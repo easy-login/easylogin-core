@@ -1,0 +1,1 @@
+from sociallogin import app
