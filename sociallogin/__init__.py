@@ -19,6 +19,9 @@ def not_found(error):
 
 # Build the database:
 # This will create the database file using SQLAlchemy
-import sociallogin.model
+from sociallogin import models
 db.create_all()
 db.session.commit()
+
+# Import all API endpoint definitions
+from sociallogin import routes, auth
