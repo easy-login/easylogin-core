@@ -7,6 +7,30 @@ import requests
 from sociallogin import app, db
 
 
-@app.route('/authorize/<provider>')
-def handle_authorize(provider):
-    return jsonify({'provider': provider})
+@app.route('/users/link', methods = ['PUT'])
+def link_user():
+    pass
+
+
+# PUT /users/<userid>/unlink?api_key=xxx
+@app.route('/users/unlink', methods = ['PUT'])
+def unlink_user():
+    pass
+
+
+# GET /users/<userid|plusid>
+@app.route('/users/<user_id>')
+def get_user(user_id):
+    pass
+
+
+# DELETE /users/<userid|plusid>
+@app.route('/users/<user_id>')
+def delete_user(user_id):
+    pass
+
+
+@app.route('/association_token')
+def get_association_token():
+    pass
+    

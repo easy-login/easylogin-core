@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 
 
@@ -15,7 +15,7 @@ db = SQLAlchemy(app)
 # Sample HTTP error handling
 @app.errorhandler(404)
 def not_found(error):
-    pass
+    return jsonify({'error': error.description}), 404
 
 # Build the database:
 # This will create the database file using SQLAlchemy
