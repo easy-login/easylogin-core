@@ -1,5 +1,6 @@
 import base64
 from flask import abort
+import urllib.parse as urlparse
 
 
 def b64encode_string(s, urlsafe=False, charset='utf8'):
@@ -23,3 +24,9 @@ def get_or_abort(d, key, err_msg=None, code=404):
 
 def gen_unique_int64():
     pass
+
+
+def is_same_uri(url1, url2):
+    r1 = urlparse.urlparse(url1)
+    r2 = urlparse.urlparse(url2)
+    return r1.scheme == r2.scheme and r1.netloc == r2.netloc and r1.path == r2.path

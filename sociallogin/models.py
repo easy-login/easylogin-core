@@ -1,4 +1,5 @@
-# from sociallogin import db
+import json
+
 from sociallogin import db
 from datetime import datetime
 
@@ -91,37 +92,35 @@ class Users(Base):
         return user
 
 
-class UserAttributes(db.Model):
-    __tablename__ = 'user_attributes'
+class UserAttrs(db.Model):
+    __tablename__ = 'user_attrs'
 
     _id = db.Column(db.Integer, primary_key=True)
     log_id = db.Column(db.Integer, primary_key=True)
-    attr = db.Column(db.String(16), primary_key=True)
-    val = db.Column(db.String(256), nullable=False)
+    attrs = db.Column(db.String(4096), nullable=False)
 
-    def __init__(self, _id, log_id, attr, val):
+    def __init__(self, _id, log_id, attrs):
         self._id = _id
         self.log_id = log_id
-        self.attr = attr
-        self.val = val
+        self.attrs = json.dumps(attrs)
 
-    @classmethod
-    def add_many(cls, _id, log_id, attrs):
-        db.session.bulk_save_objects(
-            [UserAttributes(_id=_id, log_id=log_id, attr=key, val=value) 
-            for key, value in attrs])
+    # @classmethod
+    # def add_many(cls, _id, log_id, kv):
+    #     db.session.bulk_save_objects(
+    #         [UserAttrs(_id=_id, log_id=log_id, attr=key, val=value) 
+    #         for key, value in kv])
 
 
-class SiteUsers(Base):
-    __tablename__ = 'site_users'
+# class SiteUsers(Base):
+#     __tablename__ = 'site_users'
 
-    site_id = db.Column(db.Integer, db.ForeignKey("sites._id"), nullable=False)
-    social_uid = db.Column(db.Integer, db.ForeignKey('users._id'), nullable=False)
+#     site_id = db.Column(db.Integer, db.ForeignKey("sites._id"), nullable=False)
+#     social_uid = db.Column(db.Integer, db.ForeignKey('users._id'), nullable=False)
 
-    def __init__(self, _id, site_id, social_uid):
-        self._id = _id
-        self.site_id = site_id
-        self.social_uid = social_uid
+#     def __init__(self, _id, site_id, social_uid):
+#         self._id = _id
+#         self.site_id = site_id
+#         self.social_uid = social_uid
 
 
 class Tokens(Base):

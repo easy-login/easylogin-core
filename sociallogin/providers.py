@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 from sqlalchemy.exc import SQLAlchemyError, DBAPIError
 
 from sociallogin import db
-from sociallogin.models import Sites, SiteProviders, Logs, Users, UserAttributes, Tokens
-from sociallogin.utils import b64encode_string, b64decode_string, gen_unique_int64
+from sociallogin.models import Sites, SiteProviders, Logs, Users, UserAttrs, Tokens
+from sociallogin.utils import b64encode_string, b64decode_string, is_same_uri
 
 
 _provider_endpoints = {
@@ -57,8 +57,8 @@ class ProviderAuthHandler(object):
             site_id=site_id, 
             provider=self.provider).first_or_404()
 
-        # if site.callback_uri != callback_uri:
-        #     abort(403, 'Callback URI must same with that configured in admin settings')
+        if not is_same_uri(site.callback_uri, callback_uri):
+            abort(403, 'Callback URI must same as ' + site.callback_uri)
 
         nonce = hashlib.sha1(uuid.uuid4().bytes).hexdigest()
         log = Logs(
@@ -79,33 +79,30 @@ class ProviderAuthHandler(object):
         )
 
     def _build_authorize_uri(self, site_provider, redirect_uri, state):
-        pass
+        raise NotImplementedError()
 
     def handle_authorize_error(self, provider, log_id, args):
         Logs.update.where(_id=log_id).values(status='failed')
         db.session.commit()
 
-    def handle_authorize_response(self, code, state, args={}):
-        print('code, state', code, state)
-        try:
-            params = b64decode_string(state, urlsafe=True).split('.')
-            nonce = params[0]
-            log_id = int(params[1])
-        except KeyError:
-            abort(400, 'Bad format parameter state')
-
-        log = Logs.query.filter_by(_id=log_id).first_or_404()
-        if log.nonce != nonce:
-            abort(403, 'Invalid state')
+    def handle_authorize_response(self, code, state):
+        log = self._verify_state(state)
         site_provider = SiteProviders.query.filter_by(
             site_id=log.site_id, 
             provider=self.provider).first_or_404()
 
-        identifier, token, attrs = self._get_profile_token(site_provider, code, state, args)
+        identifier, token, attrs = self._get_profile_token(site_provider, code, state)
         try:
-            user = Users.add_or_update(provider=self.provider, identifier=identifier, site_id=log.site_id)
-            UserAttributes.add_many(_id=user._id, log_id=log._id, attrs=attrs.items())
+            user = Users.add_or_update(
+                provider=self.provider, 
+                identifier=identifier, site_id=log.site_id)
             token.user_id = user._id
+
+            # once_token = hashlib.sha1(uuid.uuid4().bytes).hexdigest()
+            # log.once_token = once_token
+            # db.session.save(log)
+
+            db.session.add(UserAttrs(_id=user._id, log_id=log._id, attrs=attrs))
             db.session.add(token)
             db.session.commit()
             return user._id, log.callback_uri
@@ -113,8 +110,21 @@ class ProviderAuthHandler(object):
             db.session.rollback()
             raise
 
-    def _get_profile_token(self, site_provider, code, state, args):
-        pass
+    def _get_profile_token(self, site_provider, code, state):
+        raise NotImplementedError()
+
+    def _verify_state(self, state):
+        try:
+            params = b64decode_string(state, urlsafe=True).split('.')
+            nonce = params[0]
+            log_id = int(params[1])
+
+            log = Logs.query.filter_by(_id=log_id).first_or_404()
+            if log.nonce != nonce:
+                abort(403, 'Invalid state')
+            return log
+        except KeyError:
+            abort(400, 'Bad format parameter state')
 
 
 class LineAuthHandler(ProviderAuthHandler):
@@ -128,7 +138,7 @@ class LineAuthHandler(ProviderAuthHandler):
             state=state)
         return url
 
-    def _get_profile_token(self, site_provider, code, state, args):
+    def _get_profile_token(self, site_provider, code, state):
         token_uri = _provider_endpoints['line']['token_uri']
         res = requests.post(token_uri, data={
             'grant_type': 'authorization_code',

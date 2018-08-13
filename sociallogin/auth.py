@@ -33,7 +33,7 @@ def authorize_callback(provider):
     if not code or not state:
         abort(400, 'Invalid code or state')
 
-    user_id, callback_uri = auth_handler.handle_authorize_response(code, state, request.args)
+    user_id, callback_uri = auth_handler.handle_authorize_response(code, state)
     now = int(time.time())
     token = jwt.encode({
         'iss': app.config['SERVER_NAME'],
