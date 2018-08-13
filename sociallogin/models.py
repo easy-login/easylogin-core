@@ -50,8 +50,8 @@ class Sites(Base):
     owner_id = db.Column(db.Integer, db.ForeignKey("site_owners._id"), nullable=False)
 
 
-class SiteProviders(Base):
-    __tablename__ = 'site_providers'
+class Channels(Base):
+    __tablename__ = 'channels'
 
     provider = db.Column(db.String(8), nullable=False)
     client_id = db.Column(db.String(128), nullable=False)

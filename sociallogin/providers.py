@@ -4,10 +4,9 @@ import uuid
 from flask import request, abort, jsonify, url_for
 import requests
 from datetime import datetime, timedelta
-from sqlalchemy.exc import SQLAlchemyError, DBAPIError
 
 from sociallogin import db
-from sociallogin.models import Sites, SiteProviders, Logs, Users, UserAttrs, Tokens
+from sociallogin.models import Sites, Channels, Logs, Users, UserAttrs, Tokens
 from sociallogin.utils import b64encode_string, b64decode_string, is_same_uri
 
 
@@ -53,7 +52,7 @@ class ProviderAuthHandler(object):
     
     def build_authorize_uri(self, site_id, callback_uri):
         site = Sites.query.filter_by(_id=site_id).first_or_404()
-        site_provider = SiteProviders.query.filter_by(
+        channel = Channels.query.filter_by(
             site_id=site_id, 
             provider=self.provider).first_or_404()
 
@@ -73,12 +72,12 @@ class ProviderAuthHandler(object):
         db.session.commit()
 
         return self._build_authorize_uri(
-            site_provider=site_provider, 
+            channel=channel, 
             redirect_uri=urlparse.quote_plus(self.redirect_uri),
             state=b64encode_string(nonce + '.' + str(log._id), urlsafe=True)
         )
 
-    def _build_authorize_uri(self, site_provider, redirect_uri, state):
+    def _build_authorize_uri(self, channel, redirect_uri, state):
         raise NotImplementedError()
 
     def handle_authorize_error(self, provider, log_id, args):
@@ -87,11 +86,11 @@ class ProviderAuthHandler(object):
 
     def handle_authorize_response(self, code, state):
         log = self._verify_state(state)
-        site_provider = SiteProviders.query.filter_by(
+        channel = Channels.query.filter_by(
             site_id=log.site_id, 
             provider=self.provider).first_or_404()
 
-        identifier, token_dict, attrs = self._get_profile_token(site_provider, code, state)
+        identifier, token_dict, attrs = self._get_profile_token(channel, code, state)
         try:
             user = Users.add_or_update(
                 provider=self.provider, 
@@ -138,23 +137,23 @@ class ProviderAuthHandler(object):
 
 class LineAuthHandler(ProviderAuthHandler):
 
-    def _build_authorize_uri(self, site_provider, redirect_uri, state):
+    def _build_authorize_uri(self, channel, redirect_uri, state):
         authorize_uri = _provider_endpoints['line']['authorize_uri']
         url = authorize_uri.format(
-            client_id=site_provider.client_id,
+            client_id=channel.client_id,
             redirect_uri=redirect_uri,
-            scope=urlparse.quote(site_provider.permissions.replace(',', ' ')),
+            scope=urlparse.quote(channel.permissions.replace(',', ' ')),
             state=state)
         return url
 
-    def _get_profile_token(self, site_provider, code, state):
+    def _get_profile_token(self, channel, code, state):
         token_uri = _provider_endpoints['line']['token_uri']
         res = requests.post(token_uri, data={
             'grant_type': 'authorization_code',
             'code': code,
             'redirect_uri': self.redirect_uri,
-            'client_id': site_provider.client_id,
-            'client_secret': site_provider.client_secret
+            'client_id': channel.client_id,
+            'client_secret': channel.client_secret
         })
         if res.status_code != 200:
             print('get token error', res.json())
