@@ -1,11 +1,9 @@
 from flask import request, jsonify, redirect, url_for, abort
-import hashlib
-import jwt
-import time
 import urllib.parse as urlparse
 
 from sociallogin import app, db
 from sociallogin.providers import get_auth_handler
+from sociallogin import utils
 
 
 @app.route('/auth/<provider>')
@@ -35,13 +33,9 @@ def authorize_callback(provider):
 
     user_id, callback_uri = auth_handler.handle_authorize_response(code, state)
     now = int(time.time())
-    token = jwt.encode({
-        'iss': app.config['SERVER_NAME'],
-        'sub': user_id,
-        'exp': now + 600,
-        'iat': now
-    }, app.config['JWT_SECRET_KEY'], algorithm=app.config['JWT_ALGORITHM']).decode('utf8')
+    token = utils.gen_jwt_token(sub=user_id, exp_in_seconds=300)
 
     pr = urlparse.urlparse(callback_uri)
     callback_uri += ('?' if not pr.query else '&') + 'token=' + token
+    
     return redirect(callback_uri)

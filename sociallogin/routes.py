@@ -25,7 +25,7 @@ def get_user(user_id):
 
 
 # DELETE /users/<userid|plusid>
-@app.route('/users/<user_id>')
+@app.route('/users/<user_id>', methods = ['DELETE'])
 def delete_user(user_id):
     pass
 
@@ -34,3 +34,9 @@ def delete_user(user_id):
 def get_association_token():
     pass
     
+
+@app.route('/authenticated_user')
+def authenticated_user():
+    token = request.args.get('token')
+    if not token:
+        abort(400, 'Missing parameter token')
