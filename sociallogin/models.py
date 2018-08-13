@@ -136,8 +136,8 @@ class Tokens(Base):
 
     user_id = db.Column(db.Integer, db.ForeignKey('users._id'), nullable=False)
 
-    def __init__(self, provider, access_token, expires_at, refresh_token=None, 
-                jwt_token=None, scope=None, token_type='Bearer', user_id=None):
+    def __init__(self, provider, access_token, expires_at, user_id,
+                refresh_token=None, jwt_token=None, scope=None, token_type='Bearer'):
         self.provider = provider
         self.access_token = access_token
         self.expires_at = expires_at

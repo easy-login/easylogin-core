@@ -91,12 +91,21 @@ class ProviderAuthHandler(object):
             site_id=log.site_id, 
             provider=self.provider).first_or_404()
 
-        identifier, token, attrs = self._get_profile_token(site_provider, code, state)
+        identifier, token_dict, attrs = self._get_profile_token(site_provider, code, state)
         try:
             user = Users.add_or_update(
                 provider=self.provider, 
                 identifier=identifier, site_id=log.site_id)
-            token.user_id = user._id
+            token = Tokens(
+                provider='line',
+                access_token=token_dict['access_token'],
+                expires_at=datetime.now() + timedelta(seconds=token_dict['expires_in']),
+                refresh_token=token_dict['refresh_token'],
+                jwt_token=token_dict.get('id_token'),
+                scope=token_dict['scope'],
+                token_type=token_dict['token_type'],
+                user_id=user._id
+            )
 
             # once_token = hashlib.sha1(uuid.uuid4().bytes).hexdigest()
             # log.once_token = once_token
@@ -155,18 +164,10 @@ class LineAuthHandler(ProviderAuthHandler):
             })
 
         token_dict = res.json()
-        token = Tokens(
-            provider='line',
-            access_token=token_dict['access_token'],
-            expires_at=datetime.now() + timedelta(seconds=token_dict['expires_in']),
-            refresh_token=token_dict['refresh_token'],
-            jwt_token=token_dict.get('id_token'),
-            scope=token_dict['scope'],
-            token_type=token_dict['token_type']
-        )
+        auth_header = token_dict['token_type'] + ' ' + token_dict['access_token']
 
         profile_uri = _provider_endpoints['line']['profile_uri']
-        res = requests.get(profile_uri, headers={'Authorization': 'Bearer ' + token.access_token})
+        res = requests.get(profile_uri, headers={'Authorization': auth_header})
         if res.status_code != 200:
             abort(res.status_code, {
                 'msg': 'Error when getting LINE profile',
@@ -175,6 +176,6 @@ class LineAuthHandler(ProviderAuthHandler):
 
         attrs = res.json()
         identifier = attrs['userId']
-        return identifier, token, attrs
+        return identifier, token_dict, attrs
 
 
