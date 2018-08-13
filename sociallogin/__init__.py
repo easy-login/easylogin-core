@@ -17,6 +17,14 @@ db = SQLAlchemy(app)
 def not_found(error):
     return jsonify({'error': error.description}), 404
 
+@app.errorhandler(403)
+def permission_denied(error):
+    return jsonify({'error': error.description}), 403
+
+@app.errorhandler(400)
+def bad_request(error):
+    return jsonify({'error': error.description}), 400
+
 # Build the database:
 # This will create the database file using SQLAlchemy
 from sociallogin import models

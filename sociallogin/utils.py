@@ -19,3 +19,7 @@ def get_or_abort(d, key, err_msg=None, code=404):
         return d[key]
     except KeyError as err:
         abort(code, err_msg or err.message)
+
+
+def gen_unique_int64():
+    pass
