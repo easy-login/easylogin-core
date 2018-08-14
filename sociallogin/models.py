@@ -1,7 +1,7 @@
 import json
+from datetime import datetime
 
 from sociallogin import db
-from datetime import datetime
 
 
 # Define a base model for other database tables to inherit
@@ -49,6 +49,14 @@ class Sites(Base):
 
     owner_id = db.Column(db.Integer, db.ForeignKey("site_owners._id"), nullable=False)
 
+    def __init__(self):
+        self.is_authenticated = False
+        self.is_active = True
+        self.is_anonymous = False
+
+    def get_id(self):
+        return str(self._id)
+
 
 class Channels(Base):
     __tablename__ = 'channels'
@@ -81,7 +89,7 @@ class Users(Base):
 
     @classmethod
     def add_or_update(cls, provider, identifier, site_id):
-        user = Users.query.filter_by(identifier=identifier).one_or_none()
+        user = cls.query.filter_by(identifier=identifier).one_or_none()
         if not user:
             user = Users(provider=provider, identifier=identifier, site_id=site_id)
             db.session.add(user)

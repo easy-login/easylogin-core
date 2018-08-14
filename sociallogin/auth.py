@@ -1,7 +1,8 @@
 from flask import request, jsonify, redirect, url_for, abort
 import urllib.parse as urlparse
 
-from sociallogin import app, db
+from sociallogin import app, db, login_manager
+from sociallogin.models import Sites
 from sociallogin.providers import get_auth_handler
 from sociallogin import utils
 
@@ -39,3 +40,30 @@ def authorize_callback(provider):
     callback_uri += ('?' if not pr.query else '&') + 'token=' + token
     
     return redirect(callback_uri)
+
+
+@login_manager.request_loader
+def verify_site_auth(req):
+    api_key = _extract_api_key(req)
+    if not api_key:
+        abort(401, 'Unauthorized. Missing authorization parameters')
+
+    site = Sites.query.filter_by(api_key=api_key).one_or_none()
+    if not site:
+        abort(403, 'Wrong credentials. Could not verify your api_key')
+    site.is_authenticated = True
+    return site
+
+
+def _extract_api_key(req):
+    if req.method == 'GET':
+        api_key = req.args.get('api_key')
+        if api_key:
+            return api_key
+    api_key = req.headers.get('X-Api-Key')
+    if api_key:
+        return api_key
+
+    authorization = req.headers.get('Authorization')
+    if authorization:
+        api_key = authorization.replace('ApiKey ', '', 1)

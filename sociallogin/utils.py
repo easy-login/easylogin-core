@@ -5,6 +5,7 @@ import uuid
 import hashlib
 import jwt
 import time
+import os
 
 
 def b64encode_string(s, urlsafe=False, charset='utf8'):
@@ -37,7 +38,8 @@ def is_same_uri(url1, url2):
 
 
 def gen_random_token():
-    return hashlib.sha1(uuid.uuid4().bytes).hexdigest()
+    # return hashlib.sha1(uuid.uuid4().bytes).hexdigest()
+    return hashlib.sha1(os.urandom(128)).hexdigest()
 
 
 def gen_jwt_token(sub, exp_in_seconds):

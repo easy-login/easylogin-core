@@ -1,13 +1,12 @@
 import urllib.parse as urlparse
-import hashlib
-import uuid
 from flask import request, abort, jsonify, url_for
 import requests
 from datetime import datetime, timedelta
 
 from sociallogin import db
 from sociallogin.models import Sites, Channels, Logs, Users, UserAttrs, Tokens
-from sociallogin.utils import b64encode_string, b64decode_string, is_same_uri
+from sociallogin.utils import b64encode_string, b64decode_string,\
+                            is_same_uri, gen_random_token
 
 
 _provider_endpoints = {
@@ -57,9 +56,9 @@ class ProviderAuthHandler(object):
             provider=self.provider).first_or_404()
 
         if not is_same_uri(site.callback_uri, callback_uri):
-            abort(403, 'Callback URI must same as ' + site.callback_uri)
+            abort(403, 'Callback URI must same as that configured in admin settings')
 
-        nonce = hashlib.sha1(uuid.uuid4().bytes).hexdigest()
+        nonce = gen_random_token()
         log = Logs(
             provider=self.provider,
             site_id=site_id,
