@@ -67,3 +67,13 @@ def _extract_api_key(req):
     authorization = req.headers.get('Authorization')
     if authorization:
         api_key = authorization.replace('ApiKey ', '', 1)
+
+
+def init_app(app):
+    from flask.sessions import SecureCookieSessionInterface
+
+    class CustomSessionInterface(SecureCookieSessionInterface):
+        """Prevent creating session from API requests."""
+        def save_session(self, *args, **kwargs):
+            return
+    app.session_interface = CustomSessionInterface()

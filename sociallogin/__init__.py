@@ -54,3 +54,4 @@ db.session.commit()
 
 # Import all API endpoint definitions
 from sociallogin import routes, auth
+auth.init_app(app)
