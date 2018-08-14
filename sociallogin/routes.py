@@ -11,7 +11,7 @@ from sociallogin import app, db
 @app.route('/users/link', methods = ['PUT'])
 @login_required
 def link_user():
-    return jsonify({'msg': 'ok', 'site_id': site.callback_uri})
+    return jsonify({'msg': 'ok', 'site_id': site._id})
 
 
 @app.route('/users/unlink', methods = ['PUT'])

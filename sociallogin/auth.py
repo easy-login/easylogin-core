@@ -47,12 +47,16 @@ def verify_site_auth(req):
     api_key = _extract_api_key(req)
     if not api_key:
         abort(401, 'Unauthorized. Missing authorization parameters')
-
-    site = Sites.query.filter_by(api_key=api_key).one_or_none()
-    if not site:
+    try:
+        (_id, whitelist) = (db.session.query(Sites._id, Sites.whitelist)
+                            .filter_by(api_key=api_key).one_or_none())
+        site = Sites()
+        site._id = _id
+        site.whitelist = whitelist
+        site.is_authenticated = True
+        return site
+    except:
         abort(403, 'Wrong credentials. Could not verify your api_key')
-    site.is_authenticated = True
-    return site
 
 
 def _extract_api_key(req):
