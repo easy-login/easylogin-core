@@ -10,12 +10,9 @@ from sociallogin import utils
 @app.route('/auth/<provider>')
 def authenticate(provider):
     site_id = request.args.get('site_id')
-    if not site_id:
-        abort(404, 'Missing parameter site_id')
-
     callback_uri = request.args.get('callback_uri')
-    if not callback_uri:
-        abort(400, 'Missing parameter callback_uri')
+    if not callback_uri or not site_id:
+        abort(400, 'Missing parameters site_id or callback_uri')
 
     auth_handler = get_auth_handler(provider)
     authorize_uri = auth_handler.build_authorize_uri(site_id, callback_uri)
@@ -25,19 +22,18 @@ def authenticate(provider):
 
 @app.route('/authorize/<provider>/approval_state')
 def authorize_callback(provider):
-    auth_handler = get_auth_handler(provider)
-
     code = request.args.get('code')
     state = request.args.get('state')
     if not code or not state:
-        abort(400, 'Invalid code or state')
+        abort(400, 'Missing parameters code or state')
 
+    auth_handler = get_auth_handler(provider)
     user_id, callback_uri = auth_handler.handle_authorize_response(code, state)
-    now = int(time.time())
     token = utils.gen_jwt_token(sub=user_id, exp_in_seconds=300)
 
     pr = urlparse.urlparse(callback_uri)
-    callback_uri += ('?' if not pr.query else '&') + 'token=' + token
+    query = urlparse.urlencode({'provider': provider, 'token': token})
+    callback_uri += ('?' if not pr.query else '&') + query
     
     return redirect(callback_uri)
 
@@ -48,11 +44,11 @@ def verify_site_auth(req):
     if not api_key:
         abort(401, 'Unauthorized. Missing authorization parameters')
     try:
-        (_id, whitelist) = (db.session.query(Sites._id, Sites.whitelist)
+        (_id, allowed_ips) = (db.session.query(Sites._id, Sites.allowed_ips)
                             .filter_by(api_key=api_key).one_or_none())
         site = Sites()
         site._id = _id
-        site.whitelist = whitelist
+        site.allowed_ips = allowed_ips
         site.is_authenticated = True
         return site
     except:

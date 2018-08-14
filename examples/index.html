@@ -1,0 +1,12 @@
+<html>
+    <header></header>
+    <body>
+        {% if token and provider %}
+            <h2>Login with {{ provider }} succeeded. Token: {{ token }}!</h2>
+        {% else %}
+        <a href="http://localhost:5000/auth/line?site_id=1&callback_uri=http://localhost:8080/auth/callback">
+            <img src="https://static.tildacdn.com/tild3361-3663-4634-b664-306631636532/option_login.png"/>
+        </a>
+        {% endif %}        
+    </body>
+</html>

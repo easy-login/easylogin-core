@@ -44,12 +44,13 @@ class Sites(Base):
     domain = db.Column(db.String(64), nullable=False)
     api_key = db.Column(db.String(128), nullable=False)
     callback_uri = db.Column(db.String(1024), nullable=False)
-    whitelist = db.Column(db.String(512))
+    allowed_ips = db.Column(db.String(512))
     description = db.Column(db.String(512))
 
     owner_id = db.Column(db.Integer, db.ForeignKey("site_owners._id"), nullable=False)
 
     def __init__(self):
+        super().__init__()
         self.is_authenticated = False
         self.is_active = True
         self.is_anonymous = False

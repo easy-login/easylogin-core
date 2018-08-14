@@ -56,7 +56,7 @@ class ProviderAuthHandler(object):
             provider=self.provider).first_or_404()
 
         if not is_same_uri(site.callback_uri, callback_uri):
-            abort(403, 'Callback URI must same as that configured in admin settings')
+            abort(403, 'Callback URI must same as what was configured in admin settings')
 
         nonce = gen_random_token()
         log = Logs(
