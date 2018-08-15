@@ -21,7 +21,15 @@ _provider_endpoints = {
         'profile_uri': 'https://api.line.me/v2/profile'
     },
     'yahoojp': {
-
+        'authorize_uri': '''
+            https://auth.login.yahoo.co.jp/yconnect/v2/authorization?response_type=code
+            &client_id={client_id}
+            &state={state}
+            &scope={scope}
+            &bail=1&max_age=600&display=page&prompt=login
+            &redirect_uri={redirect_uri}'''.strip().replace('\n', '').replace(' ', ''),
+        'token_uri': 'https://auth.login.yahoo.co.jp/yconnect/v2/token',
+        'profile_uri': 'https://userinfo.yahooapis.jp/yconnect/v2/attribute'
     },
     'amazon': {
         'authorize_uri': '''
@@ -41,6 +49,8 @@ def get_auth_handler(provider):
         return LineAuthHandler(provider)
     elif provider == 'amazon':
         return AmazonAuthHandler(provider)
+    elif provider == 'yahoojp':
+        return YahooJpAuthHandler(provider)
     else: 
         return abort(404, 'Unsupported provider')
 
@@ -104,7 +114,7 @@ class ProviderAuthHandler(object):
                 provider=self.provider, 
                 identifier=identifier, site_id=log.site_id)
             token = Tokens(
-                provider='line',
+                provider=self.provider,
                 access_token=token_dict['access_token'],
                 token_type=token_dict['token_type'],
                 expires_at=datetime.now() + timedelta(seconds=token_dict['expires_in']),
@@ -184,4 +194,14 @@ class AmazonAuthHandler(ProviderAuthHandler):
     def _get_profile(self, token_type, access_token):
         attrs = super()._get_profile(token_type, access_token)
         identifier = attrs['user_id']
+        return identifier, attrs
+
+
+class YahooJpAuthHandler(ProviderAuthHandler):
+    """
+    Authentication handler for YAHOOJP accounts
+    """
+    def _get_profile(self, token_type, access_token):
+        attrs = super()._get_profile(token_type, access_token)
+        identifier = attrs['sub']
         return identifier, attrs
