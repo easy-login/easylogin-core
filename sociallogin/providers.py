@@ -28,10 +28,10 @@ _provider_endpoints = {
             https://www.amazon.com/ap/oa?response_type=code
             &client_id={client_id}
             &state={state}
-            &scope=profile
+            &scope={scope}
             &redirect_uri={redirect_uri}'''.strip().replace('\n', '').replace(' ', ''),
         'token_uri': 'https://api.amazon.com/auth/o2/token',
-        'profile_uri': ''
+        'profile_uri': 'https://api.amazon.com/user/profile'
     }
 }
 
@@ -39,6 +39,8 @@ _provider_endpoints = {
 def get_auth_handler(provider):
     if provider == 'line':
         return LineAuthHandler(provider)
+    elif provider == 'amazon':
+        return AmazonAuthHandler(provider)
     else: 
         return abort(404, 'Unsupported provider')
 
@@ -77,7 +79,13 @@ class ProviderAuthHandler(object):
         )
 
     def _build_authorize_uri(self, channel, redirect_uri, state):
-        raise NotImplementedError()
+        authorize_uri = _provider_endpoints[self.provider]['authorize_uri']
+        url = authorize_uri.format(
+            client_id=channel.client_id,
+            redirect_uri=redirect_uri,
+            scope=urlparse.quote(channel.permissions.replace(',', ' ')),
+            state=state)
+        return url
 
     def handle_authorize_error(self, provider, log_id, args):
         Logs.update.where(_id=log_id).values(status='failed')
@@ -89,7 +97,8 @@ class ProviderAuthHandler(object):
             site_id=log.site_id, 
             provider=self.provider).first_or_404()
 
-        identifier, token_dict, attrs = self._get_profile_token(channel, code, state)
+        token_dict = self._get_token(channel, code, state)
+        identifier, attrs = self._get_profile(token_dict['token_type'], token_dict['access_token'])
         try:
             user = Users.add_or_update(
                 provider=self.provider, 
@@ -97,11 +106,11 @@ class ProviderAuthHandler(object):
             token = Tokens(
                 provider='line',
                 access_token=token_dict['access_token'],
+                token_type=token_dict['token_type'],
                 expires_at=datetime.now() + timedelta(seconds=token_dict['expires_in']),
                 refresh_token=token_dict['refresh_token'],
                 jwt_token=token_dict.get('id_token'),
-                scope=token_dict['scope'],
-                token_type=token_dict['token_type'],
+                scope=token_dict.get('scope'),
                 user_id=user._id
             )
 
@@ -117,8 +126,32 @@ class ProviderAuthHandler(object):
             db.session.rollback()
             raise
 
-    def _get_profile_token(self, site_provider, code, state):
-        raise NotImplementedError()
+    def _get_token(self, channel, code, state):
+        token_uri = _provider_endpoints[self.provider]['token_uri']
+        res = requests.post(token_uri, data={
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': self.redirect_uri,
+            'client_id': channel.client_id,
+            'client_secret': channel.client_secret
+        })
+        if res.status_code != 200:
+            abort(res.status_code, {
+                'msg': 'Error when getting %s access token' % self.provider.upper(),
+                'error': res.json()
+            })
+        return res.json()
+
+    def _get_profile(self, token_type, access_token):
+        auth_header = token_type + ' ' + access_token
+        profile_uri = _provider_endpoints[self.provider]['profile_uri']
+        res = requests.get(profile_uri, headers={'Authorization': auth_header})
+        if res.status_code != 200:
+            abort(res.status_code, {
+                'msg': 'Error when getting %s profile' % self.provider.upper(),
+                'error': res.json()
+            })
+        return res.json()
 
     def _verify_state(self, state):
         try:
@@ -135,45 +168,20 @@ class ProviderAuthHandler(object):
 
 
 class LineAuthHandler(ProviderAuthHandler):
-
-    def _build_authorize_uri(self, channel, redirect_uri, state):
-        authorize_uri = _provider_endpoints['line']['authorize_uri']
-        url = authorize_uri.format(
-            client_id=channel.client_id,
-            redirect_uri=redirect_uri,
-            scope=urlparse.quote(channel.permissions.replace(',', ' ')),
-            state=state)
-        return url
-
-    def _get_profile_token(self, channel, code, state):
-        token_uri = _provider_endpoints['line']['token_uri']
-        res = requests.post(token_uri, data={
-            'grant_type': 'authorization_code',
-            'code': code,
-            'redirect_uri': self.redirect_uri,
-            'client_id': channel.client_id,
-            'client_secret': channel.client_secret
-        })
-        if res.status_code != 200:
-            print('get token error', res.json())
-            abort(res.status_code, {
-                'msg': 'Error when getting LINE access token',
-                'error': res.json()
-            })
-
-        token_dict = res.json()
-        auth_header = token_dict['token_type'] + ' ' + token_dict['access_token']
-
-        profile_uri = _provider_endpoints['line']['profile_uri']
-        res = requests.get(profile_uri, headers={'Authorization': auth_header})
-        if res.status_code != 200:
-            abort(res.status_code, {
-                'msg': 'Error when getting LINE profile',
-                'error': res.json()
-            })
-
-        attrs = res.json()
+    """
+    Authentication handler for LINE accounts
+    """
+    def _get_profile(self, token_type, access_token):
+        attrs = super()._get_profile(token_type, access_token)
         identifier = attrs['userId']
-        return identifier, token_dict, attrs
+        return identifier, attrs
 
 
+class AmazonAuthHandler(ProviderAuthHandler):
+    """
+    Authentication handler for AMAZON accounts
+    """
+    def _get_profile(self, token_type, access_token):
+        attrs = super()._get_profile(token_type, access_token)
+        identifier = attrs['user_id']
+        return identifier, attrs

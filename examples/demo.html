@@ -4,9 +4,16 @@
         {% if token and provider %}
             <h3>Login with {{ provider }} succeeded. Token: {{ token }}!</h3>
         {% else %}
-        <a href="http://localhost:5000/auth/line?site_id=1&callback_uri=http://localhost:8080/auth/callback">
-            <img src="https://static.tildacdn.com/tild3361-3663-4634-b664-306631636532/option_login.png"/>
-        </a>
+        <div>
+            <a href="http://localhost:5000/auth/line?site_id=1&callback_uri=http://localhost:8080/auth/callback">
+                <img src="https://static.tildacdn.com/tild3361-3663-4634-b664-306631636532/option_login.png"/>
+            </a>
+        </div>
+        <div>
+            <a href="http://localhost:5000/auth/amazon?site_id=1&callback_uri=http://localhost:8080/auth/callback">
+                <img src="https://images-na.ssl-images-amazon.com/images/G/01/lwa/btnLWA_gold_390x92._CB487591039_.png"/>
+            </a>
+        </div>
         {% endif %}        
     </body>
 </html>
