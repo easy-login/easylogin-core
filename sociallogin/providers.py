@@ -1,15 +1,16 @@
 import urllib.parse as urlparse
-from flask import request, abort, jsonify, url_for
 import requests
 from datetime import datetime, timedelta
+import hashlib
+from flask import request, abort, jsonify, url_for
 
 from sociallogin import db
-from sociallogin.models import Sites, Channels, Logs, Users, UserAttrs, Tokens
+from sociallogin.models import Apps, Channels, AuthLogs, Users, Tokens
 from sociallogin.utils import b64encode_string, b64decode_string,\
                             is_same_uri, gen_random_token
 
 
-_provider_endpoints = {
+__END_POINTS__ = {
     'line': {
         'authorize_uri': '''
             https://access.line.me/oauth2/v2.1/authorize?response_type=code
@@ -61,19 +62,19 @@ class ProviderAuthHandler(object):
         self.provider = provider
         self.redirect_uri = url_for('authorize_callback', _external=True, provider=provider)
     
-    def build_authorize_uri(self, site_id, callback_uri):
-        site = Sites.query.filter_by(_id=site_id).first_or_404()
+    def build_authorize_uri(self, app_id, callback_uri, callback_if_failed=None):
+        site = Sites.query.filter_by(_id=app_id).first_or_404()
         channel = Channels.query.filter_by(
-            site_id=site_id, 
+            app_id=app_id, 
             provider=self.provider).first_or_404()
 
         if not is_same_uri(site.callback_uri, callback_uri):
             abort(403, 'Callback URI must same as what was configured in admin settings')
 
         nonce = gen_random_token(nbytes=16)
-        log = Logs(
+        log = AuthLogs(
             provider=self.provider,
-            site_id=site_id,
+            app_id=app_id,
             ua=request.headers['User-Agent'],
             ip=request.remote_addr,
             nonce=nonce,
@@ -93,18 +94,24 @@ class ProviderAuthHandler(object):
         db.session.commit()
 
     def handle_authorize_response(self, code, state):
-        print('code ==============>', code)
         log = self._verify_state(state)
         channel = Channels.query.filter_by(
-            site_id=log.site_id, 
+            app_id=log.app_id, 
             provider=self.provider).first_or_404()
 
         token_dict = self._get_token(channel, code, state)
         identifier, attrs = self._get_profile(token_dict['token_type'], token_dict['access_token'])
         try:
-            user = Users.add_or_update(
+            profile = SocialProfiles.add_or_update(
                 provider=self.provider, 
-                identifier=identifier, site_id=log.site_id)
+                identifier=hashlib.sha1(identifier).hexdigest(), 
+                kvattrs=attrs)
+
+            log.once_token = gen_random_token(nbytes=32)
+            log.token_expires = datetime.now() + timedelta(seconds=600)
+            log.social_id = profile._id
+            log.status = Logs.STATUS_AUTHORIZED
+
             token = Tokens(
                 provider=self.provider,
                 access_token=token_dict['access_token'],
@@ -113,24 +120,17 @@ class ProviderAuthHandler(object):
                 refresh_token=token_dict['refresh_token'],
                 jwt_token=token_dict.get('id_token'),
                 scope=token_dict.get('scope'),
-                user_id=user._id
+                social_id=profile._id
             )
-
-            log.once_token = gen_random_token(nbytes=32)
-            log.token_expires = datetime.now() + timedelta(seconds=600)
-            log.user_id = user._id
-            log.status = Logs.STATUS_AUTHORIZED
-
-            db.session.add(UserAttrs(_id=user._id, log_id=log._id, attrs=attrs))
             db.session.add(token)
             db.session.commit()
-            return user._id, log.once_token, log.callback_uri
+            return profile._id, log.once_token, log.callback_uri
         except:
             db.session.rollback()
             raise
 
     def _build_authorize_uri(self, channel, redirect_uri, state):
-        authorize_uri = _provider_endpoints[self.provider]['authorize_uri']
+        authorize_uri = __END_POINTS__[self.provider]['authorize_uri']
         url = authorize_uri.format(
             client_id=channel.client_id,
             redirect_uri=redirect_uri,
@@ -139,7 +139,7 @@ class ProviderAuthHandler(object):
         return url
 
     def _get_token(self, channel, code, state):
-        token_uri = _provider_endpoints[self.provider]['token_uri']
+        token_uri = __END_POINTS__[self.provider]['token_uri']
         res = requests.post(token_uri, data={
             'grant_type': 'authorization_code',
             'code': code,
@@ -156,7 +156,7 @@ class ProviderAuthHandler(object):
 
     def _get_profile(self, token_type, access_token):
         auth_header = token_type + ' ' + access_token
-        profile_uri = _provider_endpoints[self.provider]['profile_uri']
+        profile_uri = __END_POINTS__[self.provider]['profile_uri']
         res = requests.get(profile_uri, headers={'Authorization': auth_header})
         if res.status_code != 200:
             abort(res.status_code, {

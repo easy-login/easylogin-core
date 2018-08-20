@@ -3,7 +3,7 @@ import urllib.parse as urlparse
 from flask_login import login_required
 
 from sociallogin import app, db, login_manager
-from sociallogin.models import Sites, Logs, Users, UserAttrs
+from sociallogin.models import Apps, AuthLogs, Users
 from sociallogin.providers import get_auth_handler
 from sociallogin import utils
 
@@ -46,22 +46,22 @@ def authenticated_user():
         abort(400, 'Missing parameter token') 
     log = Logs.find_by_once_token(once_token=token)
     user_id = log.user_id
-    return jsonify(Users.query.filter_by(_id=user_id).__dict__)
+    return jsonify(Users.query.filter_by(_id=user_id).as_map())
 
 
 @login_manager.request_loader
-def verify_site_auth(req):
+def verify_app_auth(req):
     api_key = _extract_api_key(req)
     if not api_key:
         abort(401, 'Unauthorized. Missing authorization parameters')
     try:
-        (_id, allowed_ips) = (db.session.query(Sites._id, Sites.allowed_ips)
+        (_id, allowed_ips) = (db.session.query(Apps._id, Apps.allowed_ips)
                             .filter_by(api_key=api_key).one_or_none())
-        site = Sites()
-        site._id = _id
-        site.allowed_ips = allowed_ips
-        site.is_authenticated = True
-        return site
+        app = Apps()
+        app._id = _id
+        app.allowed_ips = allowed_ips
+        app.is_authenticated = True
+        return app
     except:
         abort(403, 'Wrong credentials. Could not verify your api_key')
 
