@@ -6,6 +6,8 @@ import hashlib
 import jwt
 import time
 import os
+import secrets
+import string
 
 
 def b64encode_string(s, urlsafe=False, charset='utf8'):
@@ -37,9 +39,18 @@ def is_same_uri(url1, url2):
     return r1.scheme == r2.scheme and r1.netloc == r2.netloc and r1.path == r2.path
 
 
-def gen_random_token():
-    # return hashlib.sha1(uuid.uuid4().bytes).hexdigest()
-    return hashlib.sha1(os.urandom(128)).hexdigest()
+def gen_random_token(nbytes=32, output_format='alphanumeric'):
+    if output_format == 'alphanumeric':
+        alphabet = string.ascii_letters + string.digits
+        return ''.join(secrets.choice(alphabet) for i in range(nbytes))
+    elif output_format == 'hex':
+        return secrets.token_hex(nbytes)
+    elif output_format == 'urlsafe':
+        return secrets.token_urlsafe(nbytes)
+    elif output_format == 'base64':
+        return base64.standard_b64encode(secrets.token_bytes(nbytes))
+    else:
+        return os.urandom(nbytes)
 
 
 def gen_jwt_token(sub, exp_in_seconds):

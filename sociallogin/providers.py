@@ -70,7 +70,7 @@ class ProviderAuthHandler(object):
         if not is_same_uri(site.callback_uri, callback_uri):
             abort(403, 'Callback URI must same as what was configured in admin settings')
 
-        nonce = gen_random_token()
+        nonce = gen_random_token(nbytes=16)
         log = Logs(
             provider=self.provider,
             site_id=site_id,
@@ -88,20 +88,12 @@ class ProviderAuthHandler(object):
             state=b64encode_string(nonce + '.' + str(log._id), urlsafe=True)
         )
 
-    def _build_authorize_uri(self, channel, redirect_uri, state):
-        authorize_uri = _provider_endpoints[self.provider]['authorize_uri']
-        url = authorize_uri.format(
-            client_id=channel.client_id,
-            redirect_uri=redirect_uri,
-            scope=urlparse.quote(channel.permissions.replace(',', ' ')),
-            state=state)
-        return url
-
     def handle_authorize_error(self, provider, log_id, args):
         Logs.update.where(_id=log_id).values(status='failed')
         db.session.commit()
 
     def handle_authorize_response(self, code, state):
+        print('code ==============>', code)
         log = self._verify_state(state)
         channel = Channels.query.filter_by(
             site_id=log.site_id, 
@@ -124,17 +116,27 @@ class ProviderAuthHandler(object):
                 user_id=user._id
             )
 
-            # once_token = hashlib.sha1(uuid.uuid4().bytes).hexdigest()
-            # log.once_token = once_token
-            # db.session.save(log)
+            log.once_token = gen_random_token(nbytes=32)
+            log.token_expires = datetime.now() + timedelta(seconds=600)
+            log.user_id = user._id
+            log.status = Logs.STATUS_AUTHORIZED
 
             db.session.add(UserAttrs(_id=user._id, log_id=log._id, attrs=attrs))
             db.session.add(token)
             db.session.commit()
-            return user._id, log.callback_uri
+            return user._id, log.once_token, log.callback_uri
         except:
             db.session.rollback()
             raise
+
+    def _build_authorize_uri(self, channel, redirect_uri, state):
+        authorize_uri = _provider_endpoints[self.provider]['authorize_uri']
+        url = authorize_uri.format(
+            client_id=channel.client_id,
+            redirect_uri=redirect_uri,
+            scope=urlparse.quote(channel.permissions.replace(',', ' ')),
+            state=state)
+        return url
 
     def _get_token(self, channel, code, state):
         token_uri = _provider_endpoints[self.provider]['token_uri']

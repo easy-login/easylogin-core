@@ -10,8 +10,8 @@ JWT_SECRET_KEY = 'soci@llogin.dev'
 JWT_ALGORITHM = 'HS512'
 
 # Define the database
-# SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:root@localhost/sociallogin?charset=utf8mb4'
-SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://guest:123456@192.168.9.89/nhatanhdb?charset=utf8mb4'
+SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:root@localhost/sociallogin?charset=utf8mb4'
+# SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://guest:123456@192.168.9.89/nhatanhdb?charset=utf8mb4'
 SQLALCHEMY_TRACK_MODIFICATIONS = True
 SQLALCHEMY_NATIVE_UNICODE = True
 

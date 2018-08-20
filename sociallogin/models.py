@@ -160,16 +160,25 @@ class Tokens(Base):
 class Logs(Base):
     __tablename__ = 'logs'
 
+    STATUS_UNKNOWN = 'unknown'
+    STATUS_AUTHORIZED = 'authorized'
+    STATUS_SUCCEEDED = 'succeeded'
+    STATUS_FAILED = 'failed'
+
     provider = db.Column(db.String(8), nullable=False)
-    nonce = db.Column(db.String(40), nullable=False)
+    nonce = db.Column(db.String(32), nullable=False)
     callback_uri = db.Column(db.String(1024), nullable=False)
     ua = db.Column(db.String(512))
     ip = db.Column(db.String(16))
-    status = db.Column(db.String(8), nullable=False)
+    status = db.Column(db.String(16), nullable=False)
+    once_token = db.Column(db.String(32))
+    token_expires = db.Column(db.DateTime)
 
     site_id = db.Column(db.Integer, db.ForeignKey("sites._id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users._id'))
 
-    def __init__(self, provider, site_id, nonce, callback_uri, ua=None, ip=None, status='unknown'):
+    def __init__(self, provider, site_id, nonce, callback_uri, 
+                ua=None, ip=None, status=STATUS_UNKNOWN):
         self.provider = provider
         self.site_id = site_id
         self.nonce = nonce
@@ -177,3 +186,7 @@ class Logs(Base):
         self.ua = ua
         self.ip = ip
         self.status = status
+
+    @classmethod
+    def find_by_once_token(cls, once_token):
+        return cls.query.filter_by(once_token=once_token).order_by(cls._id.desc()).first_or_404()

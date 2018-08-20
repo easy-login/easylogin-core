@@ -38,11 +38,3 @@ def delete_user(user_id):
 @login_required
 def get_association_token():
     pass
-    
-
-@app.route('/users/authenticated')
-@login_required
-def authenticated_user():
-    token = request.args.get('token')
-    if not token:
-        abort(400, 'Missing parameter token')
