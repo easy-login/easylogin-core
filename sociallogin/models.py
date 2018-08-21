@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, timezone
+import hashlib
 
 from sociallogin import db
 
@@ -18,8 +19,9 @@ class Base(db.Model):
 
     def as_dict(self):
         attrs = {}
+        k = ''
         for k, v in self.__dict__.items():
-            if k == '_sa_instance_state' or k == '_deleted': 
+            if k.startswith('_') and k != '_id':
                 continue
             if isinstance(v, datetime):
                 v = v.replace(tzinfo=timezone.utc).isoformat()
@@ -84,18 +86,20 @@ class SocialProfiles(Base):
     __tablename__ = 'social_profiles'
 
     provider = db.Column(db.String(15), nullable=False)
-    identifier = db.Column(db.String(40), nullable=False)
+    pk = db.Column(db.String(40), nullable=False)
+    attrs = attrs = db.Column(db.String(4095), nullable=False)
     last_authorized_at = db.Column("authorized_at", db.DateTime)
     linked_at = db.Column(db.DateTime)
-    attrs = attrs = db.Column(db.String(4095), nullable=False)
-    _deleted = db.Column("deleted", db.SmallInteger, default=0, nullable=False)
+    _deleted = db.Column("deleted", db.SmallInteger, default=0)
 
-    user_id = db.Column(db.String(255), db.ForeignKey("users._id"))
+    user_id = db.Column(db.Integer, db.ForeignKey("users._id"))
+    app_id = db.Column(db.Integer, db.ForeignKey("apps._id"), nullable=False)
 
-    def __init__(self, provider, identifier, kvattrs, last_authorized_at=datetime.now()):
+    def __init__(self, app_id, pk, provider, attrs, last_authorized_at=datetime.now()):
+        self.app_id = app_id
+        self.pk = hashlib.sha1((provider + '.' + pk).encode('utf8')).hexdigest()
         self.provider = provider
-        self.identifier = identifier
-        self.attrs = json.dumps(kvattrs)
+        self.attrs = json.dumps(attrs)
         self.last_authorized_at = last_authorized_at
 
     def as_dict(self):
@@ -104,10 +108,10 @@ class SocialProfiles(Base):
         return d
 
     @classmethod
-    def add_or_update(cls, provider, identifier, kvattrs):
-        profile = cls.query.filter_by(identifier=identifier).one_or_none()
+    def add_or_update(cls, app_id, pk, provider, attrs):
+        profile = cls.query.filter_by(app_id=app_id, pk=pk).one_or_none()
         if not profile:
-            profile = SocialProfiles(provider=provider, identifier=identifier, kvattrs=kvattrs)
+            profile = SocialProfiles(app_id=app_id, pk=pk, provider=provider, attrs=attrs)
             db.session.add(profile)
             db.session.flush()
         else:
@@ -126,20 +130,20 @@ class SocialProfiles(Base):
             raise
 
 
-class Users(db.Model):
+class Users(Base):
     __tablename__ = 'users'
 
-    _id = db.Column("_id", db.String(255), primary_key=True)
+    pk = db.Column(db.String(255), unique=True, nullable=False)
     last_logged_in_at = db.Column("last_login", db.DateTime)
     last_logged_in_provider = db.Column("last_provider", db.String(15))
-    login_count = db.Column(db.Integer, nullable=False, default=0)
-    _deleted = db.Column("deleted", db.Boolean, nullable=False, default=False)
+    login_count = db.Column(db.Integer, default=0)
+    _deleted = db.Column("deleted", db.Boolean, default=False)
 
     app_id = db.Column(db.Integer, db.ForeignKey("apps._id"), nullable=False)
 
-    def __init__(_id, app_id, last_provider, login_count=0, last_login=datetime.now()):
-        self._id = _id
+    def __init__(self, app_id, pk, last_provider, login_count=0, last_login=datetime.now()):
         self.app_id = app_id
+        self.pk = pk
         self.last_logged_in_provider = last_provider
         self.login_count = login_count
         self.last_logged_in_at = last_login
@@ -153,19 +157,17 @@ class Tokens(Base):
     refresh_token = db.Column(db.String(2047))
     jwt_token = db.Column(db.String(2047))
     expires_at = db.Column(db.DateTime, nullable=False)
-    scope = db.Column(db.String(1023))
     token_type = db.Column(db.String(15))
 
     social_id = db.Column(db.Integer, db.ForeignKey('social_profiles._id'), nullable=False)
 
     def __init__(self, provider, access_token, expires_at, social_id,
-                refresh_token=None, jwt_token=None, scope=None, token_type='Bearer'):
+                refresh_token=None, jwt_token=None, token_type='Bearer'):
         self.provider = provider
         self.access_token = access_token
         self.expires_at = expires_at
         self.refresh_token = refresh_token
         self.jwt_token = jwt_token
-        self.scope = scope
         self.token_type = token_type
         self.social_id = social_id
 

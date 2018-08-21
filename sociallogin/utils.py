@@ -1,5 +1,5 @@
 import base64
-from flask import abort, current_app as app
+from flask import abort, current_app as app, jsonify
 import urllib.parse as urlparse
 import uuid
 import hashlib
@@ -61,3 +61,15 @@ def gen_jwt_token(sub, exp_in_seconds):
         'exp': now + exp_in_seconds,
         'iat': now
     }, app.config['JWT_SECRET_KEY'], algorithm=app.config['JWT_ALGORITHM']).decode('utf8')
+
+
+def make_api_response(payload, success=True):
+    return jsonify({
+        'success': success,
+        'data': payload
+    })
+
+
+def convert_CameCase_to_snake_case(s):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', s)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()

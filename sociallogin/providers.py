@@ -1,13 +1,12 @@
 import urllib.parse as urlparse
 import requests
 from datetime import datetime, timedelta
-import hashlib
 from flask import request, abort, jsonify, url_for
 
 from sociallogin import db
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
-from sociallogin.utils import b64encode_string, b64decode_string,\
-                            is_same_uri, gen_random_token
+from sociallogin.utils import b64encode_string, b64decode_string, is_same_uri,
+                            gen_random_token, convert_CameCase_to_snake_case
 
 
 __END_POINTS__ = {
@@ -100,12 +99,12 @@ class ProviderAuthHandler(object):
             provider=self.provider).first_or_404()
 
         token_dict = self._get_token(channel, code, state)
-        identifier, attrs = self._get_profile(token_dict['token_type'], token_dict['access_token'])
+        pk, attrs = self._get_profile(token_dict['token_type'], token_dict['access_token'])
         try:
             profile = SocialProfiles.add_or_update(
-                provider=self.provider, 
-                identifier=hashlib.sha1(identifier.encode('utf8')).hexdigest(), 
-                kvattrs=attrs)
+                app_id=log.app_id,
+                provider=self.provider,
+                pk=pk, attrs=attrs)
 
             log.once_token = gen_random_token(nbytes=32)
             log.token_expires = datetime.now() + timedelta(seconds=600)
@@ -119,7 +118,6 @@ class ProviderAuthHandler(object):
                 expires_at=datetime.now() + timedelta(seconds=token_dict['expires_in']),
                 refresh_token=token_dict['refresh_token'],
                 jwt_token=token_dict.get('id_token'),
-                scope=token_dict.get('scope'),
                 social_id=profile._id
             )
             db.session.add(token)
@@ -185,8 +183,8 @@ class LineAuthHandler(ProviderAuthHandler):
     """
     def _get_profile(self, token_type, access_token):
         attrs = super()._get_profile(token_type, access_token)
-        identifier = attrs['userId']
-        return identifier, attrs
+        pk = attrs['userId']
+        return pk, attrs
 
 
 class AmazonAuthHandler(ProviderAuthHandler):
@@ -195,8 +193,8 @@ class AmazonAuthHandler(ProviderAuthHandler):
     """
     def _get_profile(self, token_type, access_token):
         attrs = super()._get_profile(token_type, access_token)
-        identifier = attrs['user_id']
-        return identifier, attrs
+        pk = attrs['user_id']
+        return pk, attrs
 
 
 class YahooJpAuthHandler(ProviderAuthHandler):
@@ -205,5 +203,5 @@ class YahooJpAuthHandler(ProviderAuthHandler):
     """
     def _get_profile(self, token_type, access_token):
         attrs = super()._get_profile(token_type, access_token)
-        identifier = attrs['sub']
-        return identifier, attrs
+        pk = attrs['sub']
+        return pk, attrs

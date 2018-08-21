@@ -1,15 +1,12 @@
-from flask import request, jsonify, redirect, url_for, abort
 import urllib.parse as urlparse
-from flask_login import login_required
-from datetime import datetime   
+from flask import abort, jsonify, redirect, request, url_for
 
-from sociallogin import app, db, login_manager
-from sociallogin.models import Apps, AuthLogs, Users, SocialProfiles
+from sociallogin import app as flask_app, db, login_manager
+from sociallogin.models import Apps
 from sociallogin.providers import get_auth_handler
-from sociallogin import utils
 
 
-@app.route('/authenticate/<provider>')
+@flask_app.route('/authenticate/<provider>')
 def authenticate(provider):
     app_id = request.args.get('app_id')
     callback_uri = request.args.get('callback_uri')
@@ -22,7 +19,7 @@ def authenticate(provider):
     return redirect(authorize_uri)
 
 
-@app.route('/authorize/<provider>/approval_state')
+@flask_app.route('/authorize/<provider>/approval_state')
 def authorize_callback(provider):
     code = request.args.get('code')
     state = request.args.get('state')
@@ -37,25 +34,6 @@ def authorize_callback(provider):
     callback_uri += ('?' if not pr.query else '&') + query
     
     return redirect(callback_uri)
-
-
-@app.route('/users/authenticated')
-@login_required
-def authenticated_user():
-    token = request.args.get('token')
-    if not token:
-        abort(400, 'Missing parameter token') 
-    try:
-        log = AuthLogs.find_by_once_token(once_token=token)
-        if log.status != AuthLogs.STATUS_AUTHORIZED:
-            abort(400, 'Invalid token or token has been already used')
-        elif log.token_expires < datetime.now():
-            abort(400, 'Token expired')
-        social_id = log.social_id
-        log.status = AuthLogs.STATUS_SUCCEEDED
-        return jsonify(SocialProfiles.query.filter_by(_id=social_id).first_or_404().as_dict())
-    finally:
-        db.session.commit()
 
 
 @login_manager.request_loader
@@ -87,6 +65,7 @@ def _extract_api_key(req):
     authorization = req.headers.get('Authorization')
     if authorization:
         api_key = authorization.replace('ApiKey ', '', 1)
+        return api_key
 
 
 def init_app(app):
