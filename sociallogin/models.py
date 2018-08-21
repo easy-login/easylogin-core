@@ -154,7 +154,7 @@ class SocialProfiles(Base):
         db.session.commit()
 
     @classmethod
-    def add_or_update(cls, app_id, pk, provider, attrs):
+    def add_or_update(cls, app_id, pk, provider, attrs, auto_commit=False):
         profile = cls.query.filter_by(app_id=app_id, pk=pk).one_or_none()
         if not profile:
             profile = SocialProfiles(app_id=app_id, pk=pk, provider=provider, attrs=attrs)
@@ -163,6 +163,8 @@ class SocialProfiles(Base):
         else:
             profile.last_authorized_at = datetime.now()
             db.session.merge(profile)
+        if auto_commit:
+            db.session.commit()
         return profile
 
 
@@ -190,6 +192,14 @@ class Users(Base):
         del d['pk']
         del d['_id']
         return d
+
+    @classmethod
+    def update_after_auth(cls, profile):
+        user = Users.query.filter_by(_id=profile.user_id).first_or_404()
+        user.last_logged_in_provider = profile.provider
+        user.last_logged_in_at = datetime.now()
+        user.login_count += 1
+        db.session.commit()
 
     @classmethod
     def get_full_as_dict(cls, app_id, pk):

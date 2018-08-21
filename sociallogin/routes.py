@@ -13,8 +13,6 @@ from sociallogin.models import AuthLogs, SocialProfiles, Users
 from sociallogin.utils import make_api_response
 
 
-EMPTY_RESPONSE = jsonify({})
-
 @flask_app.route('/profiles/authenticated')
 @login_required
 def authenticated_profile():
@@ -27,9 +25,11 @@ def authenticated_profile():
             abort(400, 'Invalid token or token has been already used')
         elif log.token_expires < datetime.now():
             abort(400, 'Token expired')
+
         social_id = log.social_id
         log.status = AuthLogs.STATUS_SUCCEEDED
         profile = SocialProfiles.query.filter_by(_id=social_id).first_or_404()
+        Users.update_after_auth(profile)
         return jsonify(profile.as_dict())
     finally:
         db.session.commit()
