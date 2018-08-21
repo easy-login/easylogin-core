@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sociallogin import db
 
@@ -8,16 +8,23 @@ from sociallogin import db
 class Base(db.Model):
     __abstract__  = True
 
-    _id           = db.Column(db.Integer, primary_key=True)
+    _id           = db.Column("_id", db.Integer, primary_key=True)
     created_at    = db.Column(db.DateTime, default=db.func.current_timestamp())
     modified_at   = db.Column(db.DateTime, default=db.func.current_timestamp(),
                                         onupdate=db.func.current_timestamp())
     
     def __repr__(self):
-        return str(self.__dict__)
+        return str(self.as_map())
 
     def as_map(self):
-        pass
+        attrs = {}
+        for k, v in self.__dict__.items():
+            if k == '_sa_instance_state' or k == '_deleted': 
+                continue
+            if isinstance(v, datetime):
+                v = v.replace(tzinfo=timezone.utc).isoformat()
+            attrs[k] = v
+        return attrs
 
 
 class Providers(Base):
@@ -44,12 +51,11 @@ class Admins(Base):
 class Apps(Base):
     __tablename__ = 'apps'
 
-    domain = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
     api_key = db.Column(db.String(255), nullable=False)
-    callback_uri = db.Column(db.String(2047), nullable=False)
-    callback_if_failed = db.Column(db.String(2047), nullable=False)
     allowed_ips = db.Column(db.String(255))
     description = db.Column(db.String(255))
+    callback_uri = db.Column(db.String(65535), nullable=False)
 
     owner_id = db.Column(db.Integer, db.ForeignKey("admins._id"), nullable=False)
 
@@ -74,7 +80,7 @@ class Channels(Base):
     app_id = db.Column(db.Integer, db.ForeignKey("apps._id"), nullable=False)
 
 
-class SocialProfile(Base):
+class SocialProfiles(Base):
     __tablename__ = 'social_profiles'
 
     provider = db.Column(db.String(15), nullable=False)
@@ -82,9 +88,9 @@ class SocialProfile(Base):
     last_authorized_at = db.Column("authorized_at", db.DateTime)
     linked_at = db.Column(db.DateTime)
     attrs = attrs = db.Column(db.String(4095), nullable=False)
-    __deleted = db.Column(db.SmallInteger, default=0, nullable=False)
+    _deleted = db.Column("deleted", db.SmallInteger, default=0, nullable=False)
 
-    user_id = db.Column(db.String(255), db.ForeignKey("users._id"), nullable=False)
+    user_id = db.Column(db.String(255), db.ForeignKey("users._id"))
 
     def __init__(self, provider, identifier, kvattrs, last_authorized_at=datetime.now()):
         self.provider = provider
@@ -94,15 +100,15 @@ class SocialProfile(Base):
 
     @classmethod
     def add_or_update(cls, provider, identifier, kvattrs):
-        user = cls.query.filter_by(identifier=identifier).one_or_none()
-        if not user:
-            user = Users(provider=provider, identifier=identifier, kvattrs=kvattrs)
-            db.session.add(user)
+        profile = cls.query.filter_by(identifier=identifier).one_or_none()
+        if not profile:
+            profile = SocialProfiles(provider=provider, identifier=identifier, kvattrs=kvattrs)
+            db.session.add(profile)
             db.session.flush()
         else:
-            user.last_authorized_at = datetime.now()
-            db.session.merge(user)
-        return user
+            profile.last_authorized_at = datetime.now()
+            db.session.merge(profile)
+        return profile
 
     @classmethod
     def link_to_user(cls, social_id, user_id):
@@ -118,14 +124,11 @@ class SocialProfile(Base):
 class Users(db.Model):
     __tablename__ = 'users'
 
-    _id = db.Column(db.String(255), primary_key=True)
+    _id = db.Column("_id", db.String(255), primary_key=True)
     last_logged_in_at = db.Column("last_login", db.DateTime)
     last_logged_in_provider = db.Column("last_provider", db.String(15))
     login_count = db.Column(db.Integer, nullable=False, default=0)
-    created_at    = db.Column(db.DateTime, default=db.func.current_timestamp())
-    modified_at   = db.Column(db.DateTime, default=db.func.current_timestamp(),
-                                        onupdate=db.func.current_timestamp())
-    __deleted__ = db.Column("deleted", db.Boolean, nullable=False, default=False)
+    _deleted = db.Column("deleted", db.Boolean, nullable=False, default=False)
 
     app_id = db.Column(db.Integer, db.ForeignKey("apps._id"), nullable=False)
 
@@ -173,7 +176,7 @@ class AuthLogs(Base):
     provider = db.Column(db.String(15), nullable=False)
     nonce = db.Column(db.String(32), nullable=False)
     callback_uri = db.Column(db.String(2047), nullable=False)
-    callback_if_failed = db.Column(db.String(2047), nullable=False)
+    callback_if_failed = db.Column("callback_failed", db.String(2047))
     ua = db.Column(db.String(511))
     ip = db.Column(db.String(15))
     status = db.Column(db.String(15), nullable=False)
@@ -183,10 +186,10 @@ class AuthLogs(Base):
     app_id = db.Column(db.Integer, db.ForeignKey("apps._id"), nullable=False)
     social_id = db.Column(db.Integer, db.ForeignKey('social_profiles._id'))
 
-    def __init__(self, provider, site_id, nonce, callback_uri, callback_if_failed,
+    def __init__(self, provider, app_id, nonce, callback_uri, callback_if_failed=None,
                 ua=None, ip=None, status=STATUS_UNKNOWN):
         self.provider = provider
-        self.site_id = site_id
+        self.app_id = app_id
         self.nonce = nonce
         self.callback_uri = callback_uri
         self.callback_if_failed = callback_if_failed

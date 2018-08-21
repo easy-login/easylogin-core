@@ -5,7 +5,7 @@ import hashlib
 from flask import request, abort, jsonify, url_for
 
 from sociallogin import db
-from sociallogin.models import Apps, Channels, AuthLogs, Users, Tokens
+from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
 from sociallogin.utils import b64encode_string, b64decode_string,\
                             is_same_uri, gen_random_token
 
@@ -63,13 +63,13 @@ class ProviderAuthHandler(object):
         self.redirect_uri = url_for('authorize_callback', _external=True, provider=provider)
     
     def build_authorize_uri(self, app_id, callback_uri, callback_if_failed=None):
-        site = Sites.query.filter_by(_id=app_id).first_or_404()
+        app = Apps.query.filter_by(_id=app_id).first_or_404()
         channel = Channels.query.filter_by(
             app_id=app_id, 
             provider=self.provider).first_or_404()
 
-        if not is_same_uri(site.callback_uri, callback_uri):
-            abort(403, 'Callback URI must same as what was configured in admin settings')
+        # if not is_same_uri(app.callback_uri, callback_uri):
+        #     abort(403, 'Callback URI must same as what was configured in admin settings')
 
         nonce = gen_random_token(nbytes=16)
         log = AuthLogs(
@@ -90,7 +90,7 @@ class ProviderAuthHandler(object):
         )
 
     def handle_authorize_error(self, provider, log_id, args):
-        Logs.update.where(_id=log_id).values(status='failed')
+        AuthLogs.update.where(_id=log_id).values(status='failed')
         db.session.commit()
 
     def handle_authorize_response(self, code, state):
@@ -104,13 +104,13 @@ class ProviderAuthHandler(object):
         try:
             profile = SocialProfiles.add_or_update(
                 provider=self.provider, 
-                identifier=hashlib.sha1(identifier).hexdigest(), 
+                identifier=hashlib.sha1(identifier.encode('utf8')).hexdigest(), 
                 kvattrs=attrs)
 
             log.once_token = gen_random_token(nbytes=32)
             log.token_expires = datetime.now() + timedelta(seconds=600)
             log.social_id = profile._id
-            log.status = Logs.STATUS_AUTHORIZED
+            log.status = AuthLogs.STATUS_AUTHORIZED
 
             token = Tokens(
                 provider=self.provider,
@@ -171,7 +171,7 @@ class ProviderAuthHandler(object):
             nonce = params[0]
             log_id = int(params[1])
 
-            log = Logs.query.filter_by(_id=log_id).first_or_404()
+            log = AuthLogs.query.filter_by(_id=log_id).first_or_404()
             if log.nonce != nonce:
                 abort(403, 'Invalid state')
             return log

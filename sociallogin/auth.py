@@ -1,22 +1,23 @@
 from flask import request, jsonify, redirect, url_for, abort
 import urllib.parse as urlparse
 from flask_login import login_required
+from datetime import datetime   
 
 from sociallogin import app, db, login_manager
-from sociallogin.models import Apps, AuthLogs, Users
+from sociallogin.models import Apps, AuthLogs, Users, SocialProfiles
 from sociallogin.providers import get_auth_handler
 from sociallogin import utils
 
 
-@app.route('/auth/<provider>')
+@app.route('/authenticate/<provider>')
 def authenticate(provider):
-    site_id = request.args.get('site_id')
+    app_id = request.args.get('app_id')
     callback_uri = request.args.get('callback_uri')
-    if not callback_uri or not site_id:
-        abort(400, 'Missing parameters site_id or callback_uri')
+    if not callback_uri or not app_id:
+        abort(400, 'Missing parameters app_id or callback_uri')
 
     auth_handler = get_auth_handler(provider)
-    authorize_uri = auth_handler.build_authorize_uri(site_id, callback_uri)
+    authorize_uri = auth_handler.build_authorize_uri(app_id, callback_uri)
 
     return redirect(authorize_uri)
 
@@ -44,9 +45,17 @@ def authenticated_user():
     token = request.args.get('token')
     if not token:
         abort(400, 'Missing parameter token') 
-    log = Logs.find_by_once_token(once_token=token)
-    user_id = log.user_id
-    return jsonify(Users.query.filter_by(_id=user_id).as_map())
+    try:
+        log = AuthLogs.find_by_once_token(once_token=token)
+        if log.status != AuthLogs.STATUS_AUTHORIZED:
+            abort(400, 'Invalid token or token has been already used')
+        elif log.token_expires < datetime.now():
+            abort(400, 'Token expired')
+        social_id = log.social_id
+        log.status = AuthLogs.STATUS_SUCCEEDED
+        return jsonify(SocialProfiles.query.filter_by(_id=social_id).first_or_404().as_map())
+    finally:
+        db.session.commit()
 
 
 @login_manager.request_loader
