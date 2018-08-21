@@ -194,12 +194,13 @@ class Users(Base):
         return d
 
     @classmethod
-    def update_after_auth(cls, profile):
+    def update_after_auth(cls, profile, auto_commit=False):
         user = Users.query.filter_by(_id=profile.user_id).first_or_404()
         user.last_logged_in_provider = profile.provider
         user.last_logged_in_at = datetime.now()
         user.login_count += 1
-        db.session.commit()
+        if auto_commit:
+            db.session.commit()
 
     @classmethod
     def get_full_as_dict(cls, app_id, pk):

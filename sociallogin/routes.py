@@ -27,9 +27,9 @@ def authenticated_profile():
             abort(400, 'Token expired')
 
         social_id = log.social_id
-        log.status = AuthLogs.STATUS_SUCCEEDED
         profile = SocialProfiles.query.filter_by(_id=social_id).first_or_404()
         Users.update_after_auth(profile)
+        log.status = AuthLogs.STATUS_SUCCEEDED
         return jsonify(profile.as_dict())
     finally:
         db.session.commit()
@@ -48,6 +48,8 @@ def link_user():
         abort(409, 'Social profile already linked with an exists user')
 
     Users.link_with_social_profile(app_id, user_pk, profile)
+    db.session.commit()
+
     return jsonify({'success': True})
 
 
@@ -57,20 +59,22 @@ def unlink_user():
     body = request.json
     user_pk = body['user_id']
     app_id = current_app._id
-
-    if 'social_id' in body:
-        social_id = int(body['social_id'])
-        profile = SocialProfiles.query.filter_by(_id=social_id).first_or_404()
-        if not profile.user_id:
-            abort(409, "Social profile doesn't link with any user")
-        profile.unlink_from_end_user(user_pk)
-        return jsonify({'success': True})
-    elif 'providers' in body:
-        providers = body['providers'].split(',')
-        SocialProfiles.unlink_by_provider(app_id=app_id, user_pk=user_pk, providers=providers)
-        return jsonify({'success': True})
-    else:
-        abort(400, 'Missing parameter social_id or providers')
+    try:
+        if 'social_id' in body:
+            social_id = int(body['social_id'])
+            profile = SocialProfiles.query.filter_by(_id=social_id).first_or_404()
+            if not profile.user_id:
+                abort(409, "Social profile doesn't link with any user")
+            profile.unlink_from_end_user(user_pk)
+            return jsonify({'success': True})
+        elif 'providers' in body:
+            providers = body['providers'].split(',')
+            SocialProfiles.unlink_by_provider(app_id=app_id, user_pk=user_pk, providers=providers)
+            return jsonify({'success': True})
+        else:
+            abort(400, 'Missing parameter social_id or providers')
+    finally:
+        db.session.commit()
 
 
 # GET /users/<userid|socialid>
