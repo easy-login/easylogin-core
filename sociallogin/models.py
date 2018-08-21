@@ -131,13 +131,11 @@ class SocialProfiles(Base):
 
         self.user_id = user._id
         self.linked_at = datetime.now()
-        db.session.commit()
 
     def unlink_from_end_user(self, user_pk):
         if self.user_pk != user_pk:
             abort(403, '')
         self._unlink_unsafe()
-        db.session.commit()
 
     def _unlink_unsafe(self):
         self.linked_at = None
@@ -151,10 +149,9 @@ class SocialProfiles(Base):
             if p.provider not in providers: continue
             p._unlink_unsafe()
             db.session.merge(p)
-        db.session.commit()
 
     @classmethod
-    def add_or_update(cls, app_id, pk, provider, attrs, auto_commit=False):
+    def add_or_update(cls, app_id, pk, provider, attrs):
         profile = cls.query.filter_by(app_id=app_id, pk=pk).one_or_none()
         if not profile:
             profile = SocialProfiles(app_id=app_id, pk=pk, provider=provider, attrs=attrs)
@@ -163,8 +160,6 @@ class SocialProfiles(Base):
         else:
             profile.last_authorized_at = datetime.now()
             db.session.merge(profile)
-        if auto_commit:
-            db.session.commit()
         return profile
 
 
@@ -194,13 +189,11 @@ class Users(Base):
         return d
 
     @classmethod
-    def update_after_auth(cls, profile, auto_commit=False):
+    def update_after_auth(cls, profile):
         user = Users.query.filter_by(_id=profile.user_id).first_or_404()
         user.last_logged_in_provider = profile.provider
         user.last_logged_in_at = datetime.now()
         user.login_count += 1
-        if auto_commit:
-            db.session.commit()
 
     @classmethod
     def get_full_as_dict(cls, app_id, pk):
