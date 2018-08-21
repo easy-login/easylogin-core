@@ -53,7 +53,7 @@ def authenticated_user():
             abort(400, 'Token expired')
         social_id = log.social_id
         log.status = AuthLogs.STATUS_SUCCEEDED
-        return jsonify(SocialProfiles.query.filter_by(_id=social_id).first_or_404().as_map())
+        return jsonify(SocialProfiles.query.filter_by(_id=social_id).first_or_404().as_dict())
     finally:
         db.session.commit()
 

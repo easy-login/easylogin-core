@@ -14,9 +14,9 @@ class Base(db.Model):
                                         onupdate=db.func.current_timestamp())
     
     def __repr__(self):
-        return str(self.as_map())
+        return str(self.as_dict())
 
-    def as_map(self):
+    def as_dict(self):
         attrs = {}
         for k, v in self.__dict__.items():
             if k == '_sa_instance_state' or k == '_deleted': 
@@ -97,6 +97,11 @@ class SocialProfiles(Base):
         self.identifier = identifier
         self.attrs = json.dumps(kvattrs)
         self.last_authorized_at = last_authorized_at
+
+    def as_dict(self):
+        d = super().as_dict()
+        d['attrs'] = json.loads(d['attrs'], encoding='utf8')
+        return d
 
     @classmethod
     def add_or_update(cls, provider, identifier, kvattrs):
