@@ -5,7 +5,7 @@ from flask import request, abort, jsonify, url_for
 
 from sociallogin import db
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
-from sociallogin.utils import b64encode_string, b64decode_string, is_same_uri,
+from sociallogin.utils import b64encode_string, b64decode_string, is_same_uri,\
                             gen_random_token, convert_CameCase_to_snake_case
 
 

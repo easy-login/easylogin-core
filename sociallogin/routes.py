@@ -13,6 +13,8 @@ from sociallogin.models import AuthLogs, SocialProfiles, Users
 from sociallogin.utils import make_api_response
 
 
+EMPTY_RESPONSE = jsonify({})
+
 @flask_app.route('/profiles/authenticated')
 @login_required
 def authenticated_profile():
@@ -27,8 +29,8 @@ def authenticated_profile():
             abort(400, 'Token expired')
         social_id = log.social_id
         log.status = AuthLogs.STATUS_SUCCEEDED
-        profile = SocialProfiles.query.filter_by(_id=social_id).first_or_404().as_dict()
-        return jsonify(profile)
+        profile = SocialProfiles.query.filter_by(_id=social_id).first_or_404()
+        return jsonify(profile.as_dict())
     finally:
         db.session.commit()
 
@@ -38,38 +40,37 @@ def authenticated_profile():
 def link_user():
     body = request.json
     social_id = int(body['social_id'])
-    user_id = body['user_id']
+    user_pk = body['user_id']
     app_id = current_app._id
 
-    profile = SocialProfiles.query.filter_by(_id=social_id).first_or_404()
-    if profile.app_id != app_id:
-        abort(404, 'Social ID not found')
+    profile = SocialProfiles.query.filter_by(app_id=app_id, _id=social_id).first_or_404()
     if profile.user_id:
         abort(409, 'Social profile already linked with an exists user')
-    # count = db.session.query(func.count(SocialProfiles._id)).filter_by(user_id=user_id).scalar()
-    # if count > 0:
-    #     abort(409, 'User already linked with other social profiles')
 
-    user = Users.query.filter_by(_id=user_id)
-    if user:
-        if user.app_id != app_id:
-            abort(404, )
-        pass
-    else:
-        user = Users(_id=user_id, 
-            app_id=app_id, 
-            last_provider=profile.provider, 
-            login_count=1)
-        db.session.add(user)
-    profile.user_id = user_id
-    db.session.commit()
+    Users.link_with_social_profile(app_id, user_pk, profile)
     return jsonify({'success': True})
 
 
 @flask_app.route('/users/unlink', methods=['PUT'])
 @login_required
 def unlink_user():
-    return jsonify({'msg': 'ok'})
+    body = request.json
+    user_pk = body['user_id']
+    app_id = current_app._id
+
+    if 'social_id' in body:
+        social_id = int(body['social_id'])
+        profile = SocialProfiles.query.filter_by(_id=social_id).first_or_404()
+        if not profile.user_id:
+            abort(409, "Social profile doesn't link with any user")
+        profile.unlink_from_end_user(user_pk)
+        return jsonify({'success': True})
+    elif 'providers' in body:
+        providers = body['providers'].split(',')
+        SocialProfiles.unlink_by_provider(app_id=app_id, user_pk=user_pk, providers=providers)
+        return jsonify({'success': True})
+    else:
+        abort(400, 'Missing parameter social_id or providers')
 
 
 # GET /users/<userid|socialid>
@@ -77,15 +78,18 @@ def unlink_user():
 @login_required
 def get_user():
     args = request.args
-    user_id = args.get('user_id')
+    user_pk = args.get('user_id')
     social_id = args.get('social_id')
-    if user_id:
-        pass
+    app_id = current_app._id
+
+    if user_pk:
+        return jsonify(Users.get_full_as_dict(app_id=app_id, pk=user_pk))
     elif social_id:
         profile = SocialProfiles.query.filter_by(_id=social_id).first_or_404()
-        return jsonify(profile.as_dict())
+        if profile.user_pk:
+            return jsonify(Users.get_full_as_dict(app_id=app_id, pk=profile.user_pk))
     else: 
-        abort(404)
+        abort(404, 'User not found')
 
 
 

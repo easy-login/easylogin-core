@@ -1,6 +1,7 @@
 import json
 from datetime import datetime, timezone
 import hashlib
+from flask import abort
 
 from sociallogin import db
 
@@ -93,6 +94,7 @@ class SocialProfiles(Base):
     _deleted = db.Column("deleted", db.SmallInteger, default=0)
 
     user_id = db.Column(db.Integer, db.ForeignKey("users._id"))
+    user_pk = db.Column(db.String(255))
     app_id = db.Column(db.Integer, db.ForeignKey("apps._id"), nullable=False)
 
     def __init__(self, app_id, pk, provider, attrs, last_authorized_at=datetime.now()):
@@ -105,7 +107,51 @@ class SocialProfiles(Base):
     def as_dict(self):
         d = super().as_dict()
         d['attrs'] = json.loads(d['attrs'], encoding='utf8')
+        d['social_id'] = d['_id']
+        d['user_id'] = d['user_pk']
+        del d['_id']
+        del d['user_pk']
         return d
+
+    def link_to_end_user(self, user_pk, create_user=True):
+        user = Users.query.filter_by(app_id=app_id, pk=user_pk).one_or_none()
+        if user:
+            user.last_logged_in_provider = self.provider
+            user.last_logged_in_at = datetime.now()
+            user.login_count += 1
+        else:
+            if not create_user:
+                abort(404, 'User ID not found')
+            user = Users(pk=user_pk, 
+                app_id=app_id, 
+                last_provider=self.provider, 
+                login_count=1)
+            db.session.add(user)
+            db.session.flush()
+
+        self.user_id = user._id
+        self.linked_at = datetime.now()
+        db.session.commit()
+
+    def unlink_from_end_user(self, user_pk):
+        if self.user_pk != user_pk:
+            abort(403, '')
+        self._unlink_unsafe()
+        db.session.commit()
+
+    def _unlink_unsafe(self):
+        self.linked_at = None
+        self.user_id = None
+        self.user_pk = None
+
+    @classmethod
+    def unlink_by_provider(cls, app_id, user_pk, providers):
+        profiles = cls.query.filter_by(app_id=app_id, user_pk=user_pk).all()
+        for p in profiles:
+            if p.provider not in providers: continue
+            p._unlink_unsafe()
+            db.session.merge(p)
+        db.session.commit()
 
     @classmethod
     def add_or_update(cls, app_id, pk, provider, attrs):
@@ -118,16 +164,6 @@ class SocialProfiles(Base):
             profile.last_authorized_at = datetime.now()
             db.session.merge(profile)
         return profile
-
-    @classmethod
-    def link_to_user(cls, social_id, user_id):
-        profile = SocialProfile.query.filter_by(_id=social_id).first_or_404()
-        if not profile.user_id:
-            profile.user_id = user_id
-            profile.linked_at = datetime.now()
-            db.session.commit()
-        else:
-            raise
 
 
 class Users(Base):
@@ -147,6 +183,25 @@ class Users(Base):
         self.last_logged_in_provider = last_provider
         self.login_count = login_count
         self.last_logged_in_at = last_login
+
+    def as_dict(self):
+        d = super().as_dict()
+        d['user_id'] = d['pk']
+        del d['pk']
+        del d['_id']
+        return d
+
+    @classmethod
+    def get_full_as_dict(cls, app_id, pk):
+        user = cls.query.filter_by(app_id=app_id, pk=pk).one_or_none()
+        if user:
+            profiles = SocialProfiles.query.filter_by(user_id=user._id).all()
+            return {
+                'user': user.as_dict(), 
+                'profiles': [p.as_dict() for p in profiles]
+            }
+        else:
+            return {'user': None, 'profiles': None}
 
 
 class Tokens(Base):

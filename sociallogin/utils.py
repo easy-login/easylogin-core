@@ -8,6 +8,7 @@ import time
 import os
 import secrets
 import string
+import re
 
 
 def b64encode_string(s, urlsafe=False, charset='utf8'):
@@ -64,7 +65,7 @@ def gen_jwt_token(sub, exp_in_seconds):
 
 
 def make_api_response(payload, success=True):
-    return jsonify({
+    return jsonify({'success': success}) if payload else jsonify({
         'success': success,
         'data': payload
     })
