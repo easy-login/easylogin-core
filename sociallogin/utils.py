@@ -11,13 +11,18 @@ import string
 import re
 
 
-def b64encode_string(s, urlsafe=False, charset='utf8'):
+def b64encode_string(s, urlsafe=False, padding=True, charset='utf8'):
     ib = s.encode(charset)
     ob = base64.urlsafe_b64encode(ib) if urlsafe else base64.standard_b64encode(ib) 
-    return ob.decode('ascii')
+    encoded = ob.decode('ascii')
+    if not padding:
+        encoded = encoded.rstrip('=')
+    return encoded
 
 
 def b64decode_string(s, urlsafe=False, charset='utf8'):
+    padding = 4 - (len(s) % 4)
+    s += ('=' * padding)
     ib = s.encode('ascii')
     ob = base64.urlsafe_b64decode(ib) if urlsafe else base64.standard_b64decode(ib)
     return ob.decode(charset)

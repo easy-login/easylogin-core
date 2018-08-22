@@ -33,6 +33,7 @@ def redirect_login_error(error):
 @app.errorhandler(ValueError)
 @app.errorhandler(TypeError)
 def common_error(error):
+    print(type(error), error)
     return get_error_payloads(400, error='Bad Request', error_description=error.message)
 
 

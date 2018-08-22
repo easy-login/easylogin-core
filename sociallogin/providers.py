@@ -84,9 +84,8 @@ class ProviderAuthHandler(object):
 
         return self._build_authorize_uri(
             channel=channel, 
-            redirect_uri=urlparse.quote_plus(self.redirect_uri),
-            state=b64encode_string(nonce + '.' + str(log._id), urlsafe=True)
-        )
+            state=b64encode_string('{}.{}'.format(nonce, str(log._id)), urlsafe=True, padding=False),
+            redirect_uri=urlparse.quote_plus(self.redirect_uri))
 
     def handle_authorize_error(self, state, error, desc):
         log = self._verify_and_parse_state(state)
