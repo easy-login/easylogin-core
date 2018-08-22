@@ -1,7 +1,6 @@
 import json
 from datetime import datetime, timezone
 import hashlib
-from flask import abort
 
 from sociallogin import db
 

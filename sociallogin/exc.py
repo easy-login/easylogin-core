@@ -5,31 +5,15 @@ from sociallogin import app
 from sociallogin.utils import add_params_to_uri
 
 
-class BadRequestError(ValueError):
-    pass
-
-
-class PermissionDeniedError(ValueError):
-    pass
-
-
-class NotFoundError(ValueError):
-    pass
-
-
-class ServerInternalError(ValueError):
-    pass
-
-
 class SocialLoginError(Exception):
     def __init__(self, error, desc=None):
         self.error = error
-        self.error_description = desc
+        self.message = desc
 
     def as_dict(self):
         return {
             'error': self.error,
-            'error_description': self.error_description
+            'error_description': self.message
         }
 
 
@@ -45,13 +29,16 @@ def redirect_login_error(error):
     return redirect(redirect_uri)
 
 
-@app.errorhandler(400)
-@app.errorhandler(BadRequestError)
 @app.errorhandler(KeyError)
 @app.errorhandler(ValueError)
+@app.errorhandler(TypeError)
+def common_error(error):
+    return get_error_payloads(400, error='Bad Request', error_description=error.message)
+
+
+@app.errorhandler(400)
 def bad_request(error):
-    msg = error.message if isinstance(error, BadRequestError) else error.description
-    return get_error_payloads(400, error_description=msg)
+    return get_error_payloads(400, error_description=error.description)
 
 
 @app.errorhandler(401)
@@ -60,17 +47,13 @@ def unauthorized(error):
 
 
 @app.errorhandler(403)
-@app.errorhandler(PermissionDeniedError)
 def forbidden(error):
-    msg = error.message if isinstance(error, PermissionDeniedError) else error.description
-    return get_error_payloads(403, error_description=msg)
+    return get_error_payloads(403, error_description=error.description)
 
 
 @app.errorhandler(404)
-@app.errorhandler(NotFoundError)
 def not_found(error):
-    msg = error.message if isinstance(error, NotFoundError) else error.description
-    return get_error_payloads(404, error_description=msg)
+    return get_error_payloads(404, error_description=error.description)
 
 
 @app.errorhandler(405)
@@ -84,10 +67,8 @@ def conflict(error):
 
 
 @app.errorhandler(500)
-@app.errorhandler(ServerInternalError)
 def server_internal_error(error):
-    msg = error.message if isinstance(error, ServerInternalError) else error.description
-    return get_error_payloads(500, error_description=msg)
+    return get_error_payloads(500, error_description=error.description)
 
 
 @app.errorhandler(SQLAlchemyError)
