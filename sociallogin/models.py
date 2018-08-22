@@ -190,10 +190,11 @@ class Users(Base):
 
     @classmethod
     def update_after_auth(cls, profile):
-        user = Users.query.filter_by(_id=profile.user_id).first_or_404()
-        user.last_logged_in_provider = profile.provider
-        user.last_logged_in_at = datetime.now()
-        user.login_count += 1
+        user = Users.query.filter_by(_id=profile.user_id).first()
+        if user:
+            user.last_logged_in_provider = profile.provider
+            user.last_logged_in_at = datetime.now()
+            user.login_count += 1
 
     @classmethod
     def get_full_as_dict(cls, app_id, pk):

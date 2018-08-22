@@ -2,7 +2,8 @@
     <header></header>
     <body>
         {% if token and provider %}
-            <h3>Login with {{ provider }} succeeded. Token: {{ token }}!</h3>
+        <h3>Login with {{ provider }} succeeded. Token: {{ token }}</h3>
+        <pre>{{ profile }}</pre>
         {% else %}
         <div>
             <a href="http://localhost:5000/auth/line?site_id=1&callback_uri=http://localhost:8080/auth/callback">

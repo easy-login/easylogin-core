@@ -74,3 +74,9 @@ def make_api_response(payload, success=True):
 def convert_CameCase_to_snake_case(s):
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', s)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+
+def add_params_to_uri(uri, params):
+    pr = urlparse.urlparse(uri)
+    query = urlparse.urlencode(params)
+    return uri + ('?' if not pr.query else '&') + query

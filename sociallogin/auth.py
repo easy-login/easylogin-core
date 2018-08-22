@@ -1,20 +1,22 @@
 import urllib.parse as urlparse
-from flask import abort, jsonify, redirect, request, url_for
+from flask import abort, redirect, request
 
 from sociallogin import app as flask_app, db, login_manager
 from sociallogin.models import Apps
 from sociallogin.providers import get_auth_handler
+from sociallogin.exc import RedirectLoginError
 
 
 @flask_app.route('/authenticate/<provider>')
 def authenticate(provider):
     app_id = request.args.get('app_id')
     callback_uri = request.args.get('callback_uri')
+    callback_if_failed = request.args.get('callback_if_failed')
     if not callback_uri or not app_id:
         abort(400, 'Missing parameters app_id or callback_uri')
 
     auth_handler = get_auth_handler(provider)
-    authorize_uri = auth_handler.build_authorize_uri(app_id, callback_uri)
+    authorize_uri = auth_handler.build_authorize_uri(app_id, callback_uri, callback_if_failed)
 
     return redirect(authorize_uri)
 

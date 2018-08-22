@@ -1,7 +1,9 @@
+import urllib.parse as urlparse
+from flask import jsonify, redirect
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError
-from flask import jsonify
 
 from sociallogin import app
+from sociallogin.utils import add_params_to_uri
 
 
 class BadRequestError(ValueError):
@@ -19,7 +21,31 @@ class NotFoundError(ValueError):
 class ServerInternalError(ValueError):
     pass
 
-    
+
+class SocialLoginError(Exception):
+    def __init__(self, error, desc=None):
+        self.error = error
+        self.error_description = desc
+
+    def as_dict(self):
+        return {
+            'error': urlparse.quote(self.error),
+            'error_description': urlparse.quote(self.error_description)
+        }
+
+
+class RedirectLoginError(SocialLoginError):
+    def __init__(self, redirect_uri, error, desc=None):
+        super().__init__(error, desc)
+        self.redirect_uri = redirect_uri
+
+
+@app.errorhandler(RedirectLoginError)
+def redirect_login_error(error):
+    redirect_uri = add_params_to_uri(error.redirect_uri, error.as_dict())
+    return redirect(redirect_uri)
+
+
 @app.errorhandler(400)
 @app.errorhandler(BadRequestError)
 @app.errorhandler(KeyError)
@@ -94,7 +120,6 @@ def get_error_payloads(code, error=None, error_description=''):
             error = 'Internal server error'
         elif code == 503:
             error = 'Service Unavailable'
-
     return jsonify({
         'error': error,
         'error_description': error_description

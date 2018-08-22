@@ -1,13 +1,12 @@
 import urllib.parse as urlparse
-import requests
 from datetime import datetime, timedelta
-from flask import request, abort, jsonify, url_for
+import requests
+from flask import request, abort, url_for
 
 from sociallogin import db
+from sociallogin.exc import RedirectLoginError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
-from sociallogin.utils import b64encode_string, b64decode_string, is_same_uri,\
-                            gen_random_token, convert_CameCase_to_snake_case
-
+from sociallogin.utils import b64encode_string, b64decode_string, gen_random_token
 
 __END_POINTS__ = {
     'line': {
@@ -61,7 +60,7 @@ class ProviderAuthHandler(object):
         self.provider = provider
         self.redirect_uri = url_for('authorize_callback', _external=True, provider=provider)
     
-    def build_authorize_uri(self, app_id, callback_uri, callback_if_failed=None):
+    def build_authorize_uri(self, app_id, succ_callback, fail_callback):
         app = Apps.query.filter_by(_id=app_id).first_or_404()
         channel = Channels.query.filter_by(
             app_id=app_id, 
@@ -77,7 +76,8 @@ class ProviderAuthHandler(object):
             ua=request.headers['User-Agent'],
             ip=request.remote_addr,
             nonce=nonce,
-            callback_uri=callback_uri
+            callback_uri=succ_callback,
+            callback_if_failed=fail_callback
         )
         db.session.add(log)
         db.session.commit()
@@ -93,13 +93,21 @@ class ProviderAuthHandler(object):
         db.session.commit()
 
     def handle_authorize_response(self, code, state):
-        log = self._verify_state(state)
-        channel = Channels.query.filter_by(
-            app_id=log.app_id, 
-            provider=self.provider).first_or_404()
+        log = self._verify_and_parse_state(state)
+        fail_callback = log.callback_if_failed or log.callback_uri
 
-        token_dict = self._get_token(channel, code, state)
-        pk, attrs = self._get_profile(token_dict['token_type'], token_dict['access_token'])
+        channel = Channels.query.filter_by(app_id=log.app_id, provider=self.provider).first()
+        if not channel:
+            raise RedirectLoginError(
+                redirect_uri=log.callback_if_failed or log.callback_uri,
+                error='server_internal_error',
+                desc='Something wrong, cannot get application info')
+
+        token_dict = self._get_token(channel, code, fail_callback)
+        pk, attrs = self._get_profile(
+            token_type=token_dict['token_type'], 
+            access_token=token_dict['access_token'],
+            fail_callback=log.callback_if_failed)
         try:
             profile = SocialProfiles.add_or_update(
                 app_id=log.app_id,
@@ -136,7 +144,7 @@ class ProviderAuthHandler(object):
             state=state)
         return url
 
-    def _get_token(self, channel, code, state):
+    def _get_token(self, channel, code, fail_callback):
         token_uri = __END_POINTS__[self.provider]['token_uri']
         res = requests.post(token_uri, data={
             'grant_type': 'authorization_code',
@@ -146,24 +154,24 @@ class ProviderAuthHandler(object):
             'client_secret': channel.client_secret
         })
         if res.status_code != 200:
-            abort(res.status_code, {
-                'msg': 'Error when getting %s access token' % self.provider.upper(),
-                'error': res.json()
-            })
+            self._raise_redirect_error(
+                error=res.json(), 
+                msg='Getting {} access token failed: {}',
+                fail_callback=fail_callback)
         return res.json()
 
-    def _get_profile(self, token_type, access_token):
+    def _get_profile(self, token_type, access_token, fail_callback):
         auth_header = token_type + ' ' + access_token
         profile_uri = __END_POINTS__[self.provider]['profile_uri']
         res = requests.get(profile_uri, headers={'Authorization': auth_header})
         if res.status_code != 200:
-            abort(res.status_code, {
-                'msg': 'Error when getting %s profile' % self.provider.upper(),
-                'error': res.json()
-            })
+            self._raise_redirect_error(
+                error=res.json(), 
+                msg='Getting {} profile failed: {}',
+                fail_callback=fail_callback)
         return res.json()
 
-    def _verify_state(self, state):
+    def _verify_and_parse_state(self, state):
         try:
             params = b64decode_string(state, urlsafe=True).split('.')
             nonce = params[0]
@@ -173,16 +181,23 @@ class ProviderAuthHandler(object):
             if log.nonce != nonce:
                 abort(403, 'Invalid state')
             return log
-        except KeyError:
+        except (KeyError, ValueError):
             abort(400, 'Bad format parameter state')
+
+    def _raise_redirect_error(self, error, msg, fail_callback):
+        desc = msg.format(self.provider.upper(), error['error_description'])
+        raise RedirectLoginError(
+            error=error['error'], 
+            desc=desc,
+            redirect_uri=fail_callback,)
 
 
 class LineAuthHandler(ProviderAuthHandler):
     """
     Authentication handler for LINE accounts
     """
-    def _get_profile(self, token_type, access_token):
-        attrs = super()._get_profile(token_type, access_token)
+    def _get_profile(self, token_type, access_token, fail_callback):
+        attrs = super()._get_profile(token_type, access_token, fail_callback)
         pk = attrs['userId']
         return pk, attrs
 
@@ -191,8 +206,8 @@ class AmazonAuthHandler(ProviderAuthHandler):
     """
     Authentication handler for AMAZON accounts
     """
-    def _get_profile(self, token_type, access_token):
-        attrs = super()._get_profile(token_type, access_token)
+    def _get_profile(self, token_type, access_token, fail_callback):
+        attrs = super()._get_profile(token_type, access_token, fail_callback)
         pk = attrs['user_id']
         return pk, attrs
 
@@ -201,7 +216,7 @@ class YahooJpAuthHandler(ProviderAuthHandler):
     """
     Authentication handler for YAHOOJP accounts
     """
-    def _get_profile(self, token_type, access_token):
-        attrs = super()._get_profile(token_type, access_token)
+    def _get_profile(self, token_type, access_token, fail_callback):
+        attrs = super()._get_profile(token_type, access_token, fail_callback)
         pk = attrs['sub']
         return pk, attrs
