@@ -88,9 +88,11 @@ class ProviderAuthHandler(object):
             state=b64encode_string(nonce + '.' + str(log._id), urlsafe=True)
         )
 
-    def handle_authorize_error(self, provider, log_id, args):
-        AuthLogs.update.where(_id=log_id).values(status='failed')
+    def handle_authorize_error(self, state, error, desc):
+        log = self._verify_and_parse_state(state)
+        log.status = AuthLogs.STATUS_FAILED
         db.session.commit()
+        return log.callback_if_failed or log.callback_uri
 
     def handle_authorize_response(self, code, state):
         log = self._verify_and_parse_state(state)
@@ -99,7 +101,7 @@ class ProviderAuthHandler(object):
         channel = Channels.query.filter_by(app_id=log.app_id, provider=self.provider).first()
         if not channel:
             raise RedirectLoginError(
-                redirect_uri=log.callback_if_failed or log.callback_uri,
+                redirect_uri=fail_callback,
                 error='server_internal_error',
                 desc='Something wrong, cannot get application info')
 
@@ -107,7 +109,7 @@ class ProviderAuthHandler(object):
         pk, attrs = self._get_profile(
             token_type=token_dict['token_type'], 
             access_token=token_dict['access_token'],
-            fail_callback=log.callback_if_failed)
+            fail_callback=fail_callback)
         try:
             profile = SocialProfiles.add_or_update(
                 app_id=log.app_id,

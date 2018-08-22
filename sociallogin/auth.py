@@ -5,6 +5,7 @@ from sociallogin import app as flask_app, db, login_manager
 from sociallogin.models import Apps
 from sociallogin.providers import get_auth_handler
 from sociallogin.exc import RedirectLoginError
+from sociallogin.utils import add_params_to_uri
 
 
 @flask_app.route('/authenticate/<provider>')
@@ -23,17 +24,23 @@ def authenticate(provider):
 
 @flask_app.route('/authorize/<provider>/approval_state')
 def authorize_callback(provider):
-    code = request.args.get('code')
-    state = request.args.get('state')
-    if not code or not state:
-        abort(400, 'Missing parameters code or state')
-
     auth_handler = get_auth_handler(provider)
-    _, once_token, callback_uri = auth_handler.handle_authorize_response(code, state)
+    state = request.args.get('state')
+    if not state:
+        abort(400, 'Missing parameter state')
 
-    pr = urlparse.urlparse(callback_uri)
-    query = urlparse.urlencode({'provider': provider, 'token': once_token})
-    callback_uri += ('?' if not pr.query else '&') + query
+    code = request.args.get('code')
+    if not code:
+        error = request.args.get('error')
+        desc = request.args.get('error_description')
+        if not error:
+            abort(400, 'Missing parameters code or error')
+        fail_callback = auth_handler.handle_authorize_error(state, error, desc)
+        redirect_uri = add_params_to_uri(fail_callback, {'error': error, 'error_description': desc})
+        return redirect(redirect_uri)
+
+    _, once_token, succ_callback = auth_handler.handle_authorize_response(code, state)
+    callback_uri = add_params_to_uri(succ_callback, {'provider': provider, 'token': once_token})
     
     return redirect(callback_uri)
 

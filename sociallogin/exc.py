@@ -1,4 +1,3 @@
-import urllib.parse as urlparse
 from flask import jsonify, redirect
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 
@@ -29,8 +28,8 @@ class SocialLoginError(Exception):
 
     def as_dict(self):
         return {
-            'error': urlparse.quote(self.error),
-            'error_description': urlparse.quote(self.error_description)
+            'error': self.error,
+            'error_description': self.error_description
         }
 
 

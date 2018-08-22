@@ -264,6 +264,9 @@ class AuthLogs(Base):
         self.ip = ip
         self.status = status
 
+    def safe_get_failed_callback(self):
+        return self.callback_if_failed or self.callback_uri
+
     @classmethod
     def find_by_once_token(cls, once_token):
         return cls.query.filter_by(once_token=once_token).order_by(cls._id.desc()).first_or_404()
