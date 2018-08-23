@@ -115,18 +115,22 @@ class SocialProfiles(Base):
     def link_to_end_user(self, user_pk, create_user=True):
         user = Users.query.filter_by(app_id=self.app_id, pk=user_pk).one_or_none()
         if user:
-            user.last_logged_in_provider = self.provider
-            user.last_logged_in_at = datetime.now()
+            if user.last_logged_in_at < self.last_authorized_at:
+                user.last_logged_in_provider = self.provider
+                user.last_logged_in_at = self.last_authorized_at
             user.login_count += 1
         else:
             if not create_user:
                 abort(404, 'User ID not found')
             user = Users(pk=user_pk, app_id=self.app_id,
-                         last_provider=self.provider, login_count=1)
+                         last_provider=self.provider,
+                         login_count=1,
+                         last_login=self.last_authorized_at)
             db.session.add(user)
             db.session.flush()
 
         self.user_id = user._id
+        self.user_pk = user_pk
         self.linked_at = datetime.now()
 
     def unlink_from_end_user(self, user_pk):

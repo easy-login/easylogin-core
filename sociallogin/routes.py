@@ -49,7 +49,7 @@ def link_user():
     if profile.user_id:
         abort(409, 'Social profile already linked with an exists user')
 
-    Users.link_with_social_profile(app_id, user_pk, profile)
+    profile.link_to_end_user(user_pk)
     db.session.commit()
 
     return jsonify({'success': True})
