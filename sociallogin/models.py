@@ -132,7 +132,7 @@ class SocialProfiles(Base):
 
     def unlink_from_end_user(self, user_pk):
         if self.user_pk != user_pk:
-            abort(403, '')
+            abort(403, 'User ID not match with current linked user')
         self._unlink_unsafe()
 
     def _unlink_unsafe(self):

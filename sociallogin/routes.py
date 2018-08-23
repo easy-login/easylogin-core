@@ -43,7 +43,9 @@ def link_user():
     user_pk = body['user_id']
     app_id = current_app._id
 
-    profile = SocialProfiles.query.filter_by(app_id=app_id, _id=social_id).first_or_404()
+    profile = SocialProfiles.query.filter_by(_id=social_id).one_or_none()
+    if not profile or profile.app_id != app_id:
+        abort(404, 'Social ID not found')
     if profile.user_id:
         abort(409, 'Social profile already linked with an exists user')
 
@@ -62,9 +64,12 @@ def unlink_user():
     try:
         if 'social_id' in body:
             social_id = int(body['social_id'])
-            profile = SocialProfiles.query.filter_by(_id=social_id).first_or_404()
+            profile = SocialProfiles.query.filter_by(_id=social_id).one_or_none()
+            if not profile or profile.app_id != app_id:
+                abort(404, 'Social ID not found')
             if not profile.user_id:
                 abort(409, "Social profile doesn't link with any user")
+
             profile.unlink_from_end_user(user_pk)
             return jsonify({'success': True})
         elif 'providers' in body:
@@ -72,7 +77,7 @@ def unlink_user():
             SocialProfiles.unlink_by_provider(app_id=app_id, user_pk=user_pk, providers=providers)
             return jsonify({'success': True})
         else:
-            abort(400, 'Missing parameter social_id or providers')
+            abort(400, 'At least one parameter social_id or providers must be provided')
     finally:
         db.session.commit()
 
@@ -88,7 +93,9 @@ def get_user():
     if user_pk:
         return jsonify(Users.get_full_as_dict(app_id=app_id, pk=user_pk))
     elif social_id:
-        profile = SocialProfiles.query.filter_by(_id=social_id).first_or_404()
+        profile = SocialProfiles.query.filter_by(_id=social_id).one_or_none()
+        if not profile or profile.app_id != app_id:
+            abort(404, 'Social ID not found')
         if profile.user_pk:
             return jsonify(Users.get_full_as_dict(app_id=app_id, pk=profile.user_pk))
         else:
@@ -97,7 +104,7 @@ def get_user():
                 'profiles': [profile.as_dict()]
             })
     else:
-        abort(404, 'User not found')
+        abort(400, 'At least one parameter social_id or user_id must be provided')
 
 
 @flask_app.route('/users/<user_id>', methods=['DELETE'])
