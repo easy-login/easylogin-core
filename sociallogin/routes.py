@@ -91,6 +91,11 @@ def get_user():
         profile = SocialProfiles.query.filter_by(_id=social_id).first_or_404()
         if profile.user_pk:
             return jsonify(Users.get_full_as_dict(app_id=app_id, pk=profile.user_pk))
+        else:
+            return jsonify({
+                'user': None,
+                'profiles': [profile.as_dict()]
+            })
     else: 
         abort(404, 'User not found')
 
