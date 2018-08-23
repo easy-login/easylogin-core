@@ -30,8 +30,6 @@ def authenticated_profile():
         log.status = AuthLogs.STATUS_SUCCEEDED
         social_id = log.social_id
         profile = SocialProfiles.query.filter_by(_id=social_id).first_or_404()
-        Users.update_after_auth(profile)
-
         return jsonify(profile.as_dict())
     finally:
         db.session.commit()

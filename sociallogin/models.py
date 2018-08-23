@@ -24,9 +24,13 @@ class Base(db.Model):
             if k.startswith('_') and k != '_id':
                 continue
             if isinstance(v, datetime):
-                v = v.replace(tzinfo=timezone.utc).isoformat()
+                v = self.to_isoformat(v)
             attrs[k] = v
         return attrs
+
+    @staticmethod
+    def to_isoformat(dt):
+        return dt.replace(tzinfo=timezone.utc).isoformat()
 
 
 class Providers(Base):
@@ -89,8 +93,9 @@ class SocialProfiles(Base):
     pk = db.Column(db.String(40), unique=True, nullable=False)
     attrs = db.Column(db.String(4095), nullable=False)
     last_authorized_at = db.Column("authorized_at", db.DateTime)
+    login_count = db.Column(db.Integer, default=0, nullable=False)
     linked_at = db.Column(db.DateTime)
-    _deleted = db.Column("deleted", db.SmallInteger, default=0)
+    _deleted = db.Column("deleted", db.Boolean, default=False)
 
     user_id = db.Column(db.Integer, db.ForeignKey("users._id"))
     user_pk = db.Column(db.String(255))
@@ -114,18 +119,10 @@ class SocialProfiles(Base):
 
     def link_to_end_user(self, user_pk, create_user=True):
         user = Users.query.filter_by(app_id=self.app_id, pk=user_pk).one_or_none()
-        if user:
-            if user.last_logged_in_at < self.last_authorized_at:
-                user.last_logged_in_provider = self.provider
-                user.last_logged_in_at = self.last_authorized_at
-            user.login_count += 1
-        else:
+        if not user:
             if not create_user:
                 abort(404, 'User ID not found')
-            user = Users(pk=user_pk, app_id=self.app_id,
-                         last_provider=self.provider,
-                         login_count=1,
-                         last_login=self.last_authorized_at)
+            user = Users(pk=user_pk, app_id=self.app_id)
             db.session.add(user)
             db.session.flush()
 
@@ -162,6 +159,7 @@ class SocialProfiles(Base):
             db.session.flush()
         else:
             profile.last_authorized_at = datetime.now()
+            profile.login_count += 1
         return profile
 
 
@@ -169,19 +167,12 @@ class Users(Base):
     __tablename__ = 'users'
 
     pk = db.Column(db.String(255), unique=True, nullable=False)
-    last_logged_in_at = db.Column("last_login", db.DateTime)
-    last_logged_in_provider = db.Column("last_provider", db.String(15))
-    login_count = db.Column(db.Integer, default=0)
     _deleted = db.Column("deleted", db.Boolean, default=False)
-
     app_id = db.Column(db.Integer, db.ForeignKey("apps._id"), nullable=False)
 
-    def __init__(self, app_id, pk, last_provider, login_count=0, last_login=datetime.now()):
+    def __init__(self, app_id, pk):
         self.app_id = app_id
         self.pk = pk
-        self.last_logged_in_provider = last_provider
-        self.login_count = login_count
-        self.last_logged_in_at = last_login
 
     def as_dict(self):
         d = super().as_dict()
@@ -191,20 +182,27 @@ class Users(Base):
         return d
 
     @classmethod
-    def update_after_auth(cls, profile):
-        user = Users.query.filter_by(_id=profile.user_id).one_or_none()
-        if user:
-            user.last_logged_in_provider = profile.provider
-            user.last_logged_in_at = profile.last_authorized_at
-            user.login_count += 1
-
-    @classmethod
     def get_full_as_dict(cls, app_id, pk):
         user = cls.query.filter_by(app_id=app_id, pk=pk).one_or_none()
         if user:
             profiles = SocialProfiles.query.filter_by(user_id=user._id).all()
+            last_profile = None
+            login_count = 0
+            for p in profiles:
+                login_count += p.login_count
+                if not last_profile:
+                    last_profile = p
+                    continue
+                if last_profile.last_authorized_at < p.last_authorized_at:
+                    last_profile = p
+            user_attrs = user.as_dict()
+            user_attrs.update({
+                'last_logged_in_provider': last_profile.provider,
+                'last_logged_in_at': cls.to_isoformat(last_profile.last_authorized_at),
+                'login_count': login_count
+            })
             return {
-                'user': user.as_dict(),
+                'user': user_attrs,
                 'profiles': [p.as_dict() for p in profiles]
             }
         else:
