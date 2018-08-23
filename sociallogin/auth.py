@@ -33,16 +33,20 @@ def authorize_callback(provider):
     if not code:
         error = request.args.get('error')
         desc = request.args.get('error_description')
-        if not error:
-            abort(400, 'Missing parameters code or error')
         fail_callback = auth_handler.handle_authorize_error(state, error, desc)
-        redirect_uri = add_params_to_uri(fail_callback, {'error': error, 'error_description': desc})
+        redirect_uri = add_params_to_uri(fail_callback, {
+            'error': error, 
+            'error_description': desc,
+            'provider': provider
+        })
         return redirect(redirect_uri)
-
-    _, once_token, succ_callback = auth_handler.handle_authorize_response(code, state)
-    callback_uri = add_params_to_uri(succ_callback, {'provider': provider, 'token': once_token})
-    
-    return redirect(callback_uri)
+    else:
+        _, once_token, succ_callback = auth_handler.handle_authorize_response(code, state)
+        callback_uri = add_params_to_uri(succ_callback, {
+            'token': once_token,
+            'provider': provider 
+        })
+        return redirect(callback_uri)
 
 
 @login_manager.request_loader

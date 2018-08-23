@@ -3,21 +3,25 @@
     <body>
         {% if token and provider %}
         <h3>Login with {{ provider }} succeeded. Token: {{ token }}</h3>
+        <a href="/demo.html">Back to Home</a>
         <pre>{{ profile }}</pre>
         {% else %}
         <div>
-            <a href="http://localhost:5000/auth/line?site_id=1&callback_uri=http://localhost:8080/auth/callback">
-                <img src="https://static.tildacdn.com/tild3361-3663-4634-b664-306631636532/option_login.png"/>
+            <a href="http://localhost:5000/authenticate/line?app_id=3&callback_uri=http://localhost:8080/auth/callback">
+                <img  width="300" height="120"
+                src="https://static.tildacdn.com/tild3361-3663-4634-b664-306631636532/option_login.png"/>
             </a>
         </div>
         <div>
-            <a href="http://localhost:5000/auth/amazon?site_id=1&callback_uri=http://localhost:8080/auth/callback">
-                <img src="https://images-na.ssl-images-amazon.com/images/G/01/lwa/btnLWA_gold_390x92._CB487591039_.png"/>
+            <a href="http://localhost:5000/authenticate/amazon?app_id=3&callback_uri=http://localhost:8080/auth/callback">
+                <img  width="300" height="120"
+                src="https://images-na.ssl-images-amazon.com/images/G/01/lwa/btnLWA_gold_390x92._CB487591039_.png"/>
             </a>
         </div>
         <div>
-            <a href="http://localhost:5000/auth/yahoojp?site_id=1&callback_uri=http://localhost:8080/auth/callback">
-                <img src="http://www.thecryptotea.com/wp-content/uploads/2018/03/yahoojapan-616x272.png"/>
+            <a href="http://localhost:5000/authenticate/yahoojp?app_id=3&callback_uri=http://localhost:8080/auth/callback">
+                <img  width="300" height="120"
+                src="http://www.thecryptotea.com/wp-content/uploads/2018/03/yahoojapan-616x272.png"/>
             </a>
         </div>
         {% endif %}        

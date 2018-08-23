@@ -86,7 +86,7 @@ class SocialProfiles(Base):
     __tablename__ = 'social_profiles'
 
     provider = db.Column(db.String(15), nullable=False)
-    pk = db.Column(db.String(40), nullable=False)
+    pk = db.Column(db.String(40), unique=True, nullable=False)
     attrs = attrs = db.Column(db.String(4095), nullable=False)
     last_authorized_at = db.Column("authorized_at", db.DateTime)
     linked_at = db.Column(db.DateTime)
@@ -98,7 +98,7 @@ class SocialProfiles(Base):
 
     def __init__(self, app_id, pk, provider, attrs, last_authorized_at=datetime.now()):
         self.app_id = app_id
-        self.pk = hashlib.sha1((provider + '.' + pk).encode('utf8')).hexdigest()
+        self.pk = pk
         self.provider = provider
         self.attrs = json.dumps(attrs)
         self.last_authorized_at = last_authorized_at
@@ -151,14 +151,14 @@ class SocialProfiles(Base):
 
     @classmethod
     def add_or_update(cls, app_id, pk, provider, attrs):
-        profile = cls.query.filter_by(app_id=app_id, pk=pk).one_or_none()
+        hashpk = hashlib.sha1((provider + '.' + pk).encode('utf8')).hexdigest()
+        profile = cls.query.filter_by(app_id=app_id, pk=hashpk).first()
         if not profile:
-            profile = SocialProfiles(app_id=app_id, pk=pk, provider=provider, attrs=attrs)
+            profile = SocialProfiles(app_id=app_id, pk=hashpk, provider=provider, attrs=attrs)
             db.session.add(profile)
             db.session.flush()
         else:
             profile.last_authorized_at = datetime.now()
-            db.session.merge(profile)
         return profile
 
 

@@ -10,17 +10,19 @@ class SocialLoginError(Exception):
         self.error = error
         self.message = desc
 
+
+class RedirectLoginError(SocialLoginError):
+    def __init__(self, provider, redirect_uri, error, desc=None):
+        super().__init__(error, desc)
+        self.provider = provider
+        self.redirect_uri = redirect_uri
+
     def as_dict(self):
         return {
+            'provider': self.provider,
             'error': self.error,
             'error_description': self.message
         }
-
-
-class RedirectLoginError(SocialLoginError):
-    def __init__(self, redirect_uri, error, desc=None):
-        super().__init__(error, desc)
-        self.redirect_uri = redirect_uri
 
 
 @app.errorhandler(RedirectLoginError)
@@ -34,7 +36,18 @@ def redirect_login_error(error):
 @app.errorhandler(TypeError)
 def common_error(error):
     print(type(error), error)
-    return get_error_payloads(400, error='Bad Request', error_description=error.message)
+    return get_error_payloads(400, error_description=error.message)
+
+
+app.errorhandler(SQLAlchemyError)
+@app.errorhandler(DBAPIError)
+def sql_error(error):
+    if app.config['DEBUG']:
+        print(error)
+        return get_error_payloads(500, error_description=error.message)
+    # Hide error detail in production mode
+    else:
+        return get_error_payloads(503)
 
 
 @app.errorhandler(400)
@@ -70,17 +83,6 @@ def conflict(error):
 @app.errorhandler(500)
 def server_internal_error(error):
     return get_error_payloads(500, error_description=error.description)
-
-
-@app.errorhandler(SQLAlchemyError)
-@app.errorhandler(DBAPIError)
-def sql_error(error):
-    if app.config['DEBUG']:
-        app.logger.error(error)
-        return get_error_payloads(500, error_description=error.message)
-    # Hide error detail in production mode
-    else:
-        return get_error_payloads(503)
 
 
 def get_error_payloads(code, error=None, error_description=''):

@@ -18,14 +18,16 @@ def auth_callback():
     except KeyError:
         error = urlparse.unquote(request.args['error'])
         desc = urlparse.unquote(request.args['error_description'])
-        return render_template('error.html', error=error, desc=desc)
+        provider = request.args['provider']
+        return render_template('error.html', error=error, desc=desc, provider=provider)
 
 
 @app.route('/auth/failed')
 def auth_failed():
     error = urlparse.unquote(request.args['error'])
     desc = urlparse.unquote(request.args['error_description'])
-    return render_template('error.html', error=error, desc=desc)
+    provider = request.args['provider']
+    return render_template('error.html', error=error, desc=desc, provider=provider)
 
 
 @app.route('/demo.html')

@@ -100,6 +100,7 @@ class ProviderAuthHandler(object):
         channel = Channels.query.filter_by(app_id=log.app_id, provider=self.provider).first()
         if not channel:
             raise RedirectLoginError(
+                provider=self.provider,
                 redirect_uri=fail_callback,
                 error='server_internal_error',
                 desc='Something wrong, cannot get application info')
@@ -157,7 +158,7 @@ class ProviderAuthHandler(object):
         if res.status_code != 200:
             self._raise_redirect_error(
                 error=res.json(), 
-                msg='Getting {} access token failed: {}',
+                msg='Getting %s access token failed: ' % self.provider.upper(),
                 fail_callback=fail_callback)
         return res.json()
 
@@ -168,7 +169,7 @@ class ProviderAuthHandler(object):
         if res.status_code != 200:
             self._raise_redirect_error(
                 error=res.json(), 
-                msg='Getting {} profile failed: {}',
+                msg='Getting %s profile failed: ' % self.provider.upper(),
                 fail_callback=fail_callback)
         return res.json()
 
@@ -186,11 +187,12 @@ class ProviderAuthHandler(object):
             abort(400, 'Bad format parameter state')
 
     def _raise_redirect_error(self, error, msg, fail_callback):
-        desc = msg.format(self.provider.upper(), error['error_description'])
+        desc = msg + error['error_description']
         raise RedirectLoginError(
             error=error['error'], 
             desc=desc,
-            redirect_uri=fail_callback,)
+            redirect_uri=fail_callback,
+            provider=self.provider)
 
 
 class LineAuthHandler(ProviderAuthHandler):
