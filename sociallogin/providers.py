@@ -61,10 +61,12 @@ class ProviderAuthHandler(object):
         self.redirect_uri = url_for('authorize_callback', _external=True, provider=provider)
     
     def build_authorize_uri(self, app_id, succ_callback, fail_callback):
-        app = Apps.query.filter_by(_id=app_id).first_or_404()
+        app = Apps.query.filter_by(_id=app_id).one_or_none()
         channel = Channels.query.filter_by(
             app_id=app_id, 
-            provider=self.provider).first_or_404()
+            provider=self.provider).one_or_none()
+        if not app or not channel:
+            abort(404, 'Application not found')
 
         # if not is_same_uri(app.callback_uri, callback_uri):
         #     abort(403, 'Callback URI must same as what was configured in admin settings')
@@ -97,13 +99,13 @@ class ProviderAuthHandler(object):
         log = self._verify_and_parse_state(state)
         fail_callback = log.callback_if_failed or log.callback_uri
 
-        channel = Channels.query.filter_by(app_id=log.app_id, provider=self.provider).first()
+        channel = Channels.query.filter_by(app_id=log.app_id, provider=self.provider).one_or_none()
         if not channel:
             raise RedirectLoginError(
                 provider=self.provider,
                 redirect_uri=fail_callback,
                 error='server_internal_error',
-                desc='Something wrong, cannot get application info')
+                msg='Something wrong, cannot get application info')
 
         token_dict = self._get_token(channel, code, fail_callback)
         pk, attrs = self._get_profile(
@@ -187,10 +189,9 @@ class ProviderAuthHandler(object):
             abort(400, 'Bad format parameter state')
 
     def _raise_redirect_error(self, error, msg, fail_callback):
-        desc = msg + error['error_description']
         raise RedirectLoginError(
             error=error['error'], 
-            desc=desc,
+            msg=msg + error['error_description'],
             redirect_uri=fail_callback,
             provider=self.provider)
 

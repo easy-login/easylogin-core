@@ -6,14 +6,14 @@ from sociallogin.utils import add_params_to_uri
 
 
 class SocialLoginError(Exception):
-    def __init__(self, error, desc=None):
+    def __init__(self, error, msg=None):
         self.error = error
         self.message = desc
 
 
 class RedirectLoginError(SocialLoginError):
-    def __init__(self, provider, redirect_uri, error, desc=None):
-        super().__init__(error, desc)
+    def __init__(self, provider, redirect_uri, error, msg=None):
+        super().__init__(error, msg)
         self.provider = provider
         self.redirect_uri = redirect_uri
 
@@ -21,7 +21,7 @@ class RedirectLoginError(SocialLoginError):
         return {
             'provider': self.provider,
             'error': self.error,
-            'error_description': self.message
+            'error_description': self.msg
         }
 
 
@@ -39,12 +39,11 @@ def common_error(error):
     return get_error_payloads(400, error_description=error.message)
 
 
-app.errorhandler(SQLAlchemyError)
+@app.errorhandler(SQLAlchemyError)
 @app.errorhandler(DBAPIError)
 def sql_error(error):
     if app.config['DEBUG']:
-        print(error)
-        return get_error_payloads(500, error_description=error.message)
+        return get_error_payloads(500, error_description=str(error))
     # Hide error detail in production mode
     else:
         return get_error_payloads(503)

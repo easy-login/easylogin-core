@@ -152,7 +152,7 @@ class SocialProfiles(Base):
     @classmethod
     def add_or_update(cls, app_id, pk, provider, attrs):
         hashpk = hashlib.sha1((provider + '.' + pk).encode('utf8')).hexdigest()
-        profile = cls.query.filter_by(app_id=app_id, pk=hashpk).first()
+        profile = cls.query.filter_by(app_id=app_id, pk=hashpk).one_or_none()
         if not profile:
             profile = SocialProfiles(app_id=app_id, pk=hashpk, provider=provider, attrs=attrs)
             db.session.add(profile)

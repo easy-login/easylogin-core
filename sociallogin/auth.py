@@ -4,7 +4,6 @@ from flask import abort, redirect, request
 from sociallogin import app as flask_app, db, login_manager
 from sociallogin.models import Apps
 from sociallogin.providers import get_auth_handler
-from sociallogin.exc import RedirectLoginError
 from sociallogin.utils import add_params_to_uri
 
 
