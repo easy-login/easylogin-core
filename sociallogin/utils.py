@@ -28,11 +28,11 @@ def b64decode_string(s, urlsafe=False, charset='utf8'):
     return ob.decode(charset)
 
 
-def get_or_abort(d, key, err_msg=None, code=404):
+def get_or_abort(d, key, err_msg=None, code=400):
     try:
         return d[key]
     except KeyError as err:
-        abort(code, err_msg or err.message)
+        abort(code, err_msg or str(err))
 
 
 def gen_unique_int64():

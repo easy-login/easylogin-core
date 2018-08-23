@@ -6,7 +6,9 @@ from flask import request, abort, url_for
 from sociallogin import db
 from sociallogin.exc import RedirectLoginError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
-from sociallogin.utils import b64encode_string, b64decode_string, gen_random_token
+from sociallogin.utils import b64encode_string, b64decode_string, \
+    gen_random_token, gen_jwt_token, gen_unique_int64
+
 
 __END_POINTS__ = {
     'line': {
@@ -68,8 +70,12 @@ class ProviderAuthHandler(object):
         if not app or not channel:
             abort(404, 'Application not found')
 
-        # if not is_same_uri(app.callback_uri, callback_uri):
-        #     abort(403, 'Callback URI must same as what was configured in admin settings')
+        allowed_uris = [urlparse.unquote_plus(uri) for uri in app.callback_uri.split('|')]
+        print('All allowed URIs', allowed_uris)
+        if not self._verify_callback_uri(allowed_uris, succ_callback):
+            abort(403, 'Callback URI must be configured in admin settings')
+        if fail_callback and not self._verify_callback_uri(allowed_uris, fail_callback):
+            abort(403, 'Callback URI must be configured in admin settings')
 
         nonce = gen_random_token(nbytes=16)
         log = AuthLogs(
@@ -144,7 +150,7 @@ class ProviderAuthHandler(object):
         url = authorize_uri.format(
             client_id=channel.client_id,
             redirect_uri=redirect_uri,
-            scope=urlparse.quote(channel.permissions.replace(',', ' ')),
+            scope=urlparse.quote(channel.permissions.replace('|', ' ')),
             state=state)
         return url
 
@@ -195,6 +201,16 @@ class ProviderAuthHandler(object):
             msg=msg + error['error_description'],
             redirect_uri=fail_callback,
             provider=self.provider)
+
+    @staticmethod
+    def _verify_callback_uri(allowed_uris, uri):
+        r1 = urlparse.urlparse(uri)
+        for _uri in allowed_uris:
+            r2 = urlparse.urlparse(_uri)
+            ok = r1.scheme == r2.scheme and r1.netloc == r2.netloc and r1.path == r2.path
+            if ok:
+                return True
+        return False
 
 
 class LineAuthHandler(ProviderAuthHandler):
