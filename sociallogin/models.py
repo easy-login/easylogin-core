@@ -188,10 +188,10 @@ class Users(Base):
 
     @classmethod
     def update_after_auth(cls, profile):
-        user = Users.query.filter_by(_id=profile.user_id).first()
+        user = Users.query.filter_by(_id=profile.user_id).one_or_none()
         if user:
             user.last_logged_in_provider = profile.provider
-            user.last_logged_in_at = datetime.now()
+            user.last_logged_in_at = profile.last_authorized_at
             user.login_count += 1
 
     @classmethod

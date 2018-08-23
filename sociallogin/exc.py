@@ -35,15 +35,16 @@ def redirect_login_error(error):
 @app.errorhandler(ValueError)
 @app.errorhandler(TypeError)
 def common_error(error):
-    print(type(error), error)
-    return get_error_payloads(400, error_description=error.message)
+    msg = '{}: {}'.format(type(error).__name__, str(error))
+    return get_error_payloads(400, error_description=msg)
 
 
 @app.errorhandler(SQLAlchemyError)
 @app.errorhandler(DBAPIError)
 def sql_error(error):
     if app.config['DEBUG']:
-        return get_error_payloads(500, error_description=str(error))
+        msg = '{}: {}'.format(type(error).__name__, str(error))
+        return get_error_payloads(500, error_description=msg)
     # Hide error detail in production mode
     else:
         return get_error_payloads(503)

@@ -13,8 +13,8 @@ def auth_callback():
         provider = request.args['provider']
         r = requests.get(url='http://localhost:5000/profiles/authenticated',
                          params={'api_key': 'passw0rdTec', 'token': token})
-        return render_template('demo.html', provider=provider, token=token, 
-                            profile=json.dumps(r.json(), sort_keys=True, indent=2))
+        return render_template('demo.html', provider=provider, token=token,
+                               profile=json.dumps(r.json(), sort_keys=True, indent=2))
     except KeyError:
         error = urlparse.unquote(request.args['error'])
         desc = urlparse.unquote(request.args['error_description'])

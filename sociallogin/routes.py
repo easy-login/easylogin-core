@@ -18,18 +18,20 @@ from sociallogin.utils import make_api_response
 def authenticated_profile():
     token = request.args.get('token')
     if not token:
-        abort(400, 'Missing parameter token') 
-    try:
-        log = AuthLogs.find_by_once_token(once_token=token)
-        if log.status != AuthLogs.STATUS_AUTHORIZED:
-            abort(400, 'Invalid token or token has been already used')
-        elif log.token_expires < datetime.now():
-            abort(400, 'Token expired')
+        abort(400, 'Missing parameter token')
 
+    log = AuthLogs.find_by_once_token(once_token=token)
+    if log.status != AuthLogs.STATUS_AUTHORIZED:
+        abort(400, 'Invalid token or token has been already used')
+    elif log.token_expires < datetime.now():
+        abort(400, 'Token expired')
+
+    try:
+        log.status = AuthLogs.STATUS_SUCCEEDED
         social_id = log.social_id
         profile = SocialProfiles.query.filter_by(_id=social_id).first_or_404()
         Users.update_after_auth(profile)
-        log.status = AuthLogs.STATUS_SUCCEEDED
+
         return jsonify(profile.as_dict())
     finally:
         db.session.commit()
@@ -96,7 +98,7 @@ def get_user():
                 'user': None,
                 'profiles': [profile.as_dict()]
             })
-    else: 
+    else:
         abort(404, 'User not found')
 
 
