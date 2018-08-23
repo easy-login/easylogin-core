@@ -175,7 +175,8 @@ class ProviderAuthHandler(object):
                 fail_callback=fail_callback)
         return res.json()
 
-    def _verify_and_parse_state(self, state):
+    @staticmethod
+    def _verify_and_parse_state(state):
         try:
             params = b64decode_string(state, urlsafe=True).split('.')
             nonce = params[0]

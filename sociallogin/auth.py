@@ -1,4 +1,3 @@
-import urllib.parse as urlparse
 from flask import abort, redirect, request
 
 from sociallogin import app as flask_app, db, login_manager

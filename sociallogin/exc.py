@@ -8,7 +8,7 @@ from sociallogin.utils import add_params_to_uri
 class SocialLoginError(Exception):
     def __init__(self, error, msg=None):
         self.error = error
-        self.message = desc
+        self.message = msg
 
 
 class RedirectLoginError(SocialLoginError):
@@ -21,7 +21,7 @@ class RedirectLoginError(SocialLoginError):
         return {
             'provider': self.provider,
             'error': self.error,
-            'error_description': self.msg
+            'error_description': self.message
         }
 
 

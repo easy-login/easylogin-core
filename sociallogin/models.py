@@ -1,25 +1,25 @@
 import json
 from datetime import datetime, timezone
 import hashlib
+from flask import abort
 
 from sociallogin import db
 
 
 # Define a base model for other database tables to inherit
 class Base(db.Model):
-    __abstract__  = True
+    __abstract__ = True
 
-    _id           = db.Column("_id", db.Integer, primary_key=True)
-    created_at    = db.Column(db.DateTime, default=db.func.current_timestamp())
-    modified_at   = db.Column(db.DateTime, default=db.func.current_timestamp(),
-                                        onupdate=db.func.current_timestamp())
-    
+    _id = db.Column("_id", db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    modified_at = db.Column(db.DateTime, default=db.func.current_timestamp(),
+                            onupdate=db.func.current_timestamp())
+
     def __repr__(self):
         return str(self.as_dict())
 
     def as_dict(self):
         attrs = {}
-        k = ''
         for k, v in self.__dict__.items():
             if k.startswith('_') and k != '_id':
                 continue
@@ -87,7 +87,7 @@ class SocialProfiles(Base):
 
     provider = db.Column(db.String(15), nullable=False)
     pk = db.Column(db.String(40), unique=True, nullable=False)
-    attrs = attrs = db.Column(db.String(4095), nullable=False)
+    attrs = db.Column(db.String(4095), nullable=False)
     last_authorized_at = db.Column("authorized_at", db.DateTime)
     linked_at = db.Column(db.DateTime)
     _deleted = db.Column("deleted", db.SmallInteger, default=0)
@@ -113,7 +113,7 @@ class SocialProfiles(Base):
         return d
 
     def link_to_end_user(self, user_pk, create_user=True):
-        user = Users.query.filter_by(app_id=app_id, pk=user_pk).one_or_none()
+        user = Users.query.filter_by(app_id=self.app_id, pk=user_pk).one_or_none()
         if user:
             user.last_logged_in_provider = self.provider
             user.last_logged_in_at = datetime.now()
@@ -121,10 +121,8 @@ class SocialProfiles(Base):
         else:
             if not create_user:
                 abort(404, 'User ID not found')
-            user = Users(pk=user_pk, 
-                app_id=app_id, 
-                last_provider=self.provider, 
-                login_count=1)
+            user = Users(pk=user_pk, app_id=self.app_id,
+                         last_provider=self.provider, login_count=1)
             db.session.add(user)
             db.session.flush()
 
@@ -145,7 +143,8 @@ class SocialProfiles(Base):
     def unlink_by_provider(cls, app_id, user_pk, providers):
         profiles = cls.query.filter_by(app_id=app_id, user_pk=user_pk).all()
         for p in profiles:
-            if p.provider not in providers: continue
+            if p.provider not in providers:
+                continue
             p._unlink_unsafe()
             db.session.merge(p)
 
@@ -201,7 +200,7 @@ class Users(Base):
         if user:
             profiles = SocialProfiles.query.filter_by(user_id=user._id).all()
             return {
-                'user': user.as_dict(), 
+                'user': user.as_dict(),
                 'profiles': [p.as_dict() for p in profiles]
             }
         else:
@@ -221,7 +220,7 @@ class Tokens(Base):
     social_id = db.Column(db.Integer, db.ForeignKey('social_profiles._id'), nullable=False)
 
     def __init__(self, provider, access_token, expires_at, social_id,
-                refresh_token=None, jwt_token=None, token_type='Bearer'):
+                 refresh_token=None, jwt_token=None, token_type='Bearer'):
         self.provider = provider
         self.access_token = access_token
         self.expires_at = expires_at
@@ -253,7 +252,7 @@ class AuthLogs(Base):
     social_id = db.Column(db.Integer, db.ForeignKey('social_profiles._id'))
 
     def __init__(self, provider, app_id, nonce, callback_uri, callback_if_failed=None,
-                ua=None, ip=None, status=STATUS_UNKNOWN):
+                 ua=None, ip=None, status=STATUS_UNKNOWN):
         self.provider = provider
         self.app_id = app_id
         self.nonce = nonce

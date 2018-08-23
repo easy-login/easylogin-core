@@ -77,7 +77,6 @@ def unlink_user():
         db.session.commit()
 
 
-# GET /users/<userid|socialid>
 @flask_app.route('/users')
 @login_required
 def get_user():
@@ -96,8 +95,6 @@ def get_user():
         abort(404, 'User not found')
 
 
-
-# DELETE /users/<userid|plusid>
 @flask_app.route('/users/<user_id>', methods=['DELETE'])
 @login_required
 def delete_user(user_id):
