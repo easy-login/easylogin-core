@@ -6,8 +6,8 @@ from sociallogin.providers import get_auth_handler
 from sociallogin.utils import add_params_to_uri
 
 
-@flask_app.route('/authenticate/<provider>')
-def authenticate(provider):
+@flask_app.route('/authorize/<provider>')
+def authorize(provider):
     app_id = request.args.get('app_id')
     callback_uri = request.args.get('callback_uri')
     callback_if_failed = request.args.get('callback_if_failed')
@@ -54,14 +54,14 @@ def verify_app_auth(req):
         abort(401, 'Unauthorized. Missing authorization parameters')
     try:
         (_id, allowed_ips) = (db.session.query(Apps._id, Apps.allowed_ips)
-                            .filter_by(api_key=api_key).one_or_none())
+                              .filter_by(api_key=api_key).one_or_none())
         app = Apps()
         app._id = _id
         app.allowed_ips = allowed_ips
         app.is_authenticated = True
         return app
     except:
-        abort(403, 'Wrong credentials. Could not verify your api_key')
+        abort(401, 'Wrong credentials. Could not verify your api_key')
 
 
 def _extract_api_key(req):
