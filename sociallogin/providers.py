@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import requests
 from flask import request, abort, url_for
 
-from sociallogin import db
+from sociallogin import db, logger
 from sociallogin.exc import RedirectLoginError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
 from sociallogin.utils import b64encode_string, b64decode_string, \
@@ -71,7 +71,9 @@ class ProviderAuthHandler(object):
             abort(404, 'Application not found')
 
         allowed_uris = [urlparse.unquote_plus(uri) for uri in app.callback_uri.split('|')]
-        print('All allowed URIs', allowed_uris)
+        logger.debug('Verify callback uri. Allowed URIs: {}. URI to verify: {}'
+                     .format(allowed_uris, (succ_callback, fail_callback)))
+
         if not self._verify_callback_uri(allowed_uris, succ_callback):
             abort(403, 'Callback URI must be configured in admin settings')
         if fail_callback and not self._verify_callback_uri(allowed_uris, fail_callback):
