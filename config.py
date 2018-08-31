@@ -21,4 +21,4 @@ JSON_SORT_KEYS = True
 LOG_LEVEL = 'DEBUG' if DEBUG else 'INFO'
 LOG_FORMAT = '[%(asctime)s] %(levelname)s %(filename)s:%(lineno)d - %(message)s'
 LOG_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
-LOG_DIR = '/tmp/sociallogin/logs'
+LOG_DIR = '/var/log/sociallogin'
