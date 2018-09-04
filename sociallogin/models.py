@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import hashlib
 from flask import abort
 
@@ -45,14 +45,14 @@ class Providers(Base):
 class Admins(Base):
     __tablename__ = 'admins'
 
-    username = db.Column(db.String(20), nullable=False)
+    username = db.Column(db.String(32), nullable=False)
     email = db.Column(db.String(32), nullable=False)
     password = db.Column(db.String(64), nullable=False)
     salt = db.Column(db.String(8), nullable=False)
-    fullname = db.Column(db.String(64))
-    address = db.Column(db.String(128))
-    phone = db.Column(db.String(12))
-    company = db.Column(db.String(64))
+    phone = db.Column(db.String(16))
+    fullname = db.Unicode(db.String(64))
+    address = db.Unicode(db.String(128))
+    company = db.Unicode(db.String(64))
 
 
 class Apps(Base):
@@ -60,7 +60,7 @@ class Apps(Base):
 
     name = db.Column(db.String(255), nullable=False)
     api_key = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.String(1023))
+    description = db.Unicode(db.Unicode(1023))
     allowed_ips = db.Column(db.String(255))
     callback_uris = db.Column(db.Text, nullable=False)
 
@@ -92,7 +92,7 @@ class SocialProfiles(Base):
 
     provider = db.Column(db.String(15), nullable=False)
     pk = db.Column(db.String(40), unique=True, nullable=False)
-    attrs = db.Column(db.String(8191), nullable=False)
+    attrs = db.Column(db.Unicode(8191), nullable=False)
     last_authorized_at = db.Column("authorized_at", db.DateTime)
     login_count = db.Column(db.Integer, default=0, nullable=False)
     linked_at = db.Column(db.DateTime)
@@ -266,46 +266,35 @@ class AuthLogs(Base):
     def safe_get_failed_callback(self):
         return self.callback_if_failed or self.callback_uri
 
+    def set_authorized(self, social_id, nonce_token):
+        self.nonce_token = nonce_token
+        self.token_expires = datetime.now() + timedelta(seconds=600)
+        self.social_id = social_id
+        self.status = self.STATUS_AUTHORIZED
+
     @classmethod
     def find_by_nonce_token(cls, nonce_token):
-        return cls.query.filter_by(nonce_token=nonce_token).order_by(cls._id.desc()).first_or_404()
+        return cls.query.filter_by(nonce_token=nonce_token).order_by(cls._id.desc()).first()
 
 
 class AssociateLogs(Base):
     __tablename__ = 'associate_logs'
 
-    STATUS_UNKNOWN = 'unknown'
+    STATUS_UNKNOWN = 'initialized'
     STATUS_AUTHORIZED = 'authorized'
     STATUS_SUCCEEDED = 'succeeded'
     STATUS_FAILED = 'failed'
 
     provider = db.Column(db.String(15), nullable=False)
-    callback_uri = db.Column(db.String(2047), nullable=False)
-    callback_if_failed = db.Column("callback_failed", db.String(2047))
-    oauth_state = db.Column(db.String(32))
     status = db.Column(db.String(15), nullable=False)
     nonce_token = db.Column(db.String(32))
-    token_expires = db.Column(db.DateTime)
-    ua = db.Column(db.String(4095))
-    ip = db.Column(db.String(15))
 
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-    def __init__(self, provider, app_id, callback_uri, callback_if_failed=None,
-                 oauth_state=None, ua=None, ip=None, status=STATUS_UNKNOWN):
+    def __init__(self, provider, app_id, user_id, nonce_token, status=STATUS_UNKNOWN):
         self.provider = provider
         self.app_id = app_id
-        self.oauth_state = oauth_state
-        self.callback_uri = callback_uri
-        self.callback_if_failed = callback_if_failed
-        self.ua = ua
-        self.ip = ip
+        self.user_id = user_id
+        self.nonce_token = nonce_token
         self.status = status
-
-    def safe_get_failed_callback(self):
-        return self.callback_if_failed or self.callback_uri
-
-    @classmethod
-    def find_by_once_token(cls, once_token):
-        return cls.query.filter_by(once_token=once_token).order_by(cls._id.desc()).first_or_404()
