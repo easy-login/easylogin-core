@@ -118,9 +118,9 @@ def delete_user(user_id):
     pass
 
 
-@flask_app.route('/<app_id>/users/<user_pk>/association_token')
+@flask_app.route('/<app_id>/users/<user_pk>/associate_token')
 @login_required
-def get_association_token(app_id, user_pk):
+def get_associate_token(app_id, user_pk):
     provider = request.args.get('provider')
     if not is_valid_provider(provider):
         abort(404, 'Invalid provider')
@@ -139,16 +139,16 @@ def get_association_token(app_id, user_pk):
 
     try:
         nonce = gen_random_token(nbytes=32)
-        log = AssociateLogs(provider=provider, app_id=app_id,
-                            user_id=user_id, nonce=nonce)
-        db.session.merge(log)
+        log = AssociateLogs.add_or_reset(provider=provider, app_id=app_id,
+                                         user_id=user_id, nonce=nonce)
         associate_token = gen_jwt_token(sub=log._id, exp_in_seconds=600)
         return jsonify({
-            'token': nonce,
+            'token': associate_token,
             'associate_uri': url_for('authorize', _external=True, provider=provider,
-                                     token=nonce, intent='associate')
+                                     token=associate_token, intent='associate')
         })
     except Exception as e:
-        print(repr(e))
+        logger.error(repr(e))
+        raise
     finally:
         db.session.commit()

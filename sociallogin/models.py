@@ -321,3 +321,15 @@ class AssociateLogs(Base):
         self.user_id = user_id
         self.nonce = nonce
         self.status = status
+
+    @classmethod
+    def add_or_reset(cls, provider, app_id, user_id, nonce):
+        log = cls.query.filter_by(user_id=user_id, provider=provider).one_or_none()
+        if log:
+            log.nonce = nonce
+        else:
+            log = AssociateLogs(provider=provider, app_id=app_id,
+                                user_id=user_id, nonce=nonce)
+            db.session.add(log)
+            db.session.flush()
+        return log
