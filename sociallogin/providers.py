@@ -79,13 +79,13 @@ class ProviderAuthHandler(object):
         if fail_callback and not self._verify_callback_uri(allowed_uris, fail_callback):
             abort(403, 'Callback URI must be configured in admin settings')
 
-        nonce = gen_random_token(nbytes=16)
+        oauth_state = gen_random_token(nbytes=16)
         log = AuthLogs(
             provider=self.provider,
             app_id=app_id,
             ua=request.headers['User-Agent'],
             ip=request.remote_addr,
-            nonce=nonce,
+            oauth_state=oauth_state,
             callback_uri=succ_callback,
             callback_if_failed=fail_callback
         )
@@ -94,7 +94,7 @@ class ProviderAuthHandler(object):
 
         return self._build_authorize_uri(
             channel=channel, 
-            state=b64encode_string('{}.{}'.format(nonce, str(log._id)), urlsafe=True, padding=False),
+            state=b64encode_string('{}.{}'.format(oauth_state, str(log._id)), urlsafe=True, padding=False),
             redirect_uri=urlparse.quote_plus(self.redirect_uri))
 
     def handle_authorize_error(self, state, error, desc):
@@ -126,7 +126,7 @@ class ProviderAuthHandler(object):
                 provider=self.provider,
                 pk=pk, attrs=attrs)
 
-            log.once_token = gen_random_token(nbytes=32)
+            log.nonce_token = gen_random_token(nbytes=32)
             log.token_expires = datetime.now() + timedelta(seconds=600)
             log.social_id = profile._id
             log.status = AuthLogs.STATUS_AUTHORIZED
@@ -142,7 +142,7 @@ class ProviderAuthHandler(object):
             )
             db.session.add(token)
             db.session.commit()
-            return profile._id, log.once_token, log.callback_uri
+            return profile._id, log.nonce_token, log.callback_uri
         except:
             db.session.rollback()
             raise

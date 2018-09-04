@@ -10,7 +10,7 @@ from sociallogin import db
 class Base(db.Model):
     __abstract__ = True
 
-    _id = db.Column("_id", db.Integer, primary_key=True)
+    _id = db.Column("id", db.Integer, primary_key=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     modified_at = db.Column(db.DateTime, default=db.func.current_timestamp(),
                             onupdate=db.func.current_timestamp())
@@ -21,7 +21,7 @@ class Base(db.Model):
     def as_dict(self):
         attrs = {}
         for k, v in self.__dict__.items():
-            if k.startswith('_') and k != '_id':
+            if k.startswith('_'):
                 continue
             if isinstance(v, datetime):
                 v = self.to_isoformat(v)
@@ -39,6 +39,7 @@ class Providers(Base):
     name = db.Column(db.String(15), nullable=False)
     version = db.Column(db.String(7))
     permissions = db.Column(db.String(1023), nullable=False)
+    required_permissions = db.Column(db.String(1023), nullable=False)
 
 
 class Admins(Base):
@@ -59,11 +60,11 @@ class Apps(Base):
 
     name = db.Column(db.String(255), nullable=False)
     api_key = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.String(1023))
     allowed_ips = db.Column(db.String(255))
-    description = db.Column(db.String(255))
-    callback_uri = db.Column(db.String(65535), nullable=False)
+    callback_uris = db.Column(db.Text, nullable=False)
 
-    owner_id = db.Column(db.Integer, db.ForeignKey("admins._id"), nullable=False)
+    owner_id = db.Column(db.Integer, db.ForeignKey("admins.id"), nullable=False)
 
     def __init__(self):
         super().__init__()
@@ -83,7 +84,7 @@ class Channels(Base):
     client_secret = db.Column(db.String(255), nullable=False)
     permissions = db.Column(db.String(1023), default='', nullable=False)
 
-    app_id = db.Column(db.Integer, db.ForeignKey("apps._id"), nullable=False)
+    app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
 
 
 class SocialProfiles(Base):
@@ -91,15 +92,15 @@ class SocialProfiles(Base):
 
     provider = db.Column(db.String(15), nullable=False)
     pk = db.Column(db.String(40), unique=True, nullable=False)
-    attrs = db.Column(db.String(4095), nullable=False)
+    attrs = db.Column(db.String(8191), nullable=False)
     last_authorized_at = db.Column("authorized_at", db.DateTime)
     login_count = db.Column(db.Integer, default=0, nullable=False)
     linked_at = db.Column(db.DateTime)
     _deleted = db.Column("deleted", db.Boolean, default=False)
 
-    user_id = db.Column(db.Integer, db.ForeignKey("users._id"))
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     user_pk = db.Column(db.String(255))
-    app_id = db.Column(db.Integer, db.ForeignKey("apps._id"), nullable=False)
+    app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
 
     def __init__(self, app_id, pk, provider, attrs, last_authorized_at=datetime.now()):
         self.app_id = app_id
@@ -112,8 +113,7 @@ class SocialProfiles(Base):
         d = super().as_dict()
         d['attrs'] = json.loads(d['attrs'], encoding='utf8')
         d['social_id'] = d['_id']
-        d['user_id'] = d['user_pk']
-        del d['_id']
+        d['user_id'] = self._id
         del d['user_pk']
         return d
 
@@ -168,7 +168,7 @@ class Users(Base):
 
     pk = db.Column(db.String(255), unique=True, nullable=False)
     _deleted = db.Column("deleted", db.Boolean, default=False)
-    app_id = db.Column(db.Integer, db.ForeignKey("apps._id"), nullable=False)
+    app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
 
     def __init__(self, app_id, pk):
         self.app_id = app_id
@@ -178,7 +178,6 @@ class Users(Base):
         d = super().as_dict()
         d['user_id'] = d['pk']
         del d['pk']
-        del d['_id']
         return d
 
     @classmethod
@@ -206,7 +205,7 @@ class Users(Base):
                 'profiles': [p.as_dict() for p in profiles]
             }
         else:
-            return {'user': None, 'profiles': None}
+            abort(404, 'User ID not found')
 
 
 class Tokens(Base):
@@ -219,7 +218,7 @@ class Tokens(Base):
     expires_at = db.Column(db.DateTime, nullable=False)
     token_type = db.Column(db.String(15))
 
-    social_id = db.Column(db.Integer, db.ForeignKey('social_profiles._id'), nullable=False)
+    social_id = db.Column(db.Integer, db.ForeignKey('social_profiles.id'), nullable=False)
 
     def __init__(self, provider, access_token, expires_at, social_id,
                  refresh_token=None, jwt_token=None, token_type='Bearer'):
@@ -241,23 +240,63 @@ class AuthLogs(Base):
     STATUS_FAILED = 'failed'
 
     provider = db.Column(db.String(15), nullable=False)
-    nonce = db.Column(db.String(32), nullable=False)
     callback_uri = db.Column(db.String(2047), nullable=False)
     callback_if_failed = db.Column("callback_failed", db.String(2047))
-    ua = db.Column(db.String(511))
-    ip = db.Column(db.String(15))
+    oauth_state = db.Column(db.String(32), nullable=False)
     status = db.Column(db.String(15), nullable=False)
-    once_token = db.Column(db.String(32))
+    nonce_token = db.Column(db.String(32))
     token_expires = db.Column(db.DateTime)
+    ua = db.Column(db.String(4095))
+    ip = db.Column(db.String(15))
 
-    app_id = db.Column(db.Integer, db.ForeignKey("apps._id"), nullable=False)
-    social_id = db.Column(db.Integer, db.ForeignKey('social_profiles._id'))
+    app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
+    social_id = db.Column(db.Integer, db.ForeignKey('social_profiles.id'))
 
-    def __init__(self, provider, app_id, nonce, callback_uri, callback_if_failed=None,
+    def __init__(self, provider, app_id, oauth_state, callback_uri, callback_if_failed=None,
                  ua=None, ip=None, status=STATUS_UNKNOWN):
         self.provider = provider
         self.app_id = app_id
-        self.nonce = nonce
+        self.oauth_state = oauth_state
+        self.callback_uri = callback_uri
+        self.callback_if_failed = callback_if_failed
+        self.ua = ua
+        self.ip = ip
+        self.status = status
+
+    def safe_get_failed_callback(self):
+        return self.callback_if_failed or self.callback_uri
+
+    @classmethod
+    def find_by_nonce_token(cls, nonce_token):
+        return cls.query.filter_by(nonce_token=nonce_token).order_by(cls._id.desc()).first_or_404()
+
+
+class AssociateLogs(Base):
+    __tablename__ = 'associate_logs'
+
+    STATUS_UNKNOWN = 'unknown'
+    STATUS_AUTHORIZED = 'authorized'
+    STATUS_SUCCEEDED = 'succeeded'
+    STATUS_FAILED = 'failed'
+
+    provider = db.Column(db.String(15), nullable=False)
+    callback_uri = db.Column(db.String(2047), nullable=False)
+    callback_if_failed = db.Column("callback_failed", db.String(2047))
+    oauth_state = db.Column(db.String(32))
+    status = db.Column(db.String(15), nullable=False)
+    nonce_token = db.Column(db.String(32))
+    token_expires = db.Column(db.DateTime)
+    ua = db.Column(db.String(4095))
+    ip = db.Column(db.String(15))
+
+    app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    def __init__(self, provider, app_id, callback_uri, callback_if_failed=None,
+                 oauth_state=None, ua=None, ip=None, status=STATUS_UNKNOWN):
+        self.provider = provider
+        self.app_id = app_id
+        self.oauth_state = oauth_state
         self.callback_uri = callback_uri
         self.callback_if_failed = callback_if_failed
         self.ua = ua

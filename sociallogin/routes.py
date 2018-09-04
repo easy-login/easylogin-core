@@ -20,7 +20,7 @@ def authenticated_profile():
     if not token:
         abort(400, 'Missing parameter token')
 
-    log = AuthLogs.find_by_once_token(once_token=token)
+    log = AuthLogs.find_by_nonce_token(nonce_token=token)
     if log.status != AuthLogs.STATUS_AUTHORIZED:
         abort(400, 'Invalid token or token has been already used')
     elif log.token_expires < datetime.now():
