@@ -13,9 +13,9 @@ from sociallogin.models import AuthLogs, SocialProfiles, Users
 from sociallogin.utils import make_api_response
 
 
-@flask_app.route('/profiles/authenticated')
+@flask_app.route('/profiles/authorized')
 @login_required
-def authenticated_profile():
+def authorized_profile():
     token = request.args.get('token')
     if not token:
         abort(400, 'Missing parameter token')

@@ -1,4 +1,4 @@
-from flask import abort, redirect, request
+from flask import abort, redirect, request, url_for
 
 from sociallogin import app as flask_app, db, login_manager
 from sociallogin.models import Apps
@@ -39,10 +39,11 @@ def authorize_callback(provider):
         })
         return redirect(redirect_uri)
     else:
-        _, once_token, succ_callback = auth_handler.handle_authorize_response(code, state)
+        _, nonce_token, succ_callback = auth_handler.handle_authorize_response(code, state)
         callback_uri = add_params_to_uri(succ_callback, {
-            'token': once_token,
-            'provider': provider 
+            'token': nonce_token,
+            'provider': provider,
+            'profile_uri': url_for('authorized_profile', _external=True, token=nonce_token)
         })
         return redirect(callback_uri)
 
