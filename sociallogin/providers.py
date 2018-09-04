@@ -45,6 +45,9 @@ __END_POINTS__ = {
 }
 
 
+__PROVIDERS__ = ['line', 'amazon', 'yahoojp']
+
+
 def get_auth_handler(provider):
     if provider == 'line':
         return LineAuthHandler(provider)
@@ -54,6 +57,10 @@ def get_auth_handler(provider):
         return YahooJpAuthHandler(provider)
     else: 
         return abort(404, 'Unsupported provider')
+
+
+def is_valid_provider(provider):
+    return provider in __PROVIDERS__
 
 
 class ProviderAuthHandler(object):
@@ -70,7 +77,7 @@ class ProviderAuthHandler(object):
         if not app or not channel:
             abort(404, 'Application not found')
 
-        allowed_uris = [urlparse.unquote_plus(uri) for uri in app.callback_uri.split('|')]
+        allowed_uris = [urlparse.unquote_plus(uri) for uri in app.callback_uris.split('|')]
         logger.debug('Verify callback uri. Allowed URIs: {}. URI to verify: {}'
                      .format(allowed_uris, (succ_callback, fail_callback)))
 
@@ -79,13 +86,13 @@ class ProviderAuthHandler(object):
         if fail_callback and not self._verify_callback_uri(allowed_uris, fail_callback):
             abort(403, 'Callback URI must be configured in admin settings')
 
-        oauth_state = gen_random_token(nbytes=16)
+        nonce = gen_random_token(nbytes=16)
         log = AuthLogs(
             provider=self.provider,
             app_id=app_id,
             ua=request.headers['User-Agent'],
             ip=request.remote_addr,
-            oauth_state=oauth_state,
+            oauth_state=nonce,
             callback_uri=succ_callback,
             callback_if_failed=fail_callback
         )
@@ -94,7 +101,7 @@ class ProviderAuthHandler(object):
 
         return self._build_authorize_uri(
             channel=channel, 
-            state=b64encode_string('{}.{}'.format(oauth_state, str(log._id)), urlsafe=True, padding=False),
+            state=b64encode_string('{}.{}'.format(nonce, str(log._id)), urlsafe=True, padding=False),
             redirect_uri=urlparse.quote_plus(self.redirect_uri))
 
     def handle_authorize_error(self, state, error, desc):
@@ -125,12 +132,8 @@ class ProviderAuthHandler(object):
                 app_id=log.app_id,
                 provider=self.provider,
                 pk=pk, attrs=attrs)
-
-            log.nonce_token = gen_random_token(nbytes=32)
-            log.token_expires = datetime.now() + timedelta(seconds=600)
-            log.social_id = profile._id
-            log.status = AuthLogs.STATUS_AUTHORIZED
-
+            log.set_authorized(auth_token=gen_random_token(nbytes=32),
+                               social_id=profile._id)
             token = Tokens(
                 provider=self.provider,
                 access_token=token_dict['access_token'],
@@ -142,7 +145,7 @@ class ProviderAuthHandler(object):
             )
             db.session.add(token)
             db.session.commit()
-            return profile._id, log.nonce_token, log.callback_uri
+            return profile._id, log.auth_token, log.callback_uri
         except:
             db.session.rollback()
             raise
@@ -152,7 +155,7 @@ class ProviderAuthHandler(object):
         url = authorize_uri.format(
             client_id=channel.client_id,
             redirect_uri=redirect_uri,
-            scope=urlparse.quote(channel.permissions.replace('|', ' ')),
+            scope=urlparse.quote(channel.permissions.replace(',', ' ')),
             state=state)
         return url
 
@@ -191,8 +194,8 @@ class ProviderAuthHandler(object):
             log_id = int(params[1])
 
             log = AuthLogs.query.filter_by(_id=log_id).first_or_404()
-            if log.nonce != nonce:
-                abort(403, 'Invalid state')
+            if log.oauth_state != nonce:
+                abort(403, 'Invalid OAuth state')
             return log
         except (KeyError, ValueError):
             abort(400, 'Bad format parameter state')

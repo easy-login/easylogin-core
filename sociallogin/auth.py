@@ -39,11 +39,11 @@ def authorize_callback(provider):
         })
         return redirect(redirect_uri)
     else:
-        _, nonce_token, succ_callback = auth_handler.handle_authorize_response(code, state)
+        _, auth_token, succ_callback = auth_handler.handle_authorize_response(code, state)
         callback_uri = add_params_to_uri(succ_callback, {
-            'token': nonce_token,
+            'token': auth_token,
             'provider': provider,
-            'profile_uri': url_for('authorized_profile', _external=True, token=nonce_token)
+            'profile_uri': url_for('authorized_profile', _external=True, token=auth_token)
         })
         return redirect(callback_uri)
 
@@ -61,7 +61,7 @@ def verify_app_auth(req):
         app.allowed_ips = allowed_ips
         app.is_authenticated = True
         return app
-    except:
+    except Exception as e:
         abort(401, 'Wrong credentials. Could not verify your api_key')
 
 

@@ -12,7 +12,8 @@ def auth_callback():
         token = request.args['token']
         provider = request.args['provider']
         r = requests.get(url='http://localhost:5000/profiles/authorized',
-                         params={'api_key': 'passw0rdTec', 'token': token})
+                         params={'api_key': 'api_key', 'token': token})
+        print(r.json())
         return render_template('demo.html', provider=provider, token=token,
                                profile=json.dumps(r.json(), sort_keys=True, indent=2))
     except KeyError:

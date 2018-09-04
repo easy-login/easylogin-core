@@ -35,7 +35,7 @@ def redirect_login_error(error):
 @app.errorhandler(ValueError)
 @app.errorhandler(TypeError)
 def common_error(error):
-    msg = '{}: {}'.format(type(error).__name__, str(error))
+    msg = '{}: {}'.format(type(error).__name__, repr(error))
     return get_error_payloads(400, error_description=msg)
 
 
@@ -43,7 +43,7 @@ def common_error(error):
 @app.errorhandler(DBAPIError)
 def sql_error(error):
     if app.config['DEBUG']:
-        msg = '{}: {}'.format(type(error).__name__, str(error))
+        msg = '{}: {}'.format(type(error).__name__, repr(error))
         return get_error_payloads(500, error_description=msg)
     # Hide error detail in production mode
     else:

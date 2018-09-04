@@ -33,13 +33,39 @@ class Base(db.Model):
         return dt.replace(tzinfo=timezone.utc).isoformat()
 
 
-class Providers(Base):
+class Providers(db.Model):
     __tablename__ = 'providers'
 
-    name = db.Column(db.String(15), nullable=False)
-    version = db.Column(db.String(7))
+    _id = db.Column("id", db.String(15), primary_key=True)
+    version = db.Column(db.String(7), nullable=False)
     permissions = db.Column(db.String(1023), nullable=False)
-    required_permissions = db.Column(db.String(1023), nullable=False)
+    required_permissions = db.Column("permissions_required", db.String(1023), nullable=False)
+
+    def __init__(self, _id, version, permissions, required_permissions):
+        self._id = _id
+        self.version = version
+        self.permissions = permissions
+        self.required_permissions = required_permissions
+
+    @classmethod
+    def init(cls):
+        try:
+            providers = [
+                Providers(_id='line', version='v2.1',
+                          permissions='profile,openid,email',
+                          required_permissions=''),
+                Providers(_id='amazon', version='v2',
+                          permissions='profile,profile:user_id,postal_code',
+                          required_permissions=''),
+                Providers(_id='yahoojp', version='v2',
+                          permissions='profile,openid,email,address',
+                          required_permissions='')
+            ]
+            db.session.bulk_save_objects(providers)
+            db.session.commit()
+        except Exception as e:
+            print(e)
+            pass
 
 
 class Admins(Base):
@@ -50,16 +76,13 @@ class Admins(Base):
     password = db.Column(db.String(64), nullable=False)
     salt = db.Column(db.String(8), nullable=False)
     phone = db.Column(db.String(16))
-    fullname = db.Unicode(db.String(64))
-    address = db.Unicode(db.String(128))
-    company = db.Unicode(db.String(64))
 
 
 class Apps(Base):
     __tablename__ = 'apps'
 
-    name = db.Column(db.String(255), nullable=False)
-    api_key = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(63), nullable=False)
+    api_key = db.Column(db.String(127), nullable=False)
     description = db.Unicode(db.Unicode(1023))
     allowed_ips = db.Column(db.String(255))
     callback_uris = db.Column(db.Text, nullable=False)
@@ -112,8 +135,8 @@ class SocialProfiles(Base):
     def as_dict(self):
         d = super().as_dict()
         d['attrs'] = json.loads(d['attrs'], encoding='utf8')
-        d['social_id'] = d['_id']
-        d['user_id'] = self._id
+        d['social_id'] = self._id
+        d['user_id'] = d['user_pk']
         del d['user_pk']
         return d
 
@@ -244,7 +267,7 @@ class AuthLogs(Base):
     callback_if_failed = db.Column("callback_failed", db.String(2047))
     oauth_state = db.Column(db.String(32), nullable=False)
     status = db.Column(db.String(15), nullable=False)
-    nonce_token = db.Column(db.String(32))
+    auth_token = db.Column(db.String(32))
     token_expires = db.Column(db.DateTime)
     ua = db.Column(db.String(4095))
     ip = db.Column(db.String(15))
@@ -252,8 +275,8 @@ class AuthLogs(Base):
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
     social_id = db.Column(db.Integer, db.ForeignKey('social_profiles.id'))
 
-    def __init__(self, provider, app_id, oauth_state, callback_uri, callback_if_failed=None,
-                 ua=None, ip=None, status=STATUS_UNKNOWN):
+    def __init__(self, provider, app_id, oauth_state, callback_uri,
+                 callback_if_failed=None, ua=None, ip=None, status=STATUS_UNKNOWN):
         self.provider = provider
         self.app_id = app_id
         self.oauth_state = oauth_state
@@ -266,15 +289,15 @@ class AuthLogs(Base):
     def safe_get_failed_callback(self):
         return self.callback_if_failed or self.callback_uri
 
-    def set_authorized(self, social_id, nonce_token):
-        self.nonce_token = nonce_token
+    def set_authorized(self, social_id, auth_token):
+        self.auth_token = auth_token
         self.token_expires = datetime.now() + timedelta(seconds=600)
         self.social_id = social_id
         self.status = self.STATUS_AUTHORIZED
 
     @classmethod
-    def find_by_nonce_token(cls, nonce_token):
-        return cls.query.filter_by(nonce_token=nonce_token).order_by(cls._id.desc()).first()
+    def find_by_one_time_token(cls, auth_token):
+        return cls.query.filter_by(auth_token=auth_token).order_by(cls._id.desc()).first()
 
 
 class AssociateLogs(Base):
@@ -287,14 +310,14 @@ class AssociateLogs(Base):
 
     provider = db.Column(db.String(15), nullable=False)
     status = db.Column(db.String(15), nullable=False)
-    nonce_token = db.Column(db.String(32))
+    nonce = db.Column(db.String(32), nullable=False)
 
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-    def __init__(self, provider, app_id, user_id, nonce_token, status=STATUS_UNKNOWN):
+    def __init__(self, provider, app_id, user_id, nonce, status=STATUS_UNKNOWN):
         self.provider = provider
         self.app_id = app_id
         self.user_id = user_id
-        self.nonce_token = nonce_token
+        self.nonce = nonce
         self.status = status

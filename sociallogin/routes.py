@@ -8,9 +8,10 @@ from flask import abort, jsonify, redirect, request, url_for
 from flask_login import login_required, current_user as current_app
 from sqlalchemy import func
 
-from sociallogin import app as flask_app, db
-from sociallogin.models import AuthLogs, SocialProfiles, Users
-from sociallogin.utils import make_api_response
+from sociallogin import app as flask_app, db, logger
+from sociallogin.models import SocialProfiles, Users, AuthLogs, AssociateLogs
+from sociallogin.utils import gen_random_token, gen_jwt_token
+from sociallogin.providers import is_valid_provider
 
 
 @flask_app.route('/profiles/authorized')
@@ -20,17 +21,21 @@ def authorized_profile():
     if not token:
         abort(400, 'Missing parameter token')
 
-    log = AuthLogs.find_by_nonce_token(nonce_token=token)
-    if log.status != AuthLogs.STATUS_AUTHORIZED:
+    log = AuthLogs.find_by_one_time_token(auth_token=token)
+    if not log or log.status != AuthLogs.STATUS_AUTHORIZED:
         abort(400, 'Invalid token or token has been already used')
     elif log.token_expires < datetime.now():
         abort(400, 'Token expired')
 
     try:
         log.status = AuthLogs.STATUS_SUCCEEDED
-        social_id = log.social_id
-        profile = SocialProfiles.query.filter_by(_id=social_id).first_or_404()
+        profile = SocialProfiles.query.filter_by(_id=log.social_id).first_or_404()
+        logger.debug('Authorized profile: ' + repr(profile))
         return jsonify(profile.as_dict())
+    except Exception as e:
+        logger.error(repr(e))
+        log.status = AuthLogs.STATUS_FAILED
+        raise
     finally:
         db.session.commit()
 
@@ -113,7 +118,37 @@ def delete_user(user_id):
     pass
 
 
-@flask_app.route('/association_token', methods=['POST'])
+@flask_app.route('/<app_id>/users/<user_pk>/association_token')
 @login_required
-def get_association_token():
-    pass
+def get_association_token(app_id, user_pk):
+    provider = request.args.get('provider')
+    if not is_valid_provider(provider):
+        abort(404, 'Invalid provider')
+
+    (user_id,) = (db.session.query(Users._id)
+                  .filter_by(app_id=app_id, pk=user_pk).one_or_none()) or (None,)
+    if not user_id:
+        abort(404, 'User ID not found')
+
+    (social_id,) = (db.session.query(SocialProfiles._id)
+                    .filter_by(app_id=app_id,
+                               user_pk=user_pk,
+                               provider=provider).one_or_none()) or (None,)
+    if social_id:
+        abort(403, 'User already linked with another social profile for this provider')
+
+    try:
+        nonce = gen_random_token(nbytes=32)
+        log = AssociateLogs(provider=provider, app_id=app_id,
+                            user_id=user_id, nonce=nonce)
+        db.session.merge(log)
+        associate_token = gen_jwt_token(sub=log._id, exp_in_seconds=600)
+        return jsonify({
+            'token': nonce,
+            'associate_uri': url_for('authorize', _external=True, provider=provider,
+                                     token=nonce, intent='associate')
+        })
+    except Exception as e:
+        print(repr(e))
+    finally:
+        db.session.commit()

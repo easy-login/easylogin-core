@@ -26,9 +26,10 @@ logger = app.logger
 from sociallogin import models
 db.create_all()
 db.session.commit()
+# models.Providers.init()
 
 # Import all API endpoint definitions
-from sociallogin import routes, auth, exc
+from sociallogin import auth, routes, exc
 auth.init_app(app)
 
 
