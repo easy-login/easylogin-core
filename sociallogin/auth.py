@@ -1,6 +1,6 @@
 from flask import abort, redirect, request, url_for
 
-from sociallogin import app as flask_app, db, login_manager
+from sociallogin import app as flask_app, db, login_manager, logger
 from sociallogin.models import Apps
 from sociallogin.providers import get_auth_handler
 from sociallogin.utils import add_params_to_uri
@@ -62,6 +62,7 @@ def verify_app_auth(req):
         app.is_authenticated = True
         return app
     except Exception as e:
+        logger.error(repr(e))
         abort(401, 'Wrong credentials. Could not verify your api_key')
 
 

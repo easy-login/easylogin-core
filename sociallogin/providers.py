@@ -71,14 +71,13 @@ class ProviderAuthHandler(object):
     
     def build_authorize_uri(self, app_id, succ_callback, fail_callback):
         app = Apps.query.filter_by(_id=app_id).one_or_none()
-        channel = Channels.query.filter_by(
-            app_id=app_id, 
-            provider=self.provider).one_or_none()
+        channel = Channels.query.filter_by(app_id=app_id,
+                                           provider=self.provider).one_or_none()
         if not app or not channel:
             abort(404, 'Application not found')
 
         allowed_uris = [urlparse.unquote_plus(uri) for uri in app.callback_uris.split('|')]
-        logger.debug('Verify callback uri. Allowed URIs: {}. URI to verify: {}'
+        logger.debug('Allowed URIs: {}. URI to verify: {}'
                      .format(allowed_uris, (succ_callback, fail_callback)))
 
         if not self._verify_callback_uri(allowed_uris, succ_callback):
@@ -146,7 +145,8 @@ class ProviderAuthHandler(object):
             db.session.add(token)
             db.session.commit()
             return profile._id, log.auth_token, log.callback_uri
-        except:
+        except Exception as e:
+            logger.error(repr(e))
             db.session.rollback()
             raise
 
@@ -186,6 +186,13 @@ class ProviderAuthHandler(object):
                 fail_callback=fail_callback)
         return res.json()
 
+    def _raise_redirect_error(self, error, msg, fail_callback):
+        raise RedirectLoginError(
+            error=error['error'],
+            msg=msg + error['error_description'],
+            redirect_uri=fail_callback,
+            provider=self.provider)
+
     @staticmethod
     def _verify_and_parse_state(state):
         try:
@@ -199,13 +206,6 @@ class ProviderAuthHandler(object):
             return log
         except (KeyError, ValueError):
             abort(400, 'Bad format parameter state')
-
-    def _raise_redirect_error(self, error, msg, fail_callback):
-        raise RedirectLoginError(
-            error=error['error'], 
-            msg=msg + error['error_description'],
-            redirect_uri=fail_callback,
-            provider=self.provider)
 
     @staticmethod
     def _verify_callback_uri(allowed_uris, uri):

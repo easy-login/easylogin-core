@@ -14,9 +14,9 @@ from sociallogin.utils import gen_random_token, gen_jwt_token
 from sociallogin.providers import is_valid_provider
 
 
-@flask_app.route('/profiles/authorized')
+@flask_app.route('/<app_id>/profiles/authorized')
 @login_required
-def authorized_profile():
+def authorized_profile(app_id):
     token = request.args.get('token')
     if not token:
         abort(400, 'Missing parameter token')
@@ -40,13 +40,12 @@ def authorized_profile():
         db.session.commit()
 
 
-@flask_app.route('/users/link', methods=['PUT'])
+@flask_app.route('/<app_id>/users/link', methods=['PUT'])
 @login_required
-def link_user():
+def link_user(app_id):
     body = request.json
     social_id = int(body['social_id'])
     user_pk = body['user_id']
-    app_id = current_app._id
 
     profile = SocialProfiles.query.filter_by(_id=social_id).one_or_none()
     if not profile or profile.app_id != app_id:
@@ -60,40 +59,38 @@ def link_user():
     return jsonify({'success': True})
 
 
-@flask_app.route('/users/unlink', methods=['PUT'])
+@flask_app.route('/<app_id>/users/unlink', methods=['PUT'])
 @login_required
-def unlink_user():
+def unlink_user(app_id):
     body = request.json
     user_pk = body['user_id']
-    app_id = current_app._id
-    try:
-        if 'social_id' in body:
-            social_id = int(body['social_id'])
-            profile = SocialProfiles.query.filter_by(_id=social_id).one_or_none()
-            if not profile or profile.app_id != app_id:
-                abort(404, 'Social ID not found')
-            if not profile.user_id:
-                abort(409, "Social profile doesn't link with any user")
 
-            profile.unlink_from_end_user(user_pk)
-            return jsonify({'success': True})
-        elif 'providers' in body:
-            providers = body['providers'].split(',')
-            SocialProfiles.unlink_by_provider(app_id=app_id, user_pk=user_pk, providers=providers)
-            return jsonify({'success': True})
-        else:
-            abort(400, 'At least one parameter social_id or providers must be provided')
-    finally:
-        db.session.commit()
+    if 'social_id' in body:
+        social_id = int(body['social_id'])
+        profile = SocialProfiles.query.filter_by(_id=social_id).one_or_none()
+        if not profile or profile.app_id != app_id:
+            abort(404, 'Social ID not found')
+        if not profile.user_id:
+            abort(409, "Social profile doesn't link with any user")
+
+        profile.unlink_from_end_user(user_pk)
+    elif 'providers' in body:
+        providers = body['providers'].split(',')
+        SocialProfiles.unlink_by_provider(app_id=app_id, user_pk=user_pk, providers=providers)
+        return jsonify({'success': True})
+    else:
+        abort(400, 'At least one parameter social_id or providers must be provided')
+
+    db.session.commit()
+    return jsonify({'success': True})
 
 
-@flask_app.route('/users')
+@flask_app.route('/<app_id>/users')
 @login_required
-def get_user():
+def get_user(app_id):
     args = request.args
     user_pk = args.get('user_id')
     social_id = args.get('social_id')
-    app_id = current_app._id
 
     if user_pk:
         return jsonify(Users.get_full_as_dict(app_id=app_id, pk=user_pk))
@@ -112,16 +109,17 @@ def get_user():
         abort(400, 'At least one parameter social_id or user_id must be provided')
 
 
-@flask_app.route('/users/<user_id>', methods=['DELETE'])
+@flask_app.route('/<app_id>/users/<user_id>', methods=['DELETE'])
 @login_required
-def delete_user(user_id):
+def delete_user(app_id, user_id):
     pass
 
 
-@flask_app.route('/<app_id>/users/<user_pk>/associate_token')
+@flask_app.route('/<app_id>/users/associate_token')
 @login_required
-def get_associate_token(app_id, user_pk):
-    provider = request.args.get('provider')
+def get_associate_token(app_id):
+    user_pk = request.args['user_id']
+    provider = request.args['provider']
     if not is_valid_provider(provider):
         abort(404, 'Invalid provider')
 
@@ -142,6 +140,7 @@ def get_associate_token(app_id, user_pk):
         log = AssociateLogs.add_or_reset(provider=provider, app_id=app_id,
                                          user_id=user_id, nonce=nonce)
         associate_token = gen_jwt_token(sub=log._id, exp_in_seconds=600)
+        db.session.commit()
         return jsonify({
             'token': associate_token,
             'associate_uri': url_for('authorize', _external=True, provider=provider,
@@ -150,5 +149,3 @@ def get_associate_token(app_id, user_pk):
     except Exception as e:
         logger.error(repr(e))
         raise
-    finally:
-        db.session.commit()
