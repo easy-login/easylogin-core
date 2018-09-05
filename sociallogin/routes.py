@@ -10,9 +10,9 @@ from sociallogin.utils import gen_random_token
 from sociallogin.providers import is_valid_provider
 
 
-@flask_app.route('/<app_id>/profiles/authorized')
+@flask_app.route('/<int:app_id>/profiles/authorized')
 @login_required
-def authorized_profile(app_id):
+def authorized_profile():
     token = request.args.get('token')
     if not token:
         abort(400, 'Missing parameter token')
@@ -35,7 +35,7 @@ def authorized_profile(app_id):
         raise
 
 
-@flask_app.route('/<app_id>/users/link', methods=['PUT'])
+@flask_app.route('/<int:app_id>/users/link', methods=['PUT'])
 @login_required
 def link_user(app_id):
     body = request.json
@@ -54,7 +54,7 @@ def link_user(app_id):
     return jsonify({'success': True})
 
 
-@flask_app.route('/<app_id>/users/unlink', methods=['PUT'])
+@flask_app.route('/<int:app_id>/users/unlink', methods=['PUT'])
 @login_required
 def unlink_user(app_id):
     body = request.json
@@ -80,7 +80,7 @@ def unlink_user(app_id):
     return jsonify({'success': True})
 
 
-@flask_app.route('/<app_id>/users')
+@flask_app.route('/<int:app_id>/users')
 @login_required
 def get_user(app_id):
     args = request.args
@@ -104,13 +104,13 @@ def get_user(app_id):
         abort(400, 'At least one parameter social_id or user_id must be provided')
 
 
-@flask_app.route('/<app_id>/users/<user_id>', methods=['DELETE'])
+@flask_app.route('/<int:app_id>/users/<user_id>', methods=['DELETE'])
 @login_required
 def delete_user(app_id, user_id):
     pass
 
 
-@flask_app.route('/<app_id>/users/associate_token')
+@flask_app.route('/<int:app_id>/users/associate_token')
 @login_required
 def get_associate_token(app_id):
     user_pk = request.args['user_id']
@@ -138,8 +138,10 @@ def get_associate_token(app_id):
         db.session.commit()
         return jsonify({
             'token': associate_token,
-            'associate_uri': url_for('authorize', _external=True, provider=provider,
-                                     token=associate_token, intent='associate')
+            'associate_uri': url_for('authorize', _external=True,
+                                     provider=provider, app_id=app_id,
+                                     token=associate_token,
+                                     intent=AuthLogs.INTENT_ASSOCIATE)
         })
     except Exception as e:
         logger.error(repr(e))
