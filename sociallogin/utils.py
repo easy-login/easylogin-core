@@ -55,14 +55,25 @@ def gen_random_token(nbytes=32, output_format='alphanumeric'):
         return os.urandom(nbytes)
 
 
-def gen_jwt_token(sub, exp_in_seconds):
+def gen_jwt_token(sub, exp_in_seconds, payload=None):
+    if payload is None:
+        payload = dict()
     now = int(time.time())
     return jwt.encode({
         'iss': app.config['SERVER_NAME'],
         'sub': sub,
         'exp': now + exp_in_seconds,
         'iat': now
-    }, app.config['JWT_SECRET_KEY'], algorithm=app.config['JWT_ALGORITHM']).decode('utf8')
+    }.update(payload), key=app.config['JWT_SECRET_KEY'], algorithm='HS256').decode('utf8')
+
+
+def decode_jwt(encoded):
+    try:
+        payload = jwt.decode(encoded, key=app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+        expire = payload.get('exp', 0)
+        return payload if expire >= int(time.time()) else None
+    except jwt.exceptions.PyJWTError:
+        return None
 
 
 def make_api_response(payload, success=True):
