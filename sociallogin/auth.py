@@ -1,7 +1,7 @@
 from flask import abort, redirect, request, url_for
 
 from sociallogin import app as flask_app, db, login_manager, logger
-from sociallogin.models import Apps
+from sociallogin.models import Apps, AuthLogs
 from sociallogin.providers import get_auth_handler
 from sociallogin.utils import add_params_to_uri
 
@@ -15,9 +15,13 @@ def authorize(provider):
         abort(400, 'Missing parameters app_id or callback_uri')
 
     auth_handler = get_auth_handler(provider)
-    authorize_uri = auth_handler.build_authorize_uri(app_id, callback_uri, callback_if_failed)
+    intent = request.args.get('intent')
 
-    return redirect(authorize_uri)
+    if intent == AuthLogs.INTENT_ASSOCIATE:
+        assoc_token = request.args.get('token')
+    else:
+        authorize_uri = auth_handler.build_authorize_uri(app_id, callback_uri, callback_if_failed)
+        return redirect(authorize_uri)
 
 
 @flask_app.route('/authorize/<provider>/approval_state')
@@ -58,7 +62,7 @@ def verify_app_auth(req):
         return app
     except Exception as e:
         logger.error(repr(e))
-        abort(401, 'Wrong credentials. Could not verify your api_key')
+        abort(401, 'Wrong credentials. Could not verify your API key')
 
 
 def _extract_api_key(req):

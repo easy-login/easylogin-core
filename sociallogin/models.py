@@ -4,6 +4,7 @@ import hashlib
 from flask import abort
 
 from sociallogin import db
+from sociallogin.utils import b64encode_string, b64decode_string, gen_jwt_token
 
 
 # Define a base model for other database tables to inherit
@@ -262,11 +263,15 @@ class AuthLogs(Base):
     STATUS_SUCCEEDED = 'succeeded'
     STATUS_FAILED = 'failed'
 
+    INTENT_AUTHENTICATE = 'auth'
+    INTENT_ASSOCIATE = 'assoc'
+
     provider = db.Column(db.String(15), nullable=False)
     callback_uri = db.Column(db.String(2047), nullable=False)
     callback_if_failed = db.Column("callback_failed", db.String(2047))
-    oauth_state = db.Column(db.String(32), nullable=False)
+    nonce = db.Column(db.String(32), nullable=False)
     status = db.Column(db.String(15), nullable=False)
+    intent = db.Column(db.String(15))
     auth_token = db.Column(db.String(32))
     token_expires = db.Column(db.DateTime)
     ua = db.Column(db.String(4095))
@@ -275,16 +280,17 @@ class AuthLogs(Base):
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
     social_id = db.Column(db.Integer, db.ForeignKey('social_profiles.id'))
 
-    def __init__(self, provider, app_id, oauth_state, callback_uri,
-                 callback_if_failed=None, ua=None, ip=None, status=STATUS_UNKNOWN):
+    def __init__(self, provider, app_id, nonce, callback_uri, callback_if_failed=None,
+                 ua=None, ip=None, status=STATUS_UNKNOWN, intent=INTENT_AUTHENTICATE):
         self.provider = provider
         self.app_id = app_id
-        self.oauth_state = oauth_state
+        self.nonce = nonce
         self.callback_uri = callback_uri
         self.callback_if_failed = callback_if_failed
         self.ua = ua
         self.ip = ip
         self.status = status
+        self.intent = intent
 
     def safe_get_failed_callback(self):
         return self.callback_if_failed or self.callback_uri
@@ -295,9 +301,23 @@ class AuthLogs(Base):
         self.social_id = social_id
         self.status = self.STATUS_AUTHORIZED
 
+    def generate_oauth_state(self):
+        return b64encode_string('{}.{}'.format(self.nonce, str(self._id)),
+                                urlsafe=True, padding=False)
+
     @classmethod
     def find_by_one_time_token(cls, auth_token):
         return cls.query.filter_by(auth_token=auth_token).order_by(cls._id.desc()).first()
+
+    @classmethod
+    def verify_and_parse(cls, oauth_state):
+        try:
+            params = b64decode_string(oauth_state, urlsafe=True).split('.')
+            log = cls.query.filter_by(_id=int(params[1])).one_or_none()
+            if log and log.nonce == params[0]:
+                return log
+        except (KeyError, ValueError, IndexError):
+            abort(400, 'Bad format parameter associate_token')
 
 
 class AssociateLogs(Base):
@@ -322,6 +342,10 @@ class AssociateLogs(Base):
         self.nonce = nonce
         self.status = status
 
+    def generate_associate_token(self):
+        return b64encode_string('{}.{}'.format(self.nonce, str(self._id)),
+                                urlsafe=True, padding=False)
+
     @classmethod
     def add_or_reset(cls, provider, app_id, user_id, nonce):
         log = cls.query.filter_by(user_id=user_id, provider=provider).one_or_none()
@@ -333,3 +357,14 @@ class AssociateLogs(Base):
             db.session.add(log)
             db.session.flush()
         return log
+
+    @classmethod
+    def verify_and_parse(cls, associate_token):
+        try:
+            params = b64decode_string(associate_token, urlsafe=True).split('.')
+            log = cls.query.filter_by(_id=int(params[1])).one_or_none()
+            if log and log.nonce == params[0]:
+                return log
+        except (KeyError, ValueError, IndexError):
+            abort(400, 'Bad format parameter associate_token')
+

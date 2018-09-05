@@ -1,14 +1,13 @@
 import urllib.parse as urlparse
 from datetime import datetime, timedelta
+
 import requests
 from flask import request, abort, url_for
 
 from sociallogin import db, logger
 from sociallogin.exc import RedirectLoginError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
-from sociallogin.utils import b64encode_string, b64decode_string, \
-    gen_random_token, gen_jwt_token, add_params_to_uri
-
+from sociallogin.utils import gen_random_token, add_params_to_uri
 
 __END_POINTS__ = {
     'line': {
@@ -91,7 +90,7 @@ class ProviderAuthHandler(object):
             app_id=app_id,
             ua=request.headers['User-Agent'],
             ip=request.remote_addr,
-            oauth_state=nonce,
+            nonce=nonce,
             callback_uri=succ_callback,
             callback_if_failed=fail_callback
         )
@@ -100,7 +99,7 @@ class ProviderAuthHandler(object):
 
         return self._build_authorize_uri(
             channel=channel, 
-            state=b64encode_string('{}.{}'.format(nonce, str(log._id)), urlsafe=True, padding=False),
+            state=log.generate_oauth_state(),
             redirect_uri=urlparse.quote_plus(self.redirect_uri))
 
     def handle_authorize_error(self, state, error, desc):
@@ -119,7 +118,8 @@ class ProviderAuthHandler(object):
         log = self._verify_and_parse_state(state)
         fail_callback = log.callback_if_failed or log.callback_uri
 
-        channel = Channels.query.filter_by(app_id=log.app_id, provider=self.provider).one_or_none()
+        channel = Channels.query.filter_by(app_id=log.app_id,
+                                           provider=self.provider).one_or_none()
         if not channel:
             raise RedirectLoginError(
                 provider=self.provider,
@@ -201,17 +201,10 @@ class ProviderAuthHandler(object):
 
     @staticmethod
     def _verify_and_parse_state(state):
-        try:
-            params = b64decode_string(state, urlsafe=True).split('.')
-            nonce = params[0]
-            log_id = int(params[1])
-
-            log = AuthLogs.query.filter_by(_id=log_id).first_or_404()
-            if log.oauth_state != nonce:
-                abort(403, 'Invalid OAuth state')
-            return log
-        except (KeyError, ValueError):
-            abort(400, 'Bad format parameter state')
+        log = AuthLogs.verify_and_parse(oauth_state=state)
+        if not log:
+            abort(403, 'Invalid OAuth state')
+        return log
 
     @staticmethod
     def _verify_callback_uri(allowed_uris, uri):

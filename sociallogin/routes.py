@@ -1,16 +1,12 @@
-import base64
-import hashlib
-import uuid
 from datetime import datetime
 
-import requests
-from flask import abort, jsonify, redirect, request, url_for
+from flask import abort, jsonify, request, url_for
 from flask_login import login_required, current_user as current_app
 from sqlalchemy import func
 
 from sociallogin import app as flask_app, db, logger
 from sociallogin.models import SocialProfiles, Users, AuthLogs, AssociateLogs
-from sociallogin.utils import gen_random_token, gen_jwt_token
+from sociallogin.utils import gen_random_token
 from sociallogin.providers import is_valid_provider
 
 
@@ -31,13 +27,12 @@ def authorized_profile(app_id):
         log.status = AuthLogs.STATUS_SUCCEEDED
         profile = SocialProfiles.query.filter_by(_id=log.social_id).first_or_404()
         logger.debug('Authorized profile: ' + repr(profile))
+        db.session.commit()
         return jsonify(profile.as_dict())
     except Exception as e:
         logger.error(repr(e))
         log.status = AuthLogs.STATUS_FAILED
         raise
-    finally:
-        db.session.commit()
 
 
 @flask_app.route('/<app_id>/users/link', methods=['PUT'])
@@ -139,7 +134,7 @@ def get_associate_token(app_id):
         nonce = gen_random_token(nbytes=32)
         log = AssociateLogs.add_or_reset(provider=provider, app_id=app_id,
                                          user_id=user_id, nonce=nonce)
-        associate_token = gen_jwt_token(sub=log._id, exp_in_seconds=600)
+        associate_token = log.generate_associate_token()
         db.session.commit()
         return jsonify({
             'token': associate_token,
