@@ -31,15 +31,10 @@ def authorize_callback(provider):
     if not code:
         error = request.args.get('error')
         desc = request.args.get('error_description')
-        fail_callback = auth_handler.handle_authorize_error(state, error, desc)
-        redirect_uri = add_params_to_uri(fail_callback, {
-            'error': error, 
-            'error_description': desc,
-            'provider': provider
-        })
-        return redirect(redirect_uri)
+        callback_uri = auth_handler.handle_authorize_error(state, error, desc)
+        return redirect(callback_uri)
     else:
-        _, auth_token, succ_callback = auth_handler.handle_authorize_response(code, state)
+        _, auth_token, succ_callback = auth_handler.handle_authorize_success(code, state)
         callback_uri = add_params_to_uri(succ_callback, {
             'token': auth_token,
             'provider': provider,

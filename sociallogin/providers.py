@@ -7,7 +7,7 @@ from sociallogin import db, logger
 from sociallogin.exc import RedirectLoginError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
 from sociallogin.utils import b64encode_string, b64decode_string, \
-    gen_random_token, gen_jwt_token, gen_unique_int64
+    gen_random_token, gen_jwt_token, gen_unique_int64, add_params_to_uri
 
 
 __END_POINTS__ = {
@@ -107,9 +107,15 @@ class ProviderAuthHandler(object):
         log = self._verify_and_parse_state(state)
         log.status = AuthLogs.STATUS_FAILED
         db.session.commit()
-        return log.callback_if_failed or log.callback_uri
+        fail_callback = log.callback_if_failed or log.callback_uri
 
-    def handle_authorize_response(self, code, state):
+        return add_params_to_uri(fail_callback, {
+            'error': error,
+            'error_description': desc,
+            'provider': self.provider
+        })
+
+    def handle_authorize_success(self, code, state):
         log = self._verify_and_parse_state(state)
         fail_callback = log.callback_if_failed or log.callback_uri
 
