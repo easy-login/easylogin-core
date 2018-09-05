@@ -7,7 +7,7 @@ from sociallogin import db, logger
 from sociallogin.exc import RedirectLoginError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
 from sociallogin.utils import b64encode_string, b64decode_string, \
-    gen_random_token, gen_jwt_token, gen_unique_int64, add_params_to_uri
+    gen_random_token, gen_jwt_token, add_params_to_uri
 
 
 __END_POINTS__ = {

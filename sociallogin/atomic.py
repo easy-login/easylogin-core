@@ -37,39 +37,40 @@ class Id64(object):
         return (_epoch << (64 - cls.epoch_bits)) | (_shard << (64 - cls.epoch_bits - cls.shard_bits)) | _counter
     
 
-def generate_64bit_id():
-    return Id64.generate(shard=100000000)
+def generate_64bit_id(shard=100000000):
+    return Id64.generate(shard)
 
 
-def inc(index, counter):
+def inc(index, _counter):
     now = time.time()
-    for _ in range(0, 1000000):
+    for _ in range(0, 500000):
         counter.inc()
-    print('Executor {} done, took {}'.format(i, time.time() - now))
+    print('Executor {} done, took {}'.format(index, time.time() - now))
 
 
 if __name__ == '__main__':
-    # counter = AtomicCounter()
-    # futs = []
-    # with cf.ThreadPoolExecutor(max_workers=4) as executor:      
-    #     for i in range(0, 4):
-    #         print('Submit job to executor', i)
-    #         fut = executor.submit(inc, i, counter)
-    #         futs.append(fut)
+    counter = AtomicCounter()
+    futs = []
+    with cf.ThreadPoolExecutor(max_workers=4) as executor:
+        for i in range(0, 4):
+            print('Submit job to executor', i)
+            fut = executor.submit(inc, i, counter)
+            futs.append(fut)
 
-    #     last_val = counter.get()
-    #     while True:
-    #         all_futs_done = True
-    #         for fut in futs:
-    #             if not fut.done():
-    #                 all_futs_done = False
-    #                 new_val = counter.get()
-    #                 print 'Counter: {}, speed/s: {}'.format(new_val, new_val - last_val)
-    #                 last_val = new_val
-    #                 time.sleep(1)            
-    #                 break
-    #         if all_futs_done: break
-    # print 'All executors done'
+        last_val = counter.get()
+        while True:
+            all_futs_done = True
+            for fut in futs:
+                if not fut.done():
+                    all_futs_done = False
+                    new_val = counter.get()
+                    print('Counter: {}, speed/s: {}'.format(new_val, new_val - last_val))
+                    last_val = new_val
+                    time.sleep(1)
+                    break
+            if all_futs_done:
+                break
+    print('All executors done')
 
     for i in range(5):
         print(generate_64bit_id())

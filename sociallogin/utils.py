@@ -35,10 +35,6 @@ def get_or_abort(d, key, err_msg=None, code=400):
         abort(code, err_msg or str(err))
 
 
-def gen_unique_int64():
-    pass
-
-
 def is_same_uri(url1, url2):
     r1 = urlparse.urlparse(url1)
     r2 = urlparse.urlparse(url2)
