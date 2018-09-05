@@ -6,8 +6,7 @@ import os
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))  
 
 # SERVER_NAME = 'http://localhost:5000'
-JWT_SECRET_KEY = 'soci@llogin.dev'
-JWT_ALGORITHM = 'HS512'
+JWT_SECRET_KEY = 'soci@ll0gin.c48COByeIVl0NKUxsfgYYw'
 
 # Define the database
 # SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:root@localhost/sociallogin?charset=utf8mb4'
