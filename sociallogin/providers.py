@@ -6,7 +6,7 @@ from flask import request, abort, url_for
 
 from sociallogin import db, logger
 from sociallogin.exc import RedirectLoginError
-from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
+from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles, AssociateLogs
 from sociallogin.utils import gen_random_token, add_params_to_uri
 
 __END_POINTS__ = {
@@ -68,7 +68,7 @@ class ProviderAuthHandler(object):
         self.provider = provider
         self.redirect_uri = url_for('authorize_callback', _external=True, provider=provider)
     
-    def build_authorize_uri(self, app_id, succ_callback, fail_callback):
+    def build_authorize_uri(self, app_id, succ_callback, fail_callback, **kwargs):
         app = Apps.query.filter_by(_id=app_id).one_or_none()
         channel = Channels.query.filter_by(app_id=app_id,
                                            provider=self.provider).one_or_none()
@@ -99,7 +99,7 @@ class ProviderAuthHandler(object):
 
         return self._build_authorize_uri(
             channel=channel, 
-            state=log.generate_oauth_state(),
+            state=log.generate_oauth_state(**kwargs),
             redirect_uri=urlparse.quote_plus(self.redirect_uri))
 
     def handle_authorize_error(self, state, error, desc):
@@ -115,7 +115,7 @@ class ProviderAuthHandler(object):
         })
 
     def handle_authorize_success(self, code, state):
-        log = self._verify_and_parse_state(state)
+        log, args = self._verify_and_parse_state(state)
         fail_callback = log.callback_if_failed or log.callback_uri
 
         channel = Channels.query.filter_by(app_id=log.app_id,
@@ -150,7 +150,7 @@ class ProviderAuthHandler(object):
             )
             db.session.add(token)
             db.session.commit()
-            return profile._id, log.auth_token, log.callback_uri
+            return profile, log, args
         except Exception as e:
             logger.error(repr(e))
             db.session.rollback()
@@ -201,10 +201,10 @@ class ProviderAuthHandler(object):
 
     @staticmethod
     def _verify_and_parse_state(state):
-        log = AuthLogs.verify_and_parse(oauth_state=state)
-        if not log:
+        tup = AuthLogs.parse_from_oauth_state(oauth_state=state)
+        if not tup:
             abort(403, 'Invalid OAuth state')
-        return log
+        return tup
 
     @staticmethod
     def _verify_callback_uri(allowed_uris, uri):

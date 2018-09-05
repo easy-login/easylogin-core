@@ -13,7 +13,7 @@ import re
 
 def b64encode_string(s, urlsafe=False, padding=True, charset='utf8'):
     ib = s.encode(charset)
-    ob = base64.urlsafe_b64encode(ib) if urlsafe else base64.standard_b64encode(ib) 
+    ob = base64.urlsafe_b64encode(ib) if urlsafe else base64.standard_b64encode(ib)
     encoded = ob.decode('ascii')
     if not padding:
         encoded = encoded.rstrip('=')
@@ -55,24 +55,26 @@ def gen_random_token(nbytes=32, output_format='alphanumeric'):
         return os.urandom(nbytes)
 
 
-def gen_jwt_token(sub, exp_in_seconds, payload=None):
-    if payload is None:
-        payload = dict()
+def gen_jwt_token(sub, exp_in_seconds, **kwargs):
     now = int(time.time())
     return jwt.encode({
         'iss': app.config['SERVER_NAME'],
         'sub': sub,
         'exp': now + exp_in_seconds,
-        'iat': now
-    }.update(payload), key=app.config['JWT_SECRET_KEY'], algorithm='HS256').decode('utf8')
+        'iat': now,
+        'data': kwargs
+    }, key=app.config['JWT_SECRET_KEY'], algorithm='HS256').decode('utf8')
 
 
 def decode_jwt(encoded):
     try:
         payload = jwt.decode(encoded, key=app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
         expire = payload.get('exp', 0)
-        return payload if expire >= int(time.time()) else None
-    except jwt.exceptions.PyJWTError:
+        if expire < int(time.time()):
+            raise TimeoutError()
+        if payload['iss'] == app.config['SERVER_NAME']:
+            return payload['sub'], payload['data']
+    except (jwt.exceptions.PyJWTError, KeyError):
         return None
 
 
@@ -92,3 +94,10 @@ def add_params_to_uri(uri, params):
     pr = urlparse.urlparse(uri)
     query = urlparse.urlencode(params)
     return uri + ('?' if not pr.query else '&') + query
+
+
+def update_dict(d1, d2=None, **kwargs):
+    if d2:
+        d1.update(d2)
+    d1.update(kwargs)
+    return d1
