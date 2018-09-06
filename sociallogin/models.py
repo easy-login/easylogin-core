@@ -119,7 +119,7 @@ class SocialProfiles(Base):
     pk = db.Column(db.String(40), unique=True, nullable=False)
     attrs = db.Column(db.Unicode(8191), nullable=False)
     last_authorized_at = db.Column("authorized_at", db.DateTime)
-    login_count = db.Column(db.Integer, default=0, nullable=False)
+    login_count = db.Column(db.Integer, default=1, nullable=False)
     linked_at = db.Column(db.DateTime)
     _deleted = db.Column("deleted", db.Boolean, default=False)
 
