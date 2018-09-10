@@ -191,7 +191,7 @@ class SocialProfiles(Base):
 class Users(Base):
     __tablename__ = 'users'
 
-    pk = db.Column(db.String(255), unique=True, nullable=False)
+    pk = db.Column(db.String(255), nullable=False)
     _deleted = db.Column("deleted", db.Boolean, default=False)
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
 

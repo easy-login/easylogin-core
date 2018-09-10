@@ -10,9 +10,14 @@ from sociallogin.utils import gen_random_token
 from sociallogin.providers import is_valid_provider
 
 
+@flask_app.route('/ip')
+def get_ip():
+    return jsonify({'ip': request.remote_addr})
+
+    
 @flask_app.route('/<int:app_id>/profiles/authorized')
 @login_required
-def authorized_profile():
+def authorized_profile(app_id):
     token = request.args.get('token')
     if not token:
         abort(400, 'Missing parameter token')
@@ -27,8 +32,9 @@ def authorized_profile():
         log.status = AuthLogs.STATUS_SUCCEEDED
         profile = SocialProfiles.query.filter_by(_id=log.social_id).first_or_404()
         logger.debug('Authorized profile: ' + repr(profile))
+        body = profile.as_dict()
         db.session.commit()
-        return jsonify(profile.as_dict())
+        return jsonify(body)
     except Exception as e:
         logger.error(repr(e))
         log.status = AuthLogs.STATUS_FAILED
