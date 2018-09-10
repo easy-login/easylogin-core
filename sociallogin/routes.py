@@ -47,6 +47,8 @@ def link_user(app_id):
     body = request.json
     social_id = int(body['social_id'])
     user_pk = body['user_id']
+    if len(user_pk) < 4:
+        abort(400, 'Invalid user ID, must be at least 4 characters')
 
     profile = SocialProfiles.query.filter_by(_id=social_id).one_or_none()
     if not profile or profile.app_id != app_id:
