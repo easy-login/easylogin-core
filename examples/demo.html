@@ -1,29 +1,45 @@
 <html>
-    <header></header>
     <body>
-        {% if token and provider %}
-        <h3>Login with {{ provider }} succeeded. Token: {{ token }}</h3>
-        <a href="/demo.html">Back to Home</a>
-        <pre>{{ profile }}</pre>
-        {% else %}
         <div>
-            <a href="http://localhost:5000/authorize/line?app_id=3&callback_uri=http://localhost:8080/auth/callback">
+            <form action="/setting" method="POST">
+                App ID:<br>
+                <input type="text" name="app_id" value="{{ app_id }}"><br>
+                API key:<br>
+                <input type="text" name="api_key" value="{{ api_key }}"><br><br>
+                <input type="submit" value="Submit">
+            </form>
+        </div>
+        <div>
+            {% if line %}
+            <h4>Logged in LINE as</h4> <pre>{{ line }}</pre>
+            {% else %}
+            <a href="{{ api_host }}/authorize/line?app_id={{ app_id }}&callback_uri={{ host }}/auth/callback">
                 <img  width="300" height="120"
                 src="https://static.tildacdn.com/tild3361-3663-4634-b664-306631636532/option_login.png"/>
             </a>
+            {% endif %} 
         </div>
         <div>
-            <a href="http://localhost:5000/authorize/amazon?app_id=3&callback_uri=http://localhost:8080/auth/callback&callback_if_failed=http://localhost:8080/auth/failed">
+            {% if amazon %}
+            <h4>Logged in AMAZON as</h4> <pre>{{ amazon }}</pre>
+            {% else %}
+            <a href="{{ api_host }}/authorize/amazon?app_id={{ app_id }}&callback_uri={{ host }}/auth/callback&callback_if_failed={{ host }}/auth/failed">
                 <img  width="300" height="120"
                 src="https://images-na.ssl-images-amazon.com/images/G/01/lwa/btnLWA_gold_390x92._CB487591039_.png"/>
             </a>
+            {% endif %} 
         </div>
         <div>
-            <a href="http://localhost:5000/authorize/yahoojp?app_id=3&callback_uri=http://localhost:8080/auth/callback">
+            {% if yahoojp %}
+            <h4>Logged in YAHOO JAPAN as</h4> <pre>{{ yahoojp }}</pre>
+            {% else %}
+            <a href="{{ api_host }}/authorize/yahoojp?app_id={{ app_id }}&callback_uri={{ host }}/auth/callback">
                 <img  width="300" height="120"
                 src="http://www.thecryptotea.com/wp-content/uploads/2018/03/yahoojapan-616x272.png"/>
             </a>
+            {% endif %} 
         </div>
-        {% endif %}        
+        <br/><br/>
+        <a href="/logout">Logout All</a>
     </body>
 </html>
