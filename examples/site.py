@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, session
+from flask import Flask, request, render_template, redirect, session, abort
 import urllib.parse as urlparse
 import requests
 import json
@@ -22,6 +22,20 @@ def setting():
     session['app_id'] = request.form.get('app_id', APP_ID)
     session['api_key'] = request.form.get('api_key', API_KEY)
     return redirect('/demo.html')
+
+
+@app.route('/user/<action>', methods=['POST'])
+def link_user(action):
+    if action not in ['link', 'unlink']:
+        abort(400, 'Invalid action')
+
+    user_id = request.form['user_id']
+    social_id = request.form['social_id']
+    r = requests.put(url='http://localhost:5000/{}/users/{}'.format(session['app_id'], action),
+                     json={'user_id': user_id, 'social_id': social_id},
+                     headers={'X-Api-Key': session['api_key']})
+    msg = str(r.json())
+    return redirect('/demo.html?{}_result={}'.format(action, msg))
 
     
 @app.route('/auth/callback')
@@ -52,6 +66,8 @@ def demo_page():
         session['api_key'] = API_KEY
     return render_template('demo.html', host=HOST, api_host=API_HOST,
                            app_id=session['app_id'], api_key=session['api_key'],
+                           link_result=request.args.get('link_result', ''),
+                           unlink_result=request.args.get('unlink_result', ''),
                            line=session.get('line'), amazon=session.get('amazon'), 
                            yahoojp=session.get('yahoojp'))
 
