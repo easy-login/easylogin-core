@@ -103,7 +103,7 @@ class ProviderAuthHandler(object):
             redirect_uri=urlparse.quote_plus(self.redirect_uri))
 
     def handle_authorize_error(self, state, error, desc):
-        log = self._verify_and_parse_state(state)
+        log, args = self._verify_and_parse_state(state)
         log.status = AuthLogs.STATUS_FAILED
         db.session.commit()
         fail_callback = log.callback_if_failed or log.callback_uri
