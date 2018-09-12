@@ -4,10 +4,12 @@ from sociallogin import app as flask_app, db, login_manager, logger
 from sociallogin.models import Apps, AuthLogs, AssociateLogs
 from sociallogin.providers import get_auth_handler
 from sociallogin.utils import add_params_to_uri
+from sociallogin.exc import RedirectLoginError
 
 
-@flask_app.route('/authorize/<provider>')
-def authorize(provider):
+@flask_app.route('/authorize/<provider>', defaults={'intent': None})
+@flask_app.route('/authorize/<provider>/<intent>')
+def authorize(provider, intent):
     app_id = request.args.get('app_id')
     callback_uri = request.args.get('callback_uri')
     callback_if_failed = request.args.get('callback_if_failed')
@@ -15,11 +17,10 @@ def authorize(provider):
         abort(400, 'Missing parameters app_id or callback_uri')
 
     auth_handler = get_auth_handler(provider)
-    intent = request.args.get('intent')
-
     if intent == AuthLogs.INTENT_ASSOCIATE:
         assoc_token = request.args.get('token')
         log = AssociateLogs.parse_from_associate_token(assoc_token)
+        log.status = AssociateLogs.STATUS_AUTHORIZING
         authorize_uri = auth_handler.build_authorize_uri(
             app_id=app_id,
             succ_callback=callback_uri,
@@ -50,6 +51,18 @@ def authorize_callback(provider):
         profile, log, args = auth_handler.handle_authorize_success(state, code)
         if args and args.get('intent') == AuthLogs.INTENT_ASSOCIATE:
             # profile.link_to_end_user(args['user_id'])
+            # if args.get('provider') != provider:
+            #     raise RedirectLoginError(
+            #         error='',
+            #         msg='Invalid provider',
+            #         redirect_uri=log.safe_get_failed_callback(),
+            #         provider=args.get('provider'))
+            # elif provider.user_id:
+            #     raise RedirectLoginError(
+            #         error='',
+            #         msg='',
+            #         redirect_uri=log.safe_get_failed_callback(),
+            #         provider=args.get('provider'))
             return str(args)
         else:
             callback_uri = add_params_to_uri(log.callback_uri, {

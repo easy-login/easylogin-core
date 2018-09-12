@@ -21,14 +21,8 @@ def authorized_profile(app_id):
     token = request.args.get('token')
     if not token:
         abort(400, 'Missing parameter token')
-
-    log = AuthLogs.find_by_one_time_token(auth_token=token)
-    if not log or log.status != AuthLogs.STATUS_AUTHORIZED:
-        abort(400, 'Invalid token or token has been already used')
-    elif log.token_expires < datetime.now():
-        abort(400, 'Token expired')
-
     try:
+        log = AuthLogs.find_by_one_time_token(auth_token=token)
         log.status = AuthLogs.STATUS_SUCCEEDED
         profile = SocialProfiles.query.filter_by(_id=log.social_id).first_or_404()
         logger.debug('Authorized profile: ' + repr(profile))
@@ -149,6 +143,7 @@ def get_associate_token(app_id):
             'associate_uri': url_for('authorize', _external=True,
                                      provider=provider, app_id=app_id,
                                      token=associate_token,
+                                     callback_uri='http://localhost:8080/auth/callback',
                                      intent=AuthLogs.INTENT_ASSOCIATE)
         })
     except Exception as e:

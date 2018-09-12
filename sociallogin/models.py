@@ -266,8 +266,8 @@ class AuthLogs(Base):
     STATUS_SUCCEEDED = 'succeeded'
     STATUS_FAILED = 'failed'
 
-    INTENT_AUTHENTICATE = 'auth'
-    INTENT_ASSOCIATE = 'assoc'
+    INTENT_AUTHENTICATE = 'authenticate'
+    INTENT_ASSOCIATE = 'associate'
 
     ACTION_LOGIN = 1
     ACTION_REGISTER = 0
@@ -315,15 +315,22 @@ class AuthLogs(Base):
 
     @classmethod
     def find_by_one_time_token(cls, auth_token):
-        return cls.query.filter_by(auth_token=auth_token).order_by(cls._id.desc()).first()
+        log = cls.query.filter_by(auth_token=auth_token).order_by(cls._id.desc()).first()
+        if not log:
+            abort(400, 'Invalid token')
+        if log.status != AuthLogs.STATUS_AUTHORIZED:
+            abort(400, 'Token expired or already used')
 
     @classmethod
     def parse_from_oauth_state(cls, oauth_state):
         try:
             log_id, args = decode_jwt(oauth_state)
             log = cls.query.filter_by(_id=log_id).one_or_none()
-            if log and log.nonce == args['_nonce']:
-                return log, args
+            if not log:
+                abort(400, 'Invalid state')
+            if log.nonce != args['_nonce']:
+                abort(400, 'Invalid state, nonce does not match')
+            return log, args
         except (KeyError, ValueError, TypeError, IndexError) as e:
             logger.warn('Bad format parameter OAuth state: %s', repr(e))
             abort(400, 'Bad format parameter OAuth state')
@@ -334,7 +341,8 @@ class AuthLogs(Base):
 class AssociateLogs(Base):
     __tablename__ = 'associate_logs'
 
-    STATUS_UNKNOWN = 'initialized'
+    STATUS_NEW = 'new'
+    STATUS_AUTHORIZING = 'authorizing'
     STATUS_SUCCEEDED = 'succeeded'
     STATUS_FAILED = 'failed'
 
@@ -345,7 +353,7 @@ class AssociateLogs(Base):
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-    def __init__(self, provider, app_id, user_id, nonce, status=STATUS_UNKNOWN):
+    def __init__(self, provider, app_id, user_id, nonce, status=STATUS_NEW):
         self.provider = provider
         self.app_id = app_id
         self.user_id = user_id
@@ -360,6 +368,7 @@ class AssociateLogs(Base):
     def add_or_reset(cls, provider, app_id, user_id, nonce):
         log = cls.query.filter_by(user_id=user_id, provider=provider).one_or_none()
         if log:
+            log.status = cls.STATUS_NEW
             log.nonce = nonce
         else:
             log = AssociateLogs(provider=provider, app_id=app_id,
@@ -373,9 +382,14 @@ class AssociateLogs(Base):
         try:
             params = b64decode_string(associate_token, urlsafe=True).split('.')
             log = cls.query.filter_by(_id=int(params[1])).one_or_none()
-            if log and log.nonce == params[0]:
-                return log
+            if not log:
+                abort(400, 'Invalid associate token')
+            if log.nonce != params[0]:
+                abort(400, 'Invalid associate token, nonce does not match')
+            if log.status != cls.STATUS_NEW:
+                abort(400, 'Token expired or already used')
+            return log
         except (KeyError, ValueError, TypeError, IndexError) as e:
-            logger.warn('Bad format parameter associate_token: %s', repr(e))
-            abort(400, 'Bad format parameter associate_token')
+            logger.warn('Bad format associate_token: %s', repr(e))
+            abort(400, 'Bad format associate_token')
 

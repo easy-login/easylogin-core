@@ -199,10 +199,7 @@ class ProviderAuthHandler(object):
 
     @staticmethod
     def _verify_and_parse_state(state):
-        tup = AuthLogs.parse_from_oauth_state(oauth_state=state)
-        if not tup:
-            abort(403, 'Invalid OAuth state')
-        return tup
+        return AuthLogs.parse_from_oauth_state(oauth_state=state)
 
     @staticmethod
     def _verify_callback_uri(allowed_uris, uri):
