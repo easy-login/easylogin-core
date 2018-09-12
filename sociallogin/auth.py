@@ -50,28 +50,28 @@ def authorize_callback(provider):
     else:
         profile, log, args = auth_handler.handle_authorize_success(state, code)
         if args and args.get('intent') == AuthLogs.INTENT_ASSOCIATE:
-            # profile.link_to_end_user(args['user_id'])
-            # if args.get('provider') != provider:
-            #     raise RedirectLoginError(
-            #         error='',
-            #         msg='Invalid provider',
-            #         redirect_uri=log.safe_get_failed_callback(),
-            #         provider=args.get('provider'))
-            # elif provider.user_id:
-            #     raise RedirectLoginError(
-            #         error='',
-            #         msg='',
-            #         redirect_uri=log.safe_get_failed_callback(),
-            #         provider=args.get('provider'))
-            return str(args)
-        else:
-            callback_uri = add_params_to_uri(log.callback_uri, {
-                'token': log.auth_token,
-                'provider': provider,
-                'profile_uri': url_for('authorized_profile', _external=True,
-                                       app_id=log.app_id, token=log.auth_token)
-            })
-            return redirect(callback_uri)
+            if args.get('provider') != provider:
+                raise RedirectLoginError(
+                    error='Bad Request',
+                    msg='Target provider does not match',
+                    redirect_uri=log.safe_get_failed_callback(),
+                    provider=args.get('provider'))
+            elif profile.user_id:
+                raise RedirectLoginError(
+                    error='Permission Denied',
+                    msg='Target social profile already linked with another user',
+                    redirect_uri=log.safe_get_failed_callback(),
+                    provider=args.get('provider'))
+            profile.link_to_end_user(user_pk=args.get('user_id'))
+            db.session.commit()
+
+        callback_uri = add_params_to_uri(log.callback_uri, {
+            'token': log.auth_token,
+            'provider': provider,
+            'profile_uri': url_for('authorized_profile', _external=True,
+                                    app_id=log.app_id, token=log.auth_token)
+        })
+        return redirect(callback_uri)
 
 
 @login_manager.request_loader
@@ -109,10 +109,8 @@ def _extract_api_key(req):
 
 def init_app(app):
     from flask.sessions import SecureCookieSessionInterface
-
     class CustomSessionInterface(SecureCookieSessionInterface):
         """Prevent creating session from API requests."""
-
         def save_session(self, *args, **kwargs):
             return
 
