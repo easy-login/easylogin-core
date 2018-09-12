@@ -178,14 +178,16 @@ class SocialProfiles(Base):
     def add_or_update(cls, app_id, pk, provider, attrs):
         hashpk = hashlib.sha1((provider + '.' + pk).encode('utf8')).hexdigest()
         profile = cls.query.filter_by(app_id=app_id, pk=hashpk).one_or_none()
+        exists = True
         if not profile:
             profile = SocialProfiles(app_id=app_id, pk=hashpk, provider=provider, attrs=attrs)
             db.session.add(profile)
             db.session.flush()
+            is_new = False
         else:
             profile.last_authorized_at = datetime.now()
             profile.login_count += 1
-        return profile
+        return profile, exists
 
 
 class Users(Base):
@@ -267,13 +269,16 @@ class AuthLogs(Base):
     INTENT_AUTHENTICATE = 'auth'
     INTENT_ASSOCIATE = 'assoc'
 
+    ACTION_LOGIN = 1
+    ACTION_REGISTER = 0
+
     provider = db.Column(db.String(15), nullable=False)
     callback_uri = db.Column(db.String(2047), nullable=False)
     callback_if_failed = db.Column("callback_failed", db.String(2047))
     nonce = db.Column(db.String(32), nullable=False)
     status = db.Column(db.String(15), nullable=False)
+    is_login = db.Column(db.SmallInt(1))
     auth_token = db.Column(db.String(32))
-    token_expires = db.Column(db.DateTime)
     ua = db.Column(db.String(4095))
     ip = db.Column(db.String(15))
 
@@ -294,15 +299,19 @@ class AuthLogs(Base):
     def safe_get_failed_callback(self):
         return self.callback_if_failed or self.callback_uri
 
-    def set_authorized(self, social_id, auth_token):
-        self.auth_token = auth_token
-        self.token_expires = datetime.now() + timedelta(seconds=600)
+    def set_authorized(self, social_id, is_login, nonce):
+        self.nonce = nonce
         self.social_id = social_id
+        self.is_login = is_login
         self.status = self.STATUS_AUTHORIZED
+        self.auth_token = self.generate_one_time_token()
 
     def generate_oauth_state(self, **kwargs):
         return gen_jwt_token(sub=self._id, exp_in_seconds=600,
                              nonce=self.nonce, **kwargs)
+
+    def generate_one_time_token(self):
+        return self.nonce
 
     @classmethod
     def find_by_one_time_token(cls, auth_token):

@@ -133,12 +133,12 @@ class ProviderAuthHandler(object):
             access_token=token_dict['access_token'],
             fail_callback=fail_callback)
         try:
-            profile = SocialProfiles.add_or_update(
+            profile, exists = SocialProfiles.add_or_update(
                 app_id=log.app_id,
                 provider=self.provider,
                 pk=pk, attrs=attrs)
-            log.set_authorized(auth_token=gen_random_token(nbytes=32),
-                               social_id=profile._id)
+            log.set_authorized(social_id=profile._id, is_login=exists,
+                               nonce=gen_random_token(nbytes=32))
             token = Tokens(
                 provider=self.provider,
                 access_token=token_dict['access_token'],
