@@ -277,7 +277,7 @@ class AuthLogs(Base):
     callback_if_failed = db.Column("callback_failed", db.String(2047))
     nonce = db.Column(db.String(32), nullable=False)
     status = db.Column(db.String(15), nullable=False)
-    is_login = db.Column(db.SmallInt(1))
+    is_login = db.Column(db.SmallInteger)
     auth_token = db.Column(db.String(32))
     ua = db.Column(db.String(4095))
     ip = db.Column(db.String(15))
