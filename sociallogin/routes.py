@@ -21,8 +21,8 @@ def authorized_profile(app_id):
     token = request.args.get('token')
     if not token:
         abort(400, 'Missing parameter token')
+    log = AuthLogs.find_by_one_time_token(auth_token=token)
     try:
-        log = AuthLogs.find_by_one_time_token(auth_token=token)
         log.status = AuthLogs.STATUS_SUCCEEDED
         profile = SocialProfiles.query.filter_by(_id=log.social_id).first_or_404()
         logger.debug('Authorized profile: ' + repr(profile))

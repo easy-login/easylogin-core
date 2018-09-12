@@ -320,6 +320,7 @@ class AuthLogs(Base):
             abort(400, 'Invalid token')
         if log.status != AuthLogs.STATUS_AUTHORIZED:
             abort(400, 'Token expired or already used')
+        return log
 
     @classmethod
     def parse_from_oauth_state(cls, oauth_state):
