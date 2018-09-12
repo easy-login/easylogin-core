@@ -126,17 +126,17 @@ def get_associate_token(app_id):
         abort(404, 'User ID not found')
 
     (social_id,) = (db.session.query(SocialProfiles._id)
-                    .filter_by(app_id=app_id,
-                               user_pk=user_pk,
+                    .filter_by(app_id=app_id, user_pk=user_pk,
                                provider=provider).one_or_none()) or (None,)
     if social_id:
         abort(403, 'User already linked with another social profile for this provider')
 
     try:
         nonce = gen_random_token(nbytes=32)
-        log = AssociateLogs.add_or_reset(provider=provider, app_id=app_id,
-                                         user_id=user_id, nonce=nonce)
+        log = AssociateLogs(provider=provider, app_id=app_id,
+                            user_id=user_id, nonce=nonce)
         associate_token = log.generate_associate_token()
+        db.session.add(log)
         db.session.commit()
         return jsonify({
             'token': associate_token,

@@ -361,7 +361,7 @@ class AssociateLogs(Base):
         self.status = status
 
     def generate_associate_token(self):
-        return b64encode_string('{}.{}'.format(self.nonce, str(self._id)),
+        return b64encode_string('{}.{}'.format(self.nonce, str(self.user_id)),
                                 urlsafe=True, padding=False)
 
     @classmethod
@@ -370,6 +370,7 @@ class AssociateLogs(Base):
         if log:
             log.status = cls.STATUS_NEW
             log.nonce = nonce
+            log.provider = provider
         else:
             log = AssociateLogs(provider=provider, app_id=app_id,
                                 user_id=user_id, nonce=nonce)
@@ -381,7 +382,7 @@ class AssociateLogs(Base):
     def parse_from_associate_token(cls, associate_token):
         try:
             params = b64decode_string(associate_token, urlsafe=True).split('.')
-            log = cls.query.filter_by(_id=int(params[1])).one_or_none()
+            log = cls.query.filter_by(user_id=int(params[1])).order_by(cls._id.desc()).first()
             if not log:
                 abort(400, 'Invalid associate token')
             if log.nonce != params[0]:
