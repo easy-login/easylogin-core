@@ -84,7 +84,7 @@ class ProviderAuthHandler(object):
         if fail_callback and not self._verify_callback_uri(allowed_uris, fail_callback):
             abort(403, 'Callback URI must be configured in admin settings')
 
-        nonce = gen_random_token(nbytes=16)
+        nonce = gen_random_token(nbytes=32)
         log = AuthLogs(
             provider=self.provider,
             app_id=app_id,

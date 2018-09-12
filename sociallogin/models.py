@@ -308,7 +308,7 @@ class AuthLogs(Base):
 
     def generate_oauth_state(self, **kwargs):
         return gen_jwt_token(sub=self._id, exp_in_seconds=600,
-                             nonce=self.nonce, **kwargs)
+                             _nonce=self.nonce, **kwargs)
 
     def generate_one_time_token(self):
         return self.nonce
@@ -322,7 +322,7 @@ class AuthLogs(Base):
         try:
             log_id, args = decode_jwt(oauth_state)
             log = cls.query.filter_by(_id=log_id).one_or_none()
-            if log and log.nonce == args['nonce']:
+            if log and log.nonce == args['_nonce']:
                 return log, args
         except (KeyError, ValueError, TypeError, IndexError) as e:
             logger.warn('Bad format parameter OAuth state: %s', repr(e))
