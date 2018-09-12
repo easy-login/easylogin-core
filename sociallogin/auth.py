@@ -26,6 +26,7 @@ def authorize(provider):
             fail_callback=callback_if_failed,
             intent=intent,
             user_id=log.user_id,
+            provider=provider,
             assoc_id=log._id)
     else:
         authorize_uri = auth_handler.build_authorize_uri(app_id, callback_uri, callback_if_failed)
@@ -46,10 +47,9 @@ def authorize_callback(provider):
         callback_uri = auth_handler.handle_authorize_error(state, error, desc)
         return redirect(callback_uri)
     else:
-        profile, log, args = auth_handler.handle_authorize_success(code, state)
+        profile, log, args = auth_handler.handle_authorize_success(state, code)
         if args and args.get('intent') == AuthLogs.INTENT_ASSOCIATE:
             # profile.link_to_end_user(args['user_id'])
-            # return redirect(log.callback_uri)
             return str(args)
         else:
             callback_uri = add_params_to_uri(log.callback_uri, {

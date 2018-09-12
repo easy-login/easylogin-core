@@ -6,8 +6,8 @@ from flask import request, abort, url_for
 
 from sociallogin import db, logger
 from sociallogin.exc import RedirectLoginError
-from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles, AssociateLogs
-from sociallogin.utils import gen_random_token, add_params_to_uri
+from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
+from sociallogin.utils import gen_random_token
 
 __END_POINTS__ = {
     'line': {
@@ -105,16 +105,14 @@ class ProviderAuthHandler(object):
     def handle_authorize_error(self, state, error, desc):
         log, args = self._verify_and_parse_state(state)
         log.status = AuthLogs.STATUS_FAILED
-        db.session.commit()
         fail_callback = log.callback_if_failed or log.callback_uri
+        db.session.commit()
 
-        return add_params_to_uri(fail_callback, {
-            'error': error,
-            'error_description': desc,
-            'provider': self.provider
-        })
+        self._raise_redirect_error(
+            error=error, msg=desc,
+            fail_callback=fail_callback)
 
-    def handle_authorize_success(self, code, state):
+    def handle_authorize_success(self, state, code):
         log, args = self._verify_and_parse_state(state)
         fail_callback = log.callback_if_failed or log.callback_uri
 
