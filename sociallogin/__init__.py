@@ -25,8 +25,8 @@ logger = app.logger
 # This will create the database file using SQLAlchemy
 from sociallogin import models
 db.create_all()
-db.session.commit()
 # models.Providers.init()
+db.session.commit()
 
 # Import all API endpoint definitions
 from sociallogin import auth, routes, exc

@@ -64,9 +64,8 @@ class Providers(db.Model):
                           required_permissions='')
             ]
             db.session.bulk_save_objects(providers)
-            db.session.commit()
         except Exception as e:
-            print(e)
+            print(repr(e))
             pass
 
 
