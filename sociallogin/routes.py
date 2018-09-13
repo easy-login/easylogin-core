@@ -2,7 +2,7 @@ from datetime import datetime
 
 from flask import abort, jsonify, request, url_for
 from flask_login import login_required, current_user as current_app
-from sqlalchemy import func
+from sqlalchemy import func, and_
 
 from sociallogin import app as flask_app, db, logger
 from sociallogin.models import SocialProfiles, Users, AuthLogs, AssociateLogs
@@ -120,16 +120,15 @@ def get_associate_token(app_id):
     if not is_valid_provider(provider):
         abort(404, 'Invalid provider')
 
-    (user_id,) = (db.session.query(Users._id)
-                  .filter_by(app_id=app_id, pk=user_pk).one_or_none()) or (None,)
-    if not user_id:
-        abort(404, 'User ID not found')
-
-    (social_id,) = (db.session.query(SocialProfiles._id)
-                    .filter_by(app_id=app_id, user_pk=user_pk,
-                               provider=provider).one_or_none()) or (None,)
-    if social_id:
-        abort(403, 'User already linked with another social profile for this provider')
+    tups = (db.session.query(Users._id, SocialProfiles._id, SocialProfiles.provider)
+            .join(SocialProfiles, and_(Users._id == SocialProfiles.user_id,
+                                       Users.pk == user_pk, Users.app_id == app_id))).all()
+    if not tups:
+        abort(400, 'User not found')
+    for tup in tups:
+        if provider == tup[2]:
+            abort(403, 'User already linked with another social profile for this provider')
+    user_id = tups[0][0]
 
     try:
         nonce = gen_random_token(nbytes=32)
