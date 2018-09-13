@@ -142,20 +142,29 @@ class SocialProfiles(Base):
         del d['user_pk']
         return d
 
-    def link_to_end_user(self, user_pk, create_user=True):
+    def link_user_by_id(self, user_id):
+        try:
+            _, pk = db.session.query(Users._id, Users.pk).filter_by(_id=user_id).one_or_none()
+            self._link_unsafe(user_id, pk)
+        except TypeError:
+            abort(404, 'User not found')
+
+    def link_user_by_pk(self, user_pk, create_if_not_exists=True):
         user = Users.query.filter_by(app_id=self.app_id, pk=user_pk).one_or_none()
         if not user:
-            if not create_user:
+            if not create_if_not_exists:
                 abort(404, 'User ID not found')
             user = Users(pk=user_pk, app_id=self.app_id)
             db.session.add(user)
             db.session.flush()
+        self._link_unsafe(user._id, user_pk)
 
-        self.user_id = user._id
+    def _link_unsafe(self, user_id, user_pk):
+        self.user_id = user_id
         self.user_pk = user_pk
         self.linked_at = datetime.now()
 
-    def unlink_from_end_user(self, user_pk):
+    def unlink_user_by_pk(self, user_pk):
         if self.user_pk != user_pk:
             abort(409, "Social profile and user don't linked with each other")
         self._unlink_unsafe()
@@ -183,7 +192,7 @@ class SocialProfiles(Base):
             profile = SocialProfiles(app_id=app_id, pk=hashpk, provider=provider, attrs=attrs)
             db.session.add(profile)
             db.session.flush()
-            is_new = False
+            exists = False
         else:
             profile.last_authorized_at = datetime.now()
             profile.login_count += 1

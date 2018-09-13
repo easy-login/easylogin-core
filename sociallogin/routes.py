@@ -50,7 +50,7 @@ def link_user(app_id):
     if profile.user_id:
         abort(409, 'Social profile already linked with an exists user')
 
-    profile.link_to_end_user(user_pk)
+    profile.link_user_by_pk(user_pk)
     db.session.commit()
 
     return jsonify({'success': True})
@@ -70,7 +70,7 @@ def unlink_user(app_id):
         if not profile.user_id:
             abort(409, "Social profile doesn't link with any user")
 
-        profile.unlink_from_end_user(user_pk)
+        profile.unlink_user_by_pk(user_pk)
     elif 'providers' in body:
         providers = body['providers'].split(',')
         SocialProfiles.unlink_by_provider(app_id=app_id, user_pk=user_pk, providers=providers)

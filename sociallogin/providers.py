@@ -95,7 +95,6 @@ class ProviderAuthHandler(object):
             callback_if_failed=fail_callback
         )
         db.session.add(log)
-        db.session.commit()
 
         return self._build_authorize_uri(
             channel=channel, 
@@ -106,7 +105,6 @@ class ProviderAuthHandler(object):
         log, args = self._verify_and_parse_state(state)
         log.status = AuthLogs.STATUS_FAILED
         fail_callback = log.callback_if_failed or log.callback_uri
-        db.session.commit()
 
         self._raise_redirect_error(
             error=error, msg=desc,
@@ -147,7 +145,6 @@ class ProviderAuthHandler(object):
                 social_id=profile._id
             )
             db.session.add(token)
-            db.session.commit()
             return profile, log, args
         except Exception as e:
             logger.error(repr(e))

@@ -31,6 +31,8 @@ def authorize(provider, intent):
             assoc_id=log._id)
     else:
         authorize_uri = auth_handler.build_authorize_uri(app_id, callback_uri, callback_if_failed)
+
+    db.session.commit()
     return redirect(authorize_uri)
 
 
@@ -46,7 +48,6 @@ def authorize_callback(provider):
         error = request.args.get('error')
         desc = request.args.get('error_description')
         callback_uri = auth_handler.handle_authorize_error(state, error, desc)
-        return redirect(callback_uri)
     else:
         profile, log, args = auth_handler.handle_authorize_success(state, code)
         if args and args.get('intent') == AuthLogs.INTENT_ASSOCIATE:
@@ -62,16 +63,17 @@ def authorize_callback(provider):
                     msg='Target social profile already linked with another user',
                     redirect_uri=log.safe_get_failed_callback(),
                     provider=args.get('provider'))
-            profile.link_to_end_user(user_pk=args.get('user_id'))
-            db.session.commit()
+            profile.link_user_by_id(user_id=args.get('user_id'))
 
         callback_uri = add_params_to_uri(log.callback_uri, {
             'token': log.auth_token,
             'provider': provider,
             'profile_uri': url_for('authorized_profile', _external=True,
-                                    app_id=log.app_id, token=log.auth_token)
+                                   app_id=log.app_id, token=log.auth_token)
         })
-        return redirect(callback_uri)
+
+    db.session.commit()
+    return redirect(callback_uri)
 
 
 @login_manager.request_loader
@@ -109,6 +111,7 @@ def _extract_api_key(req):
 
 def init_app(app):
     from flask.sessions import SecureCookieSessionInterface
+
     class CustomSessionInterface(SecureCookieSessionInterface):
         """Prevent creating session from API requests."""
         def save_session(self, *args, **kwargs):
