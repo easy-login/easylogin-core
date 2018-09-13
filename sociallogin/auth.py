@@ -80,18 +80,21 @@ def authorize_callback(provider):
 def verify_app_auth(req):
     api_key = _extract_api_key(req)
     if not api_key:
-        abort(401, 'Unauthorized. Missing authorization parameters')
+        abort(401, 'Unauthorized. Missing authorization credentials')
     try:
-        (_id, allowed_ips) = (db.session.query(Apps._id, Apps.allowed_ips)
-                              .filter_by(api_key=api_key).one_or_none())
+        app_id = request.view_args['app_id']
+        (_api_key, allowed_ips) = (db.session.query(Apps._id, Apps.allowed_ips)
+                                   .filter_by(_id=app_id).one_or_none())
+        if api_key != _api_key:
+            raise ValueError('API key does not match')
+
         app = Apps()
-        app._id = _id
-        app.allowed_ips = allowed_ips
+        app._id = app_id
         app.is_authenticated = True
         return app
     except Exception as e:
         logger.error(repr(e))
-        abort(401, 'Wrong credentials. Could not verify your API key')
+        abort(401, 'Wrong credentials, could not verify your API key')
 
 
 def _extract_api_key(req):
@@ -114,6 +117,7 @@ def init_app(app):
 
     class CustomSessionInterface(SecureCookieSessionInterface):
         """Prevent creating session from API requests."""
+
         def save_session(self, *args, **kwargs):
             return
 
