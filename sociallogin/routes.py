@@ -27,12 +27,13 @@ def authorized_profile(app_id):
         profile = SocialProfiles.query.filter_by(_id=log.social_id).first_or_404()
         logger.debug('Authorized profile: ' + repr(profile))
         body = profile.as_dict()
-        db.session.commit()
         return jsonify(body)
     except Exception as e:
         logger.error(repr(e))
         log.status = AuthLogs.STATUS_FAILED
         raise
+    finally:
+        db.session.commit()
 
 
 @flask_app.route('/<int:app_id>/users/link', methods=['PUT'])
