@@ -95,6 +95,7 @@ class ProviderAuthHandler(object):
             callback_if_failed=fail_callback
         )
         db.session.add(log)
+        db.session.flush()
 
         return self._build_authorize_uri(
             channel=channel, 
@@ -116,13 +117,6 @@ class ProviderAuthHandler(object):
 
         channel = Channels.query.filter_by(app_id=log.app_id,
                                            provider=self.provider).one_or_none()
-        if not channel:
-            raise RedirectLoginError(
-                provider=self.provider,
-                redirect_uri=fail_callback,
-                error='server_internal_error',
-                msg='Something wrong, cannot get application info')
-
         token_dict = self._get_token(channel, code, fail_callback)
         pk, attrs = self._get_profile(
             token_type=token_dict['token_type'], 
