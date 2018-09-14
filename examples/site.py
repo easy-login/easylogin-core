@@ -2,6 +2,7 @@ from flask import Flask, request, render_template, redirect, session, abort
 import urllib.parse as urlparse
 import requests
 import json
+import random
 
 app = Flask(__name__, template_folder='.')
 app.config['SECRET_KEY'] = b'_5#y2L"F4Q8z\n\xec]/'
@@ -19,7 +20,12 @@ def index():
 
 @app.route('/chart.html')
 def charts():
-    return render_template('chart.html', provider_data=[352, 134, 256], login_data=[2351, 506])
+    return render_template('chart.html',
+                           provider_data=[random.randint(200, 1000),
+                                          random.randint(200, 1000),
+                                          random.randint(200, 1000)],
+                           login_data=[random.randint(1000, 2000),
+                                       random.randint(200, 1000)])
 
 
 @app.route('/setting', methods=['POST'])
