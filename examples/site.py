@@ -17,6 +17,11 @@ def index():
     return redirect('/demo.html'), 301
 
 
+@app.route('/chart.html')
+def charts():
+    return render_template('chart.html', provider_data=[352, 134, 256], login_data=[2351, 506])
+
+
 @app.route('/setting', methods=['POST'])
 def setting():
     session['app_id'] = request.form.get('app_id', APP_ID)
