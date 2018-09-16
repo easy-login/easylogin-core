@@ -88,7 +88,7 @@ def verify_app_auth(req):
         abort(401, 'Unauthorized. Missing authorization credentials')
     try:
         app_id = request.view_args['app_id']
-        (_api_key, allowed_ips) = (db.session.query(Apps._id, Apps.allowed_ips)
+        (_api_key, allowed_ips) = (db.session.query(Apps.api_key, Apps.allowed_ips)
                                    .filter_by(_id=app_id).one_or_none())
         if api_key != _api_key:
             raise ValueError('API key does not match')
