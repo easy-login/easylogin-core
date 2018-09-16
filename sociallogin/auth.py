@@ -1,4 +1,4 @@
-from flask import abort, redirect, request, url_for
+from flask import abort, redirect, request, url_for, jsonify
 
 from sociallogin import app as flask_app, db, login_manager, logger
 from sociallogin.models import Apps, AuthLogs, AssociateLogs
@@ -76,6 +76,11 @@ def authorize_callback(provider):
     return redirect(callback_uri)
 
 
+@flask_app.route('/ip')
+def get_ip():
+    return jsonify({'ip': _get_remote_ip(request)})
+
+
 @login_manager.request_loader
 def verify_app_auth(req):
     api_key = _extract_api_key(req)
@@ -110,6 +115,15 @@ def _extract_api_key(req):
     if authorization:
         api_key = authorization.replace('ApiKey ', '', 1)
         return api_key
+
+
+def _get_remote_ip(req):
+    if req.environ.get('HTTP_X_FORWARDED_FOR'):
+        return req.environ['HTTP_X_FORWARDED_FOR']
+    elif req.environ.get('HTTP_X_REAL_IP'):
+        return req.environ['HTTP_X_REAL_IP']
+    else:
+        return req.remote_addr
 
 
 def init_app(app):

@@ -10,11 +10,6 @@ from sociallogin.utils import gen_random_token
 from sociallogin.providers import is_valid_provider
 
 
-@flask_app.route('/ip')
-def get_ip():
-    return jsonify({'ip': request.remote_addr})
-
-    
 @flask_app.route('/<int:app_id>/profiles/authorized')
 @login_required
 def authorized_profile(app_id):

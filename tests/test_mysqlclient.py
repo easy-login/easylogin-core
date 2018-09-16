@@ -67,7 +67,7 @@ def insert_sample_data(db):
             'http://localhost:8080/auth/callback',
             nonce,
             'succeeded',
-            3, random.randint(0, 1)
+            3, 1 if random.randint(0, 100) > 20 else 0
         ))
 
     db.cursor().executemany(
@@ -78,7 +78,7 @@ def insert_sample_data(db):
 
 
 if __name__ == '__main__':
-    db = MySQLdb.connect(host='192.168.9.89', user='guest', passwd='123456', db='nhatanhdb')
+    db = MySQLdb.connect(host='localhost', user='root', passwd='root', db='sociallogin')
     # insert_sample_data(db)
     # res = get_auth_report_per_provider(db, app_id=3, from_dt='2018-08-29', to_dt='2018-09-4', is_login=0)
     res = get_total_auth_report(db, app_id=3)
