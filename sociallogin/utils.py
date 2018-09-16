@@ -101,3 +101,12 @@ def update_dict(d1, d2=None, **kwargs):
         d1.update(d2)
     d1.update(kwargs)
     return d1
+
+
+def get_remote_ip(req):
+    if req.environ.get('HTTP_X_FORWARDED_FOR'):
+        return req.environ['HTTP_X_FORWARDED_FOR']
+    elif req.environ.get('HTTP_X_REAL_IP'):
+        return req.environ['HTTP_X_REAL_IP']
+    else:
+        return req.remote_addr

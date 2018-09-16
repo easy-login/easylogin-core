@@ -7,7 +7,7 @@ from flask import request, abort, url_for
 from sociallogin import db, logger
 from sociallogin.exc import RedirectLoginError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
-from sociallogin.utils import gen_random_token
+from sociallogin.utils import gen_random_token, get_remote_ip
 
 __END_POINTS__ = {
     'line': {
@@ -89,7 +89,7 @@ class ProviderAuthHandler(object):
             provider=self.provider,
             app_id=app_id,
             ua=request.headers['User-Agent'],
-            ip=request.remote_addr,
+            ip=get_remote_ip(request),
             nonce=nonce,
             callback_uri=succ_callback,
             callback_if_failed=fail_callback

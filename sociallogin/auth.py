@@ -3,7 +3,7 @@ from flask import abort, redirect, request, url_for, jsonify
 from sociallogin import app as flask_app, db, login_manager, logger
 from sociallogin.models import Apps, AuthLogs, AssociateLogs
 from sociallogin.providers import get_auth_handler
-from sociallogin.utils import add_params_to_uri
+from sociallogin.utils import add_params_to_uri, get_remote_ip
 from sociallogin.exc import RedirectLoginError
 
 
@@ -50,7 +50,7 @@ def authorize_callback(provider):
         callback_uri = auth_handler.handle_authorize_error(state, error, desc)
     else:
         profile, log, args = auth_handler.handle_authorize_success(state, code)
-        if args and args.get('intent') == AuthLogs.INTENT_ASSOCIATE:
+        if args.get('intent') == AuthLogs.INTENT_ASSOCIATE:
             if args.get('provider') != provider:
                 raise RedirectLoginError(
                     error='Bad Request',
@@ -78,7 +78,7 @@ def authorize_callback(provider):
 
 @flask_app.route('/ip')
 def get_ip():
-    return jsonify({'ip': _get_remote_ip(request)})
+    return jsonify({'ip': get_remote_ip(request)})
 
 
 @login_manager.request_loader
@@ -115,15 +115,6 @@ def _extract_api_key(req):
     if authorization:
         api_key = authorization.replace('ApiKey ', '', 1)
         return api_key
-
-
-def _get_remote_ip(req):
-    if req.environ.get('HTTP_X_FORWARDED_FOR'):
-        return req.environ['HTTP_X_FORWARDED_FOR']
-    elif req.environ.get('HTTP_X_REAL_IP'):
-        return req.environ['HTTP_X_REAL_IP']
-    else:
-        return req.remote_addr
 
 
 def init_app(app):
