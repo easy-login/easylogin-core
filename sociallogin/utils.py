@@ -68,12 +68,12 @@ def gen_jwt_token(sub, exp_in_seconds, **kwargs):
 
 def decode_jwt(encoded):
     try:
-        payload = jwt.decode(encoded, key=app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+        payload = jwt.decode(encoded, key=app.config['JWT_SECRET_KEY'], 
+                             issuer=app.config['SERVER_NAME'], algorithms=['HS256'])
         expire = payload.get('exp', 0)
         if expire < int(time.time()):
             raise TimeoutError()
-        if payload['iss'] == app.config['SERVER_NAME']:
-            return payload['sub'], payload['data']
+        return payload['sub'], payload['data']
     except (jwt.exceptions.PyJWTError, KeyError):
         return None
 

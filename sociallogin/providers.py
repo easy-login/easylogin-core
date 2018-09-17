@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 import requests
 from flask import request, abort, url_for
+import jwt
 
 from sociallogin import db, logger
 from sociallogin.exc import RedirectLoginError
@@ -119,16 +120,13 @@ class ProviderAuthHandler(object):
         channel = Channels.query.filter_by(app_id=log.app_id,
                                            provider=self.provider).one_or_none()
         token_dict = self._get_token(channel, code, fail_callback)
-        pk, attrs = self._get_profile(
-            token_type=token_dict['token_type'], 
-            access_token=token_dict['access_token'],
-            fail_callback=fail_callback)
+        pk, attrs = self._get_profile(channel, token_dict, fail_callback)
         try:
-            profile, exists = SocialProfiles.add_or_update(
+            profile, existed = SocialProfiles.add_or_update(
                 app_id=log.app_id,
                 provider=self.provider,
                 pk=pk, attrs=attrs)
-            log.set_authorized(social_id=profile._id, is_login=exists,
+            log.set_authorized(social_id=profile._id, is_login=existed,
                                nonce=gen_random_token(nbytes=32))
             token = Tokens(
                 provider=self.provider,
@@ -136,7 +134,7 @@ class ProviderAuthHandler(object):
                 token_type=token_dict['token_type'],
                 expires_at=datetime.now() + timedelta(seconds=token_dict['expires_in']),
                 refresh_token=token_dict['refresh_token'],
-                jwt_token=token_dict.get('id_token'),
+                jwt_token=self._extract_jwt_token(token_dict),
                 social_id=profile._id
             )
             db.session.add(token)
@@ -171,8 +169,8 @@ class ProviderAuthHandler(object):
                 fail_callback=fail_callback)
         return res.json()
 
-    def _get_profile(self, token_type, access_token, fail_callback):
-        auth_header = token_type + ' ' + access_token
+    def _get_profile(self, channel, token_dict, fail_callback):
+        auth_header = token_dict['token_type'] + ' ' + token_dict['access_token']
         profile_uri = __END_POINTS__[self.provider]['profile_uri']
         res = requests.get(profile_uri, headers={'Authorization': auth_header})
         if res.status_code != 200:
@@ -180,7 +178,10 @@ class ProviderAuthHandler(object):
                 error=res.json(), 
                 msg='Getting %s profile failed: ' % self.provider.upper(),
                 fail_callback=fail_callback)
-        return res.json()
+        return None, res.json()
+
+    def _extract_jwt_token(self, token_dict):
+        pass
 
     def _raise_redirect_error(self, error, msg, fail_callback):
         raise RedirectLoginError(
@@ -208,18 +209,31 @@ class LineAuthHandler(ProviderAuthHandler):
     """
     Authentication handler for LINE accounts
     """
-    def _get_profile(self, token_type, access_token, fail_callback):
-        attrs = super()._get_profile(token_type, access_token, fail_callback)
+    def _get_profile(self, channel, token_dict, fail_callback):
+        _, attrs = super()._get_profile(channel, token_dict, fail_callback)
         pk = attrs['userId']
+        try:
+            payload = jwt.decode(token_dict['id_token'],
+                                 key=channel.client_secret,
+                                 audience=channel.client_id,
+                                 issuer='https://access.line.me',
+                                 algorithms=['HS256'])
+            if payload.get('email'):
+                attrs['email'] = payload['email']
+        except jwt.PyJWTError as e:
+            logger.error(repr(e))
         return pk, attrs
+
+    def _extract_jwt_token(self, token_dict):
+        return token_dict['id_token']
 
 
 class AmazonAuthHandler(ProviderAuthHandler):
     """
     Authentication handler for AMAZON accounts
     """
-    def _get_profile(self, token_type, access_token, fail_callback):
-        attrs = super()._get_profile(token_type, access_token, fail_callback)
+    def _get_profile(self, channel, token_dict, fail_callback):
+        _, attrs = super()._get_profile(channel, token_dict, fail_callback)
         pk = attrs['user_id']
         return pk, attrs
 
@@ -228,7 +242,7 @@ class YahooJpAuthHandler(ProviderAuthHandler):
     """
     Authentication handler for YAHOOJP accounts
     """
-    def _get_profile(self, token_type, access_token, fail_callback):
-        attrs = super()._get_profile(token_type, access_token, fail_callback)
+    def _get_profile(self, channel, token_dict, fail_callback):
+        _, attrs = super()._get_profile(channel, token_dict, fail_callback)
         pk = attrs['sub']
         return pk, attrs
