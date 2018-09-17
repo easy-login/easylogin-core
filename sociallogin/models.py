@@ -276,6 +276,8 @@ class AuthLogs(Base):
 
     INTENT_AUTHENTICATE = 'authenticate'
     INTENT_ASSOCIATE = 'associate'
+    INTENT_LOGIN = 'login'
+    INTENT_REGISTER = 'register'
 
     ACTION_LOGIN = 1
     ACTION_REGISTER = 0
