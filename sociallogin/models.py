@@ -195,6 +195,7 @@ class SocialProfiles(Base):
         else:
             profile.last_authorized_at = datetime.now()
             profile.login_count += 1
+            profile.attrs = json.dumps(attrs)
         return profile, exists
 
 
