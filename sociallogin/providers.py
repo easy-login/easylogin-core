@@ -17,7 +17,7 @@ __END_POINTS__ = {
             &client_id={client_id}
             &state={state}
             &scope={scope}
-            &prompt=consent
+            &prompt=consent&bot_prompt=normal
             &redirect_uri={redirect_uri}'''.strip().replace('\n', '').replace(' ', ''),
         'token_uri': 'https://api.line.me/oauth2/v2.1/token/',
         'profile_uri': 'https://api.line.me/v2/profile'
