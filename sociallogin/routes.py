@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from flask import abort, jsonify, request, url_for
 from flask_login import login_required, current_user as current_app
 from sqlalchemy import func, and_
@@ -37,18 +35,15 @@ def link_user(app_id):
     body = request.json
     social_id = int(body['social_id'])
     user_pk = body['user_id']
-    if len(user_pk) < 4:
-        abort(400, 'Invalid user ID, must be at least 4 characters')
 
-    profile = SocialProfiles.query.filter_by(_id=social_id).one_or_none()
-    if not profile or profile.app_id != app_id:
+    profile = SocialProfiles.query.filter_by(alias=social_id, app_id=app_id).first()
+    if not profile:
         abort(404, 'Social ID not found')
     if profile.user_id:
         abort(409, 'Social profile already linked with an exists user')
 
     profile.link_user_by_pk(user_pk)
     db.session.commit()
-
     return jsonify({'success': True})
 
 
@@ -60,17 +55,19 @@ def unlink_user(app_id):
 
     if 'social_id' in body:
         social_id = int(body['social_id'])
-        profile = SocialProfiles.query.filter_by(_id=social_id).one_or_none()
-        if not profile or profile.app_id != app_id:
+        profiles = SocialProfiles.query.filter_by(alias=social_id, app_id=app_id).all()
+        if not profiles:
             abort(404, 'Social ID not found')
-        if not profile.user_id:
-            abort(409, "Social profile doesn't link with any user")
-
-        profile.unlink_user_by_pk(user_pk)
+        for p in profiles:
+            if not p.user_id:
+                abort(409, "Social profile doesn't link with any user")
+            p.unlink_user_by_pk(user_pk)
     elif 'providers' in body:
         providers = body['providers'].split(',')
+        for provider in providers:
+            if not is_valid_provider(provider):
+                abort(400, 'Invalid provider')
         SocialProfiles.unlink_by_provider(app_id=app_id, user_pk=user_pk, providers=providers)
-        return jsonify({'success': True})
     else:
         abort(400, 'At least one parameter social_id or providers must be provided')
 
@@ -88,8 +85,8 @@ def get_user(app_id):
     if user_pk:
         return jsonify(Users.get_full_as_dict(app_id=app_id, pk=user_pk))
     elif social_id:
-        profile = SocialProfiles.query.filter_by(_id=social_id).one_or_none()
-        if not profile or profile.app_id != app_id:
+        profile = SocialProfiles.query.filter_by(alias=social_id, app_id=app_id).first()
+        if not profile:
             abort(404, 'Social ID not found')
         if profile.user_pk:
             return jsonify(Users.get_full_as_dict(app_id=app_id, pk=profile.user_pk))
@@ -114,17 +111,17 @@ def get_associate_token(app_id):
     user_pk = request.args['user_id']
     provider = request.args['provider']
     if not is_valid_provider(provider):
-        abort(404, 'Invalid provider')
+        abort(400, 'Invalid provider')
 
-    tups = (db.session.query(Users._id, SocialProfiles._id, SocialProfiles.provider)
-            .join(SocialProfiles, and_(Users._id == SocialProfiles.user_id,
-                                       Users.pk == user_pk, Users.app_id == app_id))).all()
-    if not tups:
+    tup = (db.session.query(Users._id, SocialProfiles._id, SocialProfiles.provider)
+           .join(SocialProfiles, and_(Users._id == SocialProfiles.user_id,
+                                      Users.pk == user_pk, Users.app_id == app_id))).all()
+    if not tup:
         abort(400, 'User not found')
-    for tup in tups:
+    for tup in tup:
         if provider == tup[2]:
             abort(403, 'User already linked with another social profile for this provider')
-    user_id = tups[0][0]
+    user_id = tup[0][0]
 
     try:
         nonce = gen_random_token(nbytes=32)

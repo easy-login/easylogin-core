@@ -2,10 +2,12 @@ import json
 from datetime import datetime, timezone, timedelta
 import hashlib
 from flask import abort
+from sqlalchemy import func, and_
 
 from sociallogin import db, logger
 from sociallogin.utils import b64encode_string, b64decode_string, \
     gen_jwt_token, decode_jwt
+from sociallogin.atomic import generate_64bit_id
 
 
 # Define a base model for other database tables to inherit
@@ -122,6 +124,7 @@ class SocialProfiles(Base):
     linked_at = db.Column(db.DateTime)
     _deleted = db.Column("deleted", db.Boolean, default=False)
 
+    alias = db.Column(db.BigInteger, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     user_pk = db.Column(db.String(255))
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
@@ -132,13 +135,15 @@ class SocialProfiles(Base):
         self.provider = provider
         self.attrs = json.dumps(attrs)
         self.last_authorized_at = last_authorized_at
+        self.alias = generate_64bit_id()
 
     def as_dict(self):
         d = super().as_dict()
         d['attrs'] = json.loads(d['attrs'], encoding='utf8')
-        d['social_id'] = self._id
+        d['social_id'] = self.alias
         d['user_id'] = d['user_pk']
         del d['user_pk']
+        del d['alias']
         return d
 
     def link_user_by_id(self, user_id):
@@ -148,30 +153,40 @@ class SocialProfiles(Base):
         except TypeError:
             abort(404, 'User not found')
 
-    def link_user_by_pk(self, user_pk, create_if_not_exists=True):
-        user = Users.query.filter_by(app_id=self.app_id, pk=user_pk).one_or_none()
-        if not user:
-            if not create_if_not_exists:
-                abort(404, 'User ID not found')
-            user = Users(pk=user_pk, app_id=self.app_id)
-            db.session.add(user)
-            db.session.flush()
-        self._link_unsafe(user._id, user_pk)
-
-    def _link_unsafe(self, user_id, user_pk):
-        self.user_id = user_id
-        self.user_pk = user_pk
-        self.linked_at = datetime.now()
+    def link_user_by_pk(self, user_pk, create_if_not_exist=True):
+        profiles = SocialProfiles.query.filter_by(app_id=self.app_id, user_pk=user_pk).all()
+        if not profiles:
+            user = Users.query.filter_by(app_id=self.app_id, pk=user_pk).one_or_none()
+            if not user:
+                if not create_if_not_exist:
+                    abort(404, 'User not found')
+                user = Users(pk=user_pk, app_id=self.app_id)
+                db.session.add(user)
+                db.session.flush()
+            self._link_unsafe(user._id, user_pk)
+        else:
+            for p in profiles:
+                if p.provider == self.provider:
+                    abort(409, 'User linked with a social profile in the same provider')
+            profile = profiles[0]
+            self._link_unsafe(profile.user_id, user_pk, alias=profile.alias)
 
     def unlink_user_by_pk(self, user_pk):
         if self.user_pk != user_pk:
             abort(409, "Social profile and user don't linked with each other")
         self._unlink_unsafe()
 
+    def _link_unsafe(self, user_id, user_pk, alias=None):
+        self.user_id = user_id
+        self.user_pk = user_pk
+        self.linked_at = datetime.now()
+        self.alias = alias or self.alias
+
     def _unlink_unsafe(self):
         self.linked_at = None
         self.user_id = None
         self.user_pk = None
+        self.alias = generate_64bit_id()
 
     @classmethod
     def unlink_by_provider(cls, app_id, user_pk, providers):
@@ -180,7 +195,6 @@ class SocialProfiles(Base):
             if p.provider not in providers:
                 continue
             p._unlink_unsafe()
-            db.session.merge(p)
 
     @classmethod
     def add_or_update(cls, app_id, pk, provider, attrs):
@@ -405,4 +419,3 @@ class AssociateLogs(Base):
         except (KeyError, ValueError, TypeError, IndexError) as e:
             logger.warn('Bad format associate_token: %s', repr(e))
             abort(400, 'Bad format associate_token')
-

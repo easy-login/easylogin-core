@@ -37,7 +37,7 @@ class Id64(object):
         return (_epoch << (64 - cls.epoch_bits)) | (_shard << (64 - cls.epoch_bits - cls.shard_bits)) | _counter
     
 
-def generate_64bit_id(shard=100000000):
+def generate_64bit_id(shard=2018):
     return Id64.generate(shard)
 
 
