@@ -37,16 +37,16 @@ class Base(db.Model):
         return dt.replace(tzinfo=timezone.utc).isoformat()
 
 
-class Providers(db.Model):
+class Providers(Base):
     __tablename__ = 'providers'
 
-    _id = db.Column("id", db.String(15), primary_key=True)
+    name = db.Column(db.String(15), nullable=False)
     version = db.Column(db.String(7), nullable=False)
     permissions = db.Column(db.String(1023), nullable=False)
     required_permissions = db.Column("permissions_required", db.String(1023), nullable=False)
 
-    def __init__(self, _id, version, permissions, required_permissions):
-        self._id = _id
+    def __init__(self, name, version, permissions, required_permissions):
+        self.name = name
         self.version = version
         self.permissions = permissions
         self.required_permissions = required_permissions
@@ -55,13 +55,13 @@ class Providers(db.Model):
     def init(cls):
         try:
             providers = [
-                Providers(_id='line', version='v2.1',
+                Providers(name='line', version='v2.1',
                           permissions='profile,openid,email',
                           required_permissions=''),
-                Providers(_id='amazon', version='v2',
+                Providers(name='amazon', version='v2',
                           permissions='profile,profile:user_id,postal_code',
                           required_permissions=''),
-                Providers(_id='yahoojp', version='v2',
+                Providers(name='yahoojp', version='v2',
                           permissions='profile,openid,email,address',
                           required_permissions='')
             ]
