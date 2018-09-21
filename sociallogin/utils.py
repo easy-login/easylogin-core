@@ -9,6 +9,8 @@ import os
 import secrets
 import string
 import re
+from datetime import datetime, timedelta, timezone
+import pytz
 
 
 def b64encode_string(s, urlsafe=False, padding=True, charset='utf8'):
@@ -110,3 +112,8 @@ def get_remote_ip(req):
         return req.environ['HTTP_X_REAL_IP']
     else:
         return req.remote_addr
+
+
+def convert_to_user_timezone(dt):
+    tz = pytz.timezone(app.config['TIME_ZONE'])
+    return dt.replace(tzinfo=timezone.utc).astimezone(tz)

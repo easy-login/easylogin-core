@@ -132,7 +132,7 @@ class ProviderAuthHandler(object):
                 provider=self.provider,
                 access_token=token_dict['access_token'],
                 token_type=token_dict['token_type'],
-                expires_at=datetime.now() + timedelta(seconds=token_dict['expires_in']),
+                expires_at=datetime.utcnow() + timedelta(seconds=token_dict['expires_in']),
                 refresh_token=token_dict['refresh_token'],
                 jwt_token=self._extract_jwt_token(token_dict),
                 social_id=profile._id

@@ -1,12 +1,13 @@
 import json
 from datetime import datetime, timezone, timedelta
 import hashlib
+import pytz
 from flask import abort
 from sqlalchemy import func, and_
 
 from sociallogin import app, db, logger
 from sociallogin.utils import b64encode_string, b64decode_string, \
-    gen_jwt_token, decode_jwt
+    gen_jwt_token, decode_jwt, convert_to_user_timezone
 from sociallogin.atomic import generate_64bit_id
 
 
@@ -15,9 +16,9 @@ class Base(db.Model):
     __abstract__ = True
 
     _id = db.Column("id", db.Integer, primary_key=True)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    modified_at = db.Column(db.DateTime, default=db.func.current_timestamp(),
-                            onupdate=db.func.current_timestamp())
+    created_at = db.Column(db.DateTime, default=datetime.utcnow())
+    modified_at = db.Column(db.DateTime, default=datetime.utcnow(),
+                            onupdate=datetime.utcnow())
 
     def __repr__(self):
         return str(self.as_dict())
@@ -34,7 +35,7 @@ class Base(db.Model):
 
     @staticmethod
     def to_isoformat(dt):
-        return dt.replace(tzinfo=timezone.utc).astimezone(app.config['TIME_ZONE']).isoformat()
+        return convert_to_user_timezone(dt).isoformat()
 
 
 class Providers(Base):
