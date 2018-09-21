@@ -4,7 +4,7 @@ import hashlib
 from flask import abort
 from sqlalchemy import func, and_
 
-from sociallogin import db, logger
+from sociallogin import app, db, logger
 from sociallogin.utils import b64encode_string, b64decode_string, \
     gen_jwt_token, decode_jwt
 from sociallogin.atomic import generate_64bit_id
@@ -34,7 +34,7 @@ class Base(db.Model):
 
     @staticmethod
     def to_isoformat(dt):
-        return dt.replace(tzinfo=timezone.utc).isoformat()
+        return dt.replace(tzinfo=timezone.utc).astimezone(app.config['TIME_ZONE']).isoformat()
 
 
 class Providers(Base):
@@ -129,7 +129,7 @@ class SocialProfiles(Base):
     user_pk = db.Column(db.String(255))
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
 
-    def __init__(self, app_id, pk, provider, attrs, last_authorized_at=datetime.now()):
+    def __init__(self, app_id, pk, provider, attrs, last_authorized_at=datetime.utcnow()):
         self.app_id = app_id
         self.pk = pk
         self.provider = provider
@@ -179,7 +179,7 @@ class SocialProfiles(Base):
     def _link_unsafe(self, user_id, user_pk, alias=None):
         self.user_id = user_id
         self.user_pk = user_pk
-        self.linked_at = datetime.now()
+        self.linked_at = datetime.utcnow()
         self.alias = alias or self.alias
 
     def _unlink_unsafe(self):
@@ -207,7 +207,7 @@ class SocialProfiles(Base):
             db.session.flush()
             exists = False
         else:
-            profile.last_authorized_at = datetime.now()
+            profile.last_authorized_at = datetime.utcnow()
             profile.login_count += 1
             profile.attrs = json.dumps(attrs)
         return profile, exists

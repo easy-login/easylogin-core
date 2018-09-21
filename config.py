@@ -3,7 +3,10 @@ DEBUG = True
 
 # Define the application directory
 import os
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))  
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+from pytz import timezone
+TIME_ZONE = timezone('Asia/Tokyo')
 
 # SERVER_NAME = 'http://localhost:5000'
 JWT_SECRET_KEY = 'soci@ll0gin.c48COByeIVl0NKUxsfgYYw'
