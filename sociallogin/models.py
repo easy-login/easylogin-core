@@ -77,7 +77,7 @@ class Admins(Base):
     username = db.Column(db.String(32), nullable=False)
     email = db.Column(db.String(32), nullable=False)
     password = db.Column(db.String(64), nullable=False)
-    salt = db.Column(db.String(8), nullable=False)
+    salt = db.Column(db.String(16), nullable=False)
     phone = db.Column(db.String(16))
 
 
