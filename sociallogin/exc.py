@@ -1,7 +1,9 @@
 from flask import jsonify, redirect
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError
+import traceback
+import sys
 
-from sociallogin import app
+from sociallogin import app, logger
 from sociallogin.utils import add_params_to_uri
 
 
@@ -43,11 +45,12 @@ def common_error(error):
 @app.errorhandler(DBAPIError)
 def sql_error(error):
     if app.config['DEBUG']:
-        msg = '{}: {}'.format(type(error).__name__, repr(error))
-        return get_error_payloads(500, error_description=msg)
-    # Hide error detail in production mode
+        raise error
     else:
-        return get_error_payloads(503)
+        # Hide error detail in production mode
+        logger.error('{}: {}'.format(type(error).__name__, repr(error)))
+        traceback.print_exc(file=sys.stderr)
+        return get_error_payloads(500)
 
 
 @app.errorhandler(400)
