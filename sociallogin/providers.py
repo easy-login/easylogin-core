@@ -28,7 +28,7 @@ __END_POINTS__ = {
             &client_id={client_id}
             &state={state}
             &scope={scope}
-            &bail=1&max_age=3600&display=page
+            &bail=1&display=page
             &redirect_uri={redirect_uri}'''.strip().replace('\n', '').replace(' ', ''),
         'token_uri': 'https://auth.login.yahoo.co.jp/yconnect/v2/token',
         'profile_uri': 'https://userinfo.yahooapis.jp/yconnect/v2/attribute'
