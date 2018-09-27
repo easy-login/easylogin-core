@@ -111,10 +111,7 @@ class ProviderAuthHandler(object):
         log, args = self._verify_and_parse_state(state)
         log.status = AuthLogs.STATUS_FAILED
         fail_callback = log.callback_if_failed or log.callback_uri
-
-        self._raise_redirect_error(
-            error=error, msg=desc,
-            fail_callback=fail_callback)
+        self._raise_redirect_error(error=error, msg=desc, fail_callback=fail_callback)
 
     def handle_authorize_success(self, state, code):
         log, args = self._verify_and_parse_state(state)
@@ -165,9 +162,10 @@ class ProviderAuthHandler(object):
             'client_secret': channel.client_secret
         })
         if res.status_code != 200:
+            error = res.json()
             self._raise_redirect_error(
-                error=res.json(), 
-                msg='Getting %s access token failed: ' % self.provider.upper(),
+                error=error['error'], 
+                msg='Getting %s access token failed: %s' % (self.provider.upper(), error['error_description']),
                 fail_callback=fail_callback)
         return res.json()
 
@@ -175,9 +173,10 @@ class ProviderAuthHandler(object):
         auth_header = token_dict['token_type'] + ' ' + token_dict['access_token']
         res = requests.get(self.__profile_uri__(), headers={'Authorization': auth_header})
         if res.status_code != 200:
+            error = res.json()
             self._raise_redirect_error(
-                error=res.json(), 
-                msg='Getting %s profile failed: ' % self.provider.upper(),
+                error=error['error'], 
+                msg='Getting %s profile failed: %s' % (self.provider.upper(), error['error_description']),
                 fail_callback=fail_callback)
 
         attrs = {}
@@ -191,11 +190,8 @@ class ProviderAuthHandler(object):
         return token_dict.get('id_token')
 
     def _raise_redirect_error(self, error, msg, fail_callback):
-        raise RedirectLoginError(
-            error=error['error'],
-            msg=msg + error['error_description'],
-            redirect_uri=fail_callback,
-            provider=self.provider)
+        raise RedirectLoginError(error=error, msg=msg, 
+                                 redirect_uri=fail_callback, provider=self.provider)
 
     def __primary_attribute__(self):
         return __PROVIDER_SETTINGS__[self.provider]['primary_attr']
