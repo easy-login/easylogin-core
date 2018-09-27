@@ -39,7 +39,7 @@ class Base(db.Model):
 
 
 class Providers(Base):
-    __tablename__ = 'providers2'
+    __tablename__ = 'providers'
 
     name = db.Column(db.String(15), nullable=False)
     version = db.Column(db.String(15), nullable=False)
