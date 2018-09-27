@@ -39,37 +39,14 @@ class Base(db.Model):
 
 
 class Providers(Base):
-    __tablename__ = 'providers'
+    __tablename__ = 'providers2'
 
     name = db.Column(db.String(15), nullable=False)
-    version = db.Column(db.String(7), nullable=False)
-    permissions = db.Column(db.String(1023), nullable=False)
-    required_permissions = db.Column("permissions_required", db.String(1023), nullable=False)
-
-    def __init__(self, name, version, permissions, required_permissions):
-        self.name = name
-        self.version = version
-        self.permissions = permissions
-        self.required_permissions = required_permissions
-
-    @classmethod
-    def init(cls):
-        try:
-            providers = [
-                Providers(name='line', version='v2.1',
-                          permissions='profile,openid,email',
-                          required_permissions=''),
-                Providers(name='amazon', version='v2',
-                          permissions='profile,profile:user_id,postal_code',
-                          required_permissions=''),
-                Providers(name='yahoojp', version='v2',
-                          permissions='profile,openid,email,address',
-                          required_permissions='')
-            ]
-            db.session.bulk_save_objects(providers)
-        except Exception as e:
-            print(repr(e))
-            pass
+    version = db.Column(db.String(15), nullable=False)
+    required_permissions = db.Column(db.String(1023), nullable=False)
+    basic_fields = db.Column(db.String(4095), nullable=False)
+    advanced_fields = db.Column(db.String(4095), nullable=False)
+    options = db.Column(db.String(1023))
 
 
 class Admins(Base):
@@ -107,9 +84,12 @@ class Channels(Base):
     __tablename__ = 'channels'
 
     provider = db.Column(db.String(15), nullable=False)
+    api_version = db.Column(db.String(15), nullable=False)
     client_id = db.Column(db.String(255), nullable=False)
     client_secret = db.Column(db.String(255), nullable=False)
-    permissions = db.Column(db.String(1023), default='', nullable=False)
+    permissions = db.Column(db.String(1023), nullable=False)
+    required_fields = db.Column(db.String(1023), nullable=False)
+    options = db.Column(db.String(255))
 
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
 
@@ -199,7 +179,7 @@ class SocialProfiles(Base):
 
     @classmethod
     def add_or_update(cls, app_id, pk, provider, attrs):
-        hashpk = hashlib.sha1((str(pk) + '.' + provider + '.' + pk).encode('utf8')).hexdigest()
+        hashpk = hashlib.sha1((str(app_id) + '.' + provider + '.' + pk).encode('utf8')).hexdigest()
         profile = cls.query.filter_by(app_id=app_id, pk=hashpk).one_or_none()
         exists = True
         if not profile:
