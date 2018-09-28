@@ -37,11 +37,18 @@ __PROVIDER_SETTINGS__ = {
         'primary_attr': 'sub'
     },
     'amazon': {
+        # 'authorize_uri': '''
+        #     https://www.amazon.com/ap/oa?response_type=code
+        #     &client_id={client_id}
+        #     &state={state}
+        #     &scope={scope}
+        #     &redirect_uri={redirect_uri}'''.strip().replace('\n', '').replace(' ', ''),
         'authorize_uri': '''
-            https://www.amazon.com/ap/oa?response_type=code
+            https://apac.account.amazon.com/ap/oa?response_type=code
             &client_id={client_id}
             &state={state}
             &scope={scope}
+            &language=ja&ui_locales=&region=
             &redirect_uri={redirect_uri}'''.strip().replace('\n', '').replace(' ', ''),
         'token_uri': 'https://api.amazon.com/auth/o2/token',
         'profile_uri': 'https://api.amazon.com/user/profile',
@@ -149,7 +156,7 @@ class ProviderAuthHandler(object):
             api_version=channel.api_version,
             client_id=channel.client_id,
             redirect_uri=redirect_uri,
-            scope=urlparse.quote(channel.permissions.replace(__SPLITOR__, ' ')),
+            scope=urlparse.quote(channel.permissions.replace(',', ' ')),
             state=state)
         return url
 
@@ -182,6 +189,7 @@ class ProviderAuthHandler(object):
         attrs = {}
         fields = (channel.required_fields or '').split(__SPLITOR__)
         for key, value in res.json().items():
+            print(key, value)
             if key in fields or key == self.__primary_attribute__():
                 attrs[key] = value
         return attrs[self.__primary_attribute__()], attrs
