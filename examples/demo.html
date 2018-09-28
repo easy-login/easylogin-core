@@ -3,10 +3,10 @@
         <h4>Application settings</h4>
         <div>
             <form action="/setting" method="POST">
-                App ID:
-                <input type="text" name="app_id" value="{{ app_id }}">
+                App ID :
+                <input type="text" name="app_id" value="{{ app_id }}"><br/>
                 API key:
-                <input type="text" name="api_key" value="{{ api_key }}">
+                <input type="text" name="api_key" value="{{ api_key }}" style="width: 600px;">
                 <input type="submit" value="Save">
             </form>
         </div>
@@ -16,7 +16,7 @@
                 User ID:
                 <input type="text" name="user_id">
                 Social ID:
-                <input type="text" name="social_id">
+                <input type="text" name="social_id" style="width: 350px;">
                 <input type="submit" value="Link">
                 <span>{{ link_result }}</span>
             </form>
@@ -24,7 +24,7 @@
                 User ID:
                 <input type="text" name="user_id">
                 Social ID:
-                <input type="text" name="social_id">
+                <input type="text" name="social_id" style="width: 350px;">
                 <input type="submit" value="Unlink">
                 <span>{{ unlink_result }}</span>
             </form>
