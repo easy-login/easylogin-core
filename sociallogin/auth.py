@@ -105,12 +105,13 @@ def verify_app_auth(req):
         abort(401, 'Missing authorization credentials')
     try:
         app_id = request.view_args['app_id']
-        (_api_key, allowed_ips) = (db.session.query(Apps.api_key, Apps.allowed_ips)
+        (_api_key, ips) = (db.session.query(Apps.api_key, Apps.allowed_ips)
                                    .filter_by(_id=app_id).one_or_none())
         if api_key != _api_key:
             raise ValueError('API key does not match')
 
-        if allowed_ips:
+        if ips:
+            allowed_ips = ips.split('|')
             remote_ip = get_remote_ip(req)
             if remote_ip not in allowed_ips:
                 raise PermissionError('IP {} is not allowed'.format(remote_ip))
