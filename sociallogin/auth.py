@@ -102,7 +102,7 @@ def get_ip():
 def verify_app_auth(req):
     api_key = _extract_api_key(req)
     if not api_key:
-        abort(401, 'Unauthorized. Missing authorization credentials')
+        abort(401, 'Missing authorization credentials')
     try:
         app_id = request.view_args['app_id']
         (_api_key, allowed_ips) = (db.session.query(Apps.api_key, Apps.allowed_ips)
@@ -110,10 +110,17 @@ def verify_app_auth(req):
         if api_key != _api_key:
             raise ValueError('API key does not match')
 
+        if allowed_ips:
+            remote_ip = get_remote_ip(req)
+            if remote_ip not in allowed_ips:
+                raise PermissionError('IP {} is not allowed'.format(remote_ip))
+
         app = Apps()
         app._id = app_id
         app.is_authenticated = True
         return app
+    except PermissionError:
+        abort(403, 'Your IP is not allowed to access this API')
     except Exception as e:
         logger.error(repr(e))
         abort(401, 'Wrong credentials, could not verify your API key')

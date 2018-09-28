@@ -183,7 +183,6 @@ class ProviderAuthHandler(object):
         attrs = {}
         fields = (channel.required_fields or '').split(__SPLITOR__)
         for key, value in res.json().items():
-            print(key, value)
             if key in fields or key == self.__primary_attribute__():
                 attrs[key] = value
         return attrs[self.__primary_attribute__()], attrs
