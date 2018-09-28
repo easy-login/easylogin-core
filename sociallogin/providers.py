@@ -37,12 +37,6 @@ __PROVIDER_SETTINGS__ = {
         'primary_attr': 'sub'
     },
     'amazon': {
-        # 'authorize_uri': '''
-        #     https://www.amazon.com/ap/oa?response_type=code
-        #     &client_id={client_id}
-        #     &state={state}
-        #     &scope={scope}
-        #     &redirect_uri={redirect_uri}'''.strip().replace('\n', '').replace(' ', ''),
         'authorize_uri': '''
             https://apac.account.amazon.com/ap/oa?response_type=code
             &client_id={client_id}
@@ -156,7 +150,7 @@ class ProviderAuthHandler(object):
             api_version=channel.api_version,
             client_id=channel.client_id,
             redirect_uri=redirect_uri,
-            scope=urlparse.quote(channel.permissions.replace(',', ' ')),
+            scope=urlparse.quote(channel.permissions.replace(__SPLITOR__, ' ')),
             state=state)
         return url
 
