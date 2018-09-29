@@ -113,7 +113,7 @@ def verify_app_auth(req):
         if ips:
             allowed_ips = ips.split('|')
             remote_ip = get_remote_ip(req)
-            if remote_ip not in allowed_ips:
+            if remote_ip not in allowed_ips and remote_ip != '127.0.0.1':
                 raise PermissionError('IP {} is not allowed'.format(remote_ip))
 
         app = Apps()
