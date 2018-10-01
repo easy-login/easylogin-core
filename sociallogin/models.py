@@ -21,7 +21,7 @@ class Base(db.Model):
                             onupdate=datetime.utcnow())
 
     def __repr__(self):
-        return str(self.as_dict())
+        return json.dumps(self.as_dict(), indent=2)
 
     def as_dict(self):
         attrs = {}

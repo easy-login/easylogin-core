@@ -18,7 +18,7 @@ __PROVIDER_SETTINGS__ = {
             &client_id={client_id}
             &state={state}
             &scope={scope}
-            &bot_prompt=normal
+            &bot_prompt={bot_prompt}&nonce={nonce}
             &redirect_uri={redirect_uri}'''.strip().replace('\n', '').replace(' ', ''),
         'token_uri': 'https://api.line.me/oauth2/v2.1/token/',
         'profile_uri': 'https://api.line.me/v2/profile',
@@ -90,23 +90,24 @@ class ProviderAuthHandler(object):
         if fail_callback and not self._verify_callback_uri(allowed_uris, fail_callback):
             abort(403, 'Callback URI must be configured in admin settings')
 
-        nonce = gen_random_token(nbytes=32)
         log = AuthLogs(
             provider=self.provider,
             app_id=app_id,
             ua=request.headers['User-Agent'],
             ip=get_remote_ip(request),
-            nonce=nonce,
+            nonce=gen_random_token(nbytes=32),
             callback_uri=succ_callback,
             callback_if_failed=fail_callback
         )
         db.session.add(log)
         db.session.flush()
 
-        return self._build_authorize_uri(
+        url = self._build_authorize_uri(
             channel=channel, 
             state=log.generate_oauth_state(**kwargs),
             redirect_uri=urlparse.quote_plus(self.redirect_uri))
+        logger.debug('Authorize URL: %s', url)
+        return url
 
     def handle_authorize_error(self, state, error, desc):
         log, args = self._verify_and_parse_state(state)
@@ -234,6 +235,7 @@ class LineAuthHandler(ProviderAuthHandler):
         url = self.__authorize_uri__().format(
             api_version=channel.api_version,
             bot_prompt=bot_prompt,
+            nonce=gen_random_token(nbytes=48),
             client_id=channel.client_id,
             redirect_uri=redirect_uri,
             scope=urlparse.quote(channel.permissions.replace(__SPLITOR__, ' ')),

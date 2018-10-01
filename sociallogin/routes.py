@@ -18,7 +18,7 @@ def authorized_profile(app_id):
     try:
         log.status = AuthLogs.STATUS_SUCCEEDED
         profile = SocialProfiles.query.filter_by(_id=log.social_id).first_or_404()
-        logger.debug('Authorized profile: ' + repr(profile))
+        logger.debug('Authorized profile: \n' + repr(profile))
         body = profile.as_dict()
         return jsonify(body)
     except Exception as e:
