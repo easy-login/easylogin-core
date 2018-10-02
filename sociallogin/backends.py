@@ -2,11 +2,12 @@ import urllib.parse as urlparse
 from datetime import datetime, timedelta
 
 import requests
-from flask import request, abort, url_for
+from flask import request, url_for
 import jwt
 
 from sociallogin import db, logger
-from sociallogin.exc import RedirectLoginError
+from sociallogin.exc import RedirectLoginError, PermissionDeniedError, \
+    UnsupportedProviderError, NotFoundError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
 from sociallogin.utils import gen_random_token, get_remote_ip, add_params_to_uri
 
@@ -58,7 +59,7 @@ def get_backend(provider):
     elif provider == 'facebook':
         return FacebookBackend(provider)
     else:
-        return abort(404, 'Unsupported provider')
+        raise UnsupportedProviderError()
 
 
 def is_valid_provider(provider):
@@ -76,16 +77,16 @@ class OAuthBackend(object):
         channel = Channels.query.filter_by(app_id=app_id,
                                            provider=self.provider).one_or_none()
         if not app or not channel:
-            abort(404, 'Application not found')
+            raise NotFoundError(msg='Application not found')
 
         allowed_uris = [urlparse.unquote_plus(uri) for uri in app.callback_uris.split(__DELIMITER__)]
         logger.debug('Allowed URIs: {}. URI to verify: {}'
                      .format(allowed_uris, (succ_callback, fail_callback)))
 
         if not self._verify_callback_uri(allowed_uris, succ_callback):
-            abort(403, 'Callback URI must be configured in admin settings')
+            raise PermissionDeniedError(msg='Callback URI must be configured in admin settings')
         if fail_callback and not self._verify_callback_uri(allowed_uris, fail_callback):
-            abort(403, 'Callback URI must be configured in admin settings')
+            raise PermissionDeniedError(msg='Callback URI must be configured in admin settings')
 
         log = AuthLogs(
             provider=self.provider,

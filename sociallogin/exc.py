@@ -7,17 +7,32 @@ from sociallogin import app, logger
 from sociallogin.utils import add_params_to_uri
 
 
+ERROR_CODES = {
+    400: 'bad_request',
+    401: 'unauthorized',
+    403: 'forbidden',
+    404: 'not_found',
+    405: 'method_not_allowed',
+    409: 'conflict',
+    500: 'internal_error',
+    503: 'service_unavailable'
+}
+
+
 class SocialLoginError(Exception):
-    def __init__(self, error, msg=None):
-        self.error = error
-        self.message = msg
+    def __init__(self, *args, **kwargs):
+        self.error = kwargs.get('error')
+        self.message = kwargs.get('msg')
+
+    def __repr__(self):
+        return self.message
 
 
 class RedirectLoginError(SocialLoginError):
-    def __init__(self, provider, redirect_uri, error, msg=None):
-        super().__init__(error, msg)
-        self.provider = provider
-        self.redirect_uri = redirect_uri
+    def __init__(self, *args, **kwargs):
+        self.provider = kwargs['provider']
+        self.redirect_uri = kwargs['redirect_uri']
+        super().__init__(*args, **kwargs)
 
     def as_dict(self):
         return {
@@ -27,26 +42,82 @@ class RedirectLoginError(SocialLoginError):
         }
 
 
+class PermissionDeniedError(SocialLoginError):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class BadRequestError(SocialLoginError):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class NotFoundError(SocialLoginError):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class ConflictError(SocialLoginError):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class UnsupportedProviderError(NotFoundError):
+    def __init__(self, **kwargs):
+        super().__init__(msg='Unsupported provider', **kwargs)
+
+
 @app.errorhandler(RedirectLoginError)
 def redirect_login_error(error):
     redirect_uri = add_params_to_uri(error.redirect_uri, **error.as_dict())
     return redirect(redirect_uri)
 
 
-@app.errorhandler(KeyError)
+@app.errorhandler(400)
+@app.errorhandler(BadRequestError)
+@app.errorhandler(LookupError)
 @app.errorhandler(ValueError)
 @app.errorhandler(TypeError)
-def common_error(error):
+def bad_request(error):
     if app.config['DEBUG']:
         raise error
     else:
         msg = '{}: {}'.format(type(error).__name__, repr(error))
-        return get_error_payloads(400, error_description=msg)
+        return get_error_payloads(400, description=msg)
 
 
+@app.errorhandler(401)
+def unauthorized(error):
+    return get_error_payloads(401, description=repr(error))
+
+
+@app.errorhandler(403)
+@app.errorhandler(PermissionDeniedError)
+def forbidden(error):
+    return get_error_payloads(403, description=repr(error))
+
+
+@app.errorhandler(404)
+@app.errorhandler(NotFoundError)
+def not_found(error):
+    return get_error_payloads(404, description=repr(error))
+
+
+@app.errorhandler(405)
+def method_not_allowed(error):
+    return get_error_payloads(405, description=repr(error))
+
+
+@app.errorhandler(409)
+@app.errorhandler(ConflictError)
+def conflict(error):
+    return get_error_payloads(409, description=repr(error))
+
+
+@app.errorhandler(500)
 @app.errorhandler(SQLAlchemyError)
 @app.errorhandler(DBAPIError)
-def sql_error(error):
+def server_internal_error(error):
     if app.config['DEBUG']:
         raise error
     else:
@@ -56,60 +127,8 @@ def sql_error(error):
         return get_error_payloads(500)
 
 
-@app.errorhandler(400)
-def bad_request(error):
-    return get_error_payloads(400, error_description=error.description)
-
-
-@app.errorhandler(401)
-def unauthorized(error):
-    return get_error_payloads(401, error_description=error.description)
-
-
-@app.errorhandler(403)
-def forbidden(error):
-    return get_error_payloads(403, error_description=error.description)
-
-
-@app.errorhandler(404)
-def not_found(error):
-    return get_error_payloads(404, error_description=error.description)
-
-
-@app.errorhandler(405)
-def method_not_allowed(error):
-    return get_error_payloads(405, error_description=error.description)
-
-
-@app.errorhandler(409)
-def conflict(error):
-    return get_error_payloads(409, error_description=error.description)
-
-
-@app.errorhandler(500)
-def server_internal_error(error):
-    return get_error_payloads(500, error_description=error.description)
-
-
-def get_error_payloads(code, error=None, error_description=''):
-    if not error:
-        if code == 400:
-            error = 'Bad request'
-        elif code == 401:
-            error = 'Unauthorized'
-        elif code == 403:
-            error = 'Forbidden'
-        elif code == 404:
-            error = 'Not found'
-        elif code == 405:
-            error = 'Method Not Allowed'
-        elif code == 409:
-            error = 'Conflict'
-        elif code == 500:
-            error = 'Internal server error'
-        elif code == 503:
-            error = 'Service Unavailable'
+def get_error_payloads(code, error=None, description=''):
     return jsonify({
-        'error': error,
-        'error_description': error_description
+        'error': error or ERROR_CODES.get(code, 'unknown'),
+        'error_description': description
     }), code

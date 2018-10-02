@@ -1,14 +1,14 @@
 import json
 from datetime import datetime, timezone, timedelta
 import hashlib
-import pytz
-from flask import abort
 from sqlalchemy import func, and_
 
-from sociallogin import app, db, logger
+from sociallogin import db, logger
 from sociallogin.utils import b64encode_string, b64decode_string, \
     gen_jwt_token, decode_jwt, convert_to_user_timezone
 from sociallogin.atomic import generate_64bit_id
+from sociallogin.exc import BadRequestError, PermissionDeniedError, \
+    ConflictError, NotFoundError
 
 
 # Define a base model for other database tables to inherit
@@ -132,7 +132,7 @@ class SocialProfiles(Base):
             _, pk = db.session.query(Users._id, Users.pk).filter_by(_id=user_id).one_or_none()
             self._link_unsafe(user_id, pk)
         except TypeError:
-            abort(404, 'User not found')
+            raise NotFoundError('User not found')
 
     def link_user_by_pk(self, user_pk, create_if_not_exist=True):
         profiles = SocialProfiles.query.filter_by(app_id=self.app_id, user_pk=user_pk).all()
@@ -140,7 +140,7 @@ class SocialProfiles(Base):
             user = Users.query.filter_by(app_id=self.app_id, pk=user_pk).one_or_none()
             if not user:
                 if not create_if_not_exist:
-                    abort(404, 'User not found')
+                    raise NotFoundError('User not found')
                 user = Users(pk=user_pk, app_id=self.app_id)
                 db.session.add(user)
                 db.session.flush()
@@ -148,13 +148,14 @@ class SocialProfiles(Base):
         else:
             for p in profiles:
                 if p.provider == self.provider:
-                    abort(409, 'User linked with a social profile in the same provider')
+                    raise ConflictError('User linked with a social profile in the same provider')
             profile = profiles[0]
             self._link_unsafe(profile.user_id, user_pk, alias=profile.alias)
 
     def unlink_user_by_pk(self, user_pk):
         if self.user_pk != user_pk:
-            abort(409, "Social profile and user don't linked with each other")
+            raise ConflictError("Social profile and user don't linked with each other")
+
         self._unlink_unsafe()
 
     def _link_unsafe(self, user_id, user_pk, alias=None):
@@ -236,7 +237,7 @@ class Users(Base):
                 'profiles': [p.as_dict() for p in profiles]
             }
         else:
-            abort(404, 'User ID not found')
+            raise NotFoundError('User not found')
 
 
 class Tokens(Base):
@@ -323,9 +324,9 @@ class AuthLogs(Base):
     def find_by_one_time_token(cls, auth_token):
         log = cls.query.filter_by(auth_token=auth_token).order_by(cls._id.desc()).first()
         if not log:
-            abort(400, 'Invalid token')
+            raise BadRequestError('Invalid token')
         if log.status != AuthLogs.STATUS_AUTHORIZED:
-            abort(400, 'Token expired or already used')
+            raise BadRequestError('Token expired or already used')
         return log
 
     @classmethod
@@ -334,15 +335,15 @@ class AuthLogs(Base):
             log_id, args = decode_jwt(oauth_state)
             log = cls.query.filter_by(_id=log_id).one_or_none()
             if not log:
-                abort(400, 'Invalid state')
+                raise BadRequestError('Invalid state')
             if log.nonce != args['_nonce']:
-                abort(400, 'Invalid state, nonce does not match')
+                raise BadRequestError('Invalid state, nonce does not match')
             return log, args
         except (KeyError, ValueError, TypeError, IndexError) as e:
             logger.warn('Bad format parameter OAuth state: %s', repr(e))
-            abort(400, 'Bad format parameter OAuth state')
+            raise BadRequestError('Bad format parameter OAuth state')
         except TimeoutError:
-            abort(403, 'Session expired')
+            raise PermissionDeniedError('Session expired')
 
 
 class AssociateLogs(Base):
@@ -391,12 +392,12 @@ class AssociateLogs(Base):
             params = b64decode_string(associate_token, urlsafe=True).split('.')
             log = cls.query.filter_by(user_id=int(params[1])).order_by(cls._id.desc()).first()
             if not log:
-                abort(400, 'Invalid associate token')
+                raise BadRequestError('Invalid associate token')
             if log.nonce != params[0]:
-                abort(400, 'Invalid associate token, nonce does not match')
+                raise BadRequestError('Invalid associate token, nonce does not match')
             if log.status != cls.STATUS_NEW:
-                abort(400, 'Token expired or already used')
+                raise PermissionDeniedError('Token expired or already used')
             return log
         except (KeyError, ValueError, TypeError, IndexError) as e:
             logger.warn('Bad format associate_token: %s', repr(e))
-            abort(400, 'Bad format associate_token')
+            raise BadRequestError('Bad format associate_token')

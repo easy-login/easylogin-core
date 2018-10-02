@@ -5,7 +5,7 @@ from sqlalchemy import func, and_
 from sociallogin import app as flask_app, db, logger
 from sociallogin.models import SocialProfiles, Users, AuthLogs, AssociateLogs
 from sociallogin.utils import gen_random_token
-from sociallogin.providers import is_valid_provider
+from sociallogin.backends import is_valid_provider
 
 
 @flask_app.route('/<int:app_id>/profiles/authorized')
