@@ -48,15 +48,15 @@ __PROVIDER_SETTINGS__ = {
 __DELIMITER__ = '|'
 
 
-def get_auth_handler(provider):
+def get_backend(provider):
     if provider == 'line':
-        return LineAuthHandler(provider)
+        return LineBackend(provider)
     elif provider == 'amazon':
-        return AmazonAuthHandler(provider)
+        return AmazonBackend(provider)
     elif provider == 'yahoojp':
-        return YahooJpAuthHandler(provider)
+        return YahooJpBackend(provider)
     elif provider == 'facebook':
-        return FacebookAuthHandler(provider)
+        return FacebookBackend(provider)
     else:
         return abort(404, 'Unsupported provider')
 
@@ -65,7 +65,7 @@ def is_valid_provider(provider):
     return provider in __PROVIDER_SETTINGS__
 
 
-class ProviderAuthHandler(object):
+class OAuthBackend(object):
 
     def __init__(self, provider):
         self.provider = provider
@@ -223,7 +223,7 @@ class ProviderAuthHandler(object):
         return False
 
 
-class LineAuthHandler(ProviderAuthHandler):
+class LineBackend(OAuthBackend):
     """
     Authentication handler for LINE accounts
     """
@@ -258,21 +258,21 @@ class LineAuthHandler(ProviderAuthHandler):
         return user_id, attrs
 
 
-class AmazonAuthHandler(ProviderAuthHandler):
+class AmazonBackend(OAuthBackend):
     """
     Authentication handler for AMAZON accounts
     """
     pass
 
 
-class YahooJpAuthHandler(ProviderAuthHandler):
+class YahooJpBackend(OAuthBackend):
     """
     Authentication handler for YAHOOJP accounts
     """
     pass
 
 
-class FacebookAuthHandler(ProviderAuthHandler):
+class FacebookBackend(OAuthBackend):
     """
     Authentication handler for FACEBOOK accounts
     """

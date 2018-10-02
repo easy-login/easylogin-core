@@ -2,7 +2,7 @@ from flask import abort, redirect, request, url_for, jsonify
 
 from sociallogin import app as flask_app, db, login_manager, logger
 from sociallogin.models import Apps, AuthLogs, AssociateLogs
-from sociallogin.providers import get_auth_handler
+from sociallogin.backends import get_backend
 from sociallogin.utils import add_params_to_uri, get_remote_ip
 from sociallogin.exc import RedirectLoginError
 
@@ -16,12 +16,12 @@ def authorize(provider, intent):
     if not callback_uri or not app_id:
         abort(400, 'Missing parameters app_id or callback_uri')
 
-    auth_handler = get_auth_handler(provider)
+    backend = get_backend(provider)
     if intent == AuthLogs.INTENT_ASSOCIATE:
         assoc_token = request.args.get('token')
         log = AssociateLogs.parse_from_associate_token(assoc_token)
         log.status = AssociateLogs.STATUS_AUTHORIZING
-        authorize_uri = auth_handler.build_authorize_uri(
+        authorize_uri = backend.build_authorize_uri(
             app_id=app_id,
             succ_callback=callback_uri,
             fail_callback=callback_if_failed,
@@ -30,7 +30,7 @@ def authorize(provider, intent):
             provider=provider,
             assoc_id=log._id)
     else:
-        authorize_uri = auth_handler.build_authorize_uri(
+        authorize_uri = backend.build_authorize_uri(
             app_id=app_id,
             succ_callback=callback_uri,
             fail_callback=callback_if_failed,
@@ -42,7 +42,7 @@ def authorize(provider, intent):
 
 @flask_app.route('/authorize/<provider>/approval_state')
 def authorize_callback(provider):
-    auth_handler = get_auth_handler(provider)
+    backend = get_backend(provider)
     state = request.args.get('state')
     if not state:
         abort(400, 'Missing parameter state')
@@ -51,9 +51,9 @@ def authorize_callback(provider):
     if not code:
         error = request.args.get('error')
         desc = request.args.get('error_description')
-        callback_uri = auth_handler.handle_authorize_error(state, error, desc)
+        callback_uri = backend.handle_authorize_error(state, error, desc)
     else:
-        profile, log, args = auth_handler.handle_authorize_success(state, code)
+        profile, log, args = backend.handle_authorize_success(state, code)
         intent = args.get('intent')
         if intent == AuthLogs.INTENT_ASSOCIATE:
             if args.get('provider') != provider:
