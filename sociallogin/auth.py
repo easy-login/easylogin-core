@@ -31,8 +31,8 @@ def authorize(provider, intent):
             assoc_id=log._id)
     else:
         authorize_uri = auth_handler.build_authorize_uri(
-            app_id=app_id, 
-            succ_callback=callback_uri, 
+            app_id=app_id,
+            succ_callback=callback_uri,
             fail_callback=callback_if_failed,
             intent=intent)
 
@@ -82,12 +82,13 @@ def authorize_callback(provider):
                 redirect_uri=log.safe_get_failed_callback(),
                 provider=provider)
 
-        callback_uri = add_params_to_uri(log.callback_uri, {
-            'token': log.auth_token,
-            'provider': provider,
-            'profile_uri': url_for('authorized_profile', _external=True,
-                                   app_id=log.app_id, token=log.auth_token)
-        })
+        callback_uri = add_params_to_uri(
+            uri=log.callback_uri,
+            provider=provider,
+            token=log.auth_token,
+            profile_uri=url_for('authorized_profile', _external=True,
+                                app_id=log.app_id, token=log.auth_token)
+        )
 
     db.session.commit()
     return redirect(callback_uri)
@@ -104,10 +105,10 @@ def verify_app_auth(req):
         api_key = _extract_api_key(req)
         if not api_key:
             abort(401, 'Missing authorization credentials')
-            
+
         app_id = request.view_args['app_id']
         (_api_key, ips) = (db.session.query(Apps.api_key, Apps.allowed_ips)
-                                   .filter_by(_id=app_id).one_or_none())
+                           .filter_by(_id=app_id).one_or_none())
         if api_key != _api_key:
             raise ValueError('API key does not match')
         if ips:

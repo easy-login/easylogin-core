@@ -29,7 +29,7 @@ class RedirectLoginError(SocialLoginError):
 
 @app.errorhandler(RedirectLoginError)
 def redirect_login_error(error):
-    redirect_uri = add_params_to_uri(error.redirect_uri, error.as_dict())
+    redirect_uri = add_params_to_uri(error.redirect_uri, **error.as_dict())
     return redirect(redirect_uri)
 
 
@@ -37,8 +37,11 @@ def redirect_login_error(error):
 @app.errorhandler(ValueError)
 @app.errorhandler(TypeError)
 def common_error(error):
-    msg = '{}: {}'.format(type(error).__name__, repr(error))
-    return get_error_payloads(400, error_description=msg)
+    if app.config['DEBUG']:
+        raise error
+    else:
+        msg = '{}: {}'.format(type(error).__name__, repr(error))
+        return get_error_payloads(400, error_description=msg)
 
 
 @app.errorhandler(SQLAlchemyError)

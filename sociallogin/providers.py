@@ -8,49 +8,44 @@ import jwt
 from sociallogin import db, logger
 from sociallogin.exc import RedirectLoginError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
-from sociallogin.utils import gen_random_token, get_remote_ip
+from sociallogin.utils import gen_random_token, get_remote_ip, add_params_to_uri
 
 
 __PROVIDER_SETTINGS__ = {
     'line': {
-        'authorize_uri': '''
-            https://access.line.me/oauth2/{api_version}/authorize?response_type=code
-            &client_id={client_id}
-            &state={state}
-            &scope={scope}
-            &bot_prompt={bot_prompt}&nonce={nonce}
-            &redirect_uri={redirect_uri}'''.strip().replace('\n', '').replace(' ', ''),
-        'token_uri': 'https://api.line.me/oauth2/v2.1/token/',
+        'authorize_uri': 'https://access.line.me/oauth2/{version}/authorize?response_type=code',
+        'token_uri': 'https://api.line.me/oauth2/{version}/token/',
         'profile_uri': 'https://api.line.me/v2/profile',
         'primary_attr': 'userId'
     },
     'yahoojp': {
         'authorize_uri': '''
-            https://auth.login.yahoo.co.jp/yconnect/{api_version}/authorization?response_type=code
-            &client_id={client_id}
-            &state={state}
-            &scope={scope}
+            https://auth.login.yahoo.co.jp/yconnect/{version}/authorization?response_type=code
             &bail=1&display=page
-            &redirect_uri={redirect_uri}'''.strip().replace('\n', '').replace(' ', ''),
-        'token_uri': 'https://auth.login.yahoo.co.jp/yconnect/v2/token',
-        'profile_uri': 'https://userinfo.yahooapis.jp/yconnect/v2/attribute',
+            '''.strip().replace('\n', '').replace(' ', ''),
+        'token_uri': 'https://auth.login.yahoo.co.jp/yconnect/{version}/token',
+        'profile_uri': 'https://userinfo.yahooapis.jp/yconnect/{version}/attribute',
         'primary_attr': 'sub'
     },
     'amazon': {
         'authorize_uri': '''
             https://apac.account.amazon.com/ap/oa?response_type=code
-            &client_id={client_id}
-            &state={state}
-            &scope={scope}
             &language=ja&ui_locales=&region=
-            &redirect_uri={redirect_uri}'''.strip().replace('\n', '').replace(' ', ''),
+            '''.strip().replace('\n', '').replace(' ', ''),
         'token_uri': 'https://api.amazon.com/auth/o2/token',
         'profile_uri': 'https://api.amazon.com/user/profile',
         'primary_attr': 'user_id'
+    },
+    'facebook': {
+        'authorize_uri': 'https://www.facebook.com/{version}/dialog/oauth?response_type=code',
+        'token_uri': 'https://graph.facebook.com/{version}/oauth/access_token',
+        'refresh_token_uri': '',
+        'profile_uri': 'https://graph.facebook.com/{version}/me?fields={fields}',
+        'primary_attr': 'id'
     }
 }
 
-__SPLITOR__ = '|'
+__DELIMITER__ = '|'
 
 
 def get_auth_handler(provider):
@@ -60,7 +55,9 @@ def get_auth_handler(provider):
         return AmazonAuthHandler(provider)
     elif provider == 'yahoojp':
         return YahooJpAuthHandler(provider)
-    else: 
+    elif provider == 'facebook':
+        return FacebookAuthHandler(provider)
+    else:
         return abort(404, 'Unsupported provider')
 
 
@@ -73,7 +70,7 @@ class ProviderAuthHandler(object):
     def __init__(self, provider):
         self.provider = provider
         self.redirect_uri = url_for('authorize_callback', _external=True, provider=provider)
-    
+
     def build_authorize_uri(self, app_id, succ_callback, fail_callback, **kwargs):
         app = Apps.query.filter_by(_id=app_id).one_or_none()
         channel = Channels.query.filter_by(app_id=app_id,
@@ -81,7 +78,7 @@ class ProviderAuthHandler(object):
         if not app or not channel:
             abort(404, 'Application not found')
 
-        allowed_uris = [urlparse.unquote_plus(uri) for uri in app.callback_uris.split(__SPLITOR__)]
+        allowed_uris = [urlparse.unquote_plus(uri) for uri in app.callback_uris.split(__DELIMITER__)]
         logger.debug('Allowed URIs: {}. URI to verify: {}'
                      .format(allowed_uris, (succ_callback, fail_callback)))
 
@@ -103,9 +100,9 @@ class ProviderAuthHandler(object):
         db.session.flush()
 
         url = self._build_authorize_uri(
-            channel=channel, 
+            channel=channel,
             state=log.generate_oauth_state(**kwargs),
-            redirect_uri=urlparse.quote_plus(self.redirect_uri))
+            redirect_uri=self.redirect_uri)
         logger.debug('Authorize URL: %s', url)
         return url
 
@@ -121,22 +118,22 @@ class ProviderAuthHandler(object):
 
         channel = Channels.query.filter_by(app_id=log.app_id,
                                            provider=self.provider).one_or_none()
-        token_dict = self._get_token(channel, code, fail_callback)
-        pk, attrs = self._get_profile(channel, token_dict, fail_callback)
+        tokens = self._get_token(channel, code, fail_callback)
+        user_id, attrs = self._get_profile(channel, tokens, fail_callback)
         try:
             profile, existed = SocialProfiles.add_or_update(
                 app_id=log.app_id,
                 provider=self.provider,
-                pk=pk, attrs=attrs)
+                pk=user_id, attrs=attrs)
             log.set_authorized(social_id=profile._id, is_login=existed,
                                nonce=gen_random_token(nbytes=32))
             token = Tokens(
                 provider=self.provider,
-                access_token=token_dict['access_token'],
-                token_type=token_dict['token_type'],
-                expires_at=datetime.utcnow() + timedelta(seconds=token_dict['expires_in']),
-                refresh_token=token_dict['refresh_token'],
-                jwt_token=self._extract_jwt_token(token_dict),
+                access_token=tokens['access_token'],
+                token_type=tokens['token_type'],
+                expires_at=datetime.utcnow() + timedelta(seconds=tokens['expires_in']),
+                refresh_token=tokens.get('refresh_token'),
+                jwt_token=self._extract_jwt_token(tokens),
                 social_id=profile._id
             )
             db.session.add(token)
@@ -147,16 +144,16 @@ class ProviderAuthHandler(object):
             raise
 
     def _build_authorize_uri(self, channel, redirect_uri, state):
-        url = self.__authorize_uri__().format(
-            api_version=channel.api_version,
+        uri = add_params_to_uri(
+            uri=self.__authorize_uri__(version=channel.api_version),
             client_id=channel.client_id,
             redirect_uri=redirect_uri,
-            scope=urlparse.quote(channel.permissions.replace(__SPLITOR__, ' ')),
+            scope=channel.permissions.replace(__DELIMITER__, ' '),
             state=state)
-        return url
+        return uri
 
     def _get_token(self, channel, code, fail_callback):
-        res = requests.post(self.__token_uri__(), data={
+        res = requests.post(self.__token_uri__(version=channel.api_version), data={
             'grant_type': 'authorization_code',
             'code': code,
             'redirect_uri': self.redirect_uri,
@@ -166,46 +163,50 @@ class ProviderAuthHandler(object):
         if res.status_code != 200:
             error = res.json()
             self._raise_redirect_error(
-                error=error['error'], 
-                msg='Getting %s access token failed: %s' % (self.provider.upper(), error['error_description']),
+                error=error['error'],
+                msg='Getting %s access token failed: %s' % (self.provider.upper(),
+                                                            error['error_description']),
                 fail_callback=fail_callback)
         return res.json()
 
-    def _get_profile(self, channel, token_dict, fail_callback):
-        auth_header = token_dict['token_type'] + ' ' + token_dict['access_token']
-        res = requests.get(self.__profile_uri__(), headers={'Authorization': auth_header})
+    def _get_profile(self, channel, tokens, fail_callback):
+        auth_header = tokens['token_type'] + ' ' + tokens['access_token']
+        res = requests.get(self.__profile_uri__(version=channel.api_version),
+                           headers={'Authorization': auth_header})
         if res.status_code != 200:
+            print(res)
             error = res.json()
             self._raise_redirect_error(
-                error=error['error'], 
-                msg='Getting %s profile failed: %s' % (self.provider.upper(), error['error_description']),
+                error=error['error'],
+                msg='Getting %s profile failed: %s' % (self.provider.upper(),
+                                                       error['error_description']),
                 fail_callback=fail_callback)
 
         attrs = {}
-        fields = (channel.required_fields or '').split(__SPLITOR__)
+        fields = (channel.required_fields or '').split(__DELIMITER__)
         for key, value in res.json().items():
             if key in fields or key == self.__primary_attribute__():
                 attrs[key] = value
         return attrs[self.__primary_attribute__()], attrs
 
-    def _extract_jwt_token(self, token_dict):
-        return token_dict.get('id_token')
+    def _extract_jwt_token(self, body):
+        return body.get('id_token')
 
     def _raise_redirect_error(self, error, msg, fail_callback):
-        raise RedirectLoginError(error=error, msg=msg, 
+        raise RedirectLoginError(error=error, msg=msg,
                                  redirect_uri=fail_callback, provider=self.provider)
 
     def __primary_attribute__(self):
         return __PROVIDER_SETTINGS__[self.provider]['primary_attr']
 
-    def __authorize_uri__(self):
-        return __PROVIDER_SETTINGS__[self.provider]['authorize_uri']
+    def __authorize_uri__(self, version):
+        return __PROVIDER_SETTINGS__[self.provider]['authorize_uri'].format(version=version)
 
-    def __token_uri__(self):
-        return __PROVIDER_SETTINGS__[self.provider]['token_uri']
+    def __token_uri__(self, version):
+        return __PROVIDER_SETTINGS__[self.provider]['token_uri'].format(version=version)
 
-    def __profile_uri__(self):
-        return __PROVIDER_SETTINGS__[self.provider]['profile_uri']
+    def __profile_uri__(self, version):
+        return __PROVIDER_SETTINGS__[self.provider]['profile_uri'].format(version=version)
 
     @staticmethod
     def _verify_and_parse_state(state):
@@ -228,24 +229,24 @@ class LineAuthHandler(ProviderAuthHandler):
     """
     def _build_authorize_uri(self, channel, redirect_uri, state):
         bot_prompt = ''
-        options = (channel.options or '').split(__SPLITOR__)
+        options = (channel.options or '').split(__DELIMITER__)
         if 'add_friend' in options:
             bot_prompt = 'normal'
 
-        url = self.__authorize_uri__().format(
-            api_version=channel.api_version,
+        uri = add_params_to_uri(
+            uri=self.__authorize_uri__(version=channel.api_version),
             bot_prompt=bot_prompt,
             nonce=gen_random_token(nbytes=48),
             client_id=channel.client_id,
             redirect_uri=redirect_uri,
-            scope=urlparse.quote(channel.permissions.replace(__SPLITOR__, ' ')),
+            scope=channel.permissions.replace(__DELIMITER__, ' '),
             state=state)
-        return url
+        return uri
 
-    def _get_profile(self, channel, token_dict, fail_callback):
-        pk, attrs = super()._get_profile(channel, token_dict, fail_callback)
+    def _get_profile(self, channel, tokens, fail_callback):
+        user_id, attrs = super()._get_profile(channel, tokens, fail_callback)
         try:
-            payload = jwt.decode(token_dict['id_token'],
+            payload = jwt.decode(tokens['id_token'],
                                  key=channel.client_secret,
                                  audience=channel.client_id,
                                  issuer='https://access.line.me',
@@ -254,7 +255,7 @@ class LineAuthHandler(ProviderAuthHandler):
                 attrs['email'] = payload['email']
         except jwt.PyJWTError as e:
             logger.error(repr(e))
-        return pk, attrs
+        return user_id, attrs
 
 
 class AmazonAuthHandler(ProviderAuthHandler):
@@ -269,3 +270,44 @@ class YahooJpAuthHandler(ProviderAuthHandler):
     Authentication handler for YAHOOJP accounts
     """
     pass
+
+
+class FacebookAuthHandler(ProviderAuthHandler):
+    """
+    Authentication handler for FACEBOOK accounts
+    """
+    def _get_token(self, channel, code, fail_callback):
+        res = requests.get(self.__token_uri__(version=channel.api_version), params={
+            'code': code,
+            'redirect_uri': self.redirect_uri,
+            'client_id': channel.client_id,
+            'client_secret': channel.client_secret
+        })
+        if res.status_code != 200:
+            error = res.json()
+            self._raise_redirect_error(
+                error=error['error'],
+                msg='Getting %s access token failed: %s' % (self.provider.upper(),
+                                                            error['error_description']),
+                fail_callback=fail_callback)
+        return res.json()
+
+    def _get_profile(self, channel, tokens, fail_callback):
+        auth_header = tokens['token_type'] + ' ' + tokens['access_token']
+        fields = (channel.required_fields or '').split(__DELIMITER__)
+
+        res = requests.get(self.__profile_uri__(version=channel.api_version),
+                           params={'fields': ','.join(fields)},
+                           headers={'Authorization': auth_header})
+        if res.status_code != 200:
+            error = res.json()
+            self._raise_redirect_error(
+                error=error['error'],
+                msg='Getting %s profile failed: %s' % (self.provider.upper(),
+                                                       error['error_description']),
+                fail_callback=fail_callback)
+
+        attrs = {}
+        for key, value in res.json().items():
+            attrs[key] = value
+        return attrs[self.__primary_attribute__()], attrs

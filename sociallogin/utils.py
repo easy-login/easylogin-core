@@ -92,9 +92,9 @@ def convert_CameCase_to_snake_case(s):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
-def add_params_to_uri(uri, params):
+def add_params_to_uri(uri, **kwargs):
     pr = urlparse.urlparse(uri)
-    query = urlparse.urlencode(params)
+    query = urlparse.urlencode(kwargs)
     return uri + ('?' if not pr.query else '&') + query
 
 

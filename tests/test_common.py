@@ -2,6 +2,8 @@ from sqlalchemy import *
 from sqlalchemy.orm import *
 import base64
 import secrets
+import urllib.parse as urlparse
+
 
 def b64encode_string(s, urlsafe=False, padding=True, charset='utf8'):
     ib = s.encode(charset)
@@ -46,6 +48,19 @@ def update_dict(d1, d2=None, **kwargs):
     return d1
 
 
-test_args('tjeubaoit', 28, **{'name': 'abu', 'age': 30})
-d1 = {'name': 'abu'}
-print(update_dict(d1, org='five9'))
+def add_params_to_uri(uri, **kwargs):
+    pr = urlparse.urlparse(uri)
+    query = urlparse.urlencode(kwargs)
+    return uri + ('?' if not pr.query else '&') + query
+
+
+# test_args('tjeubaoit', 28, **{'name': 'abu', 'age': 30})
+# d1 = {'name': 'abu'}
+# print(update_dict(d1, org='five9'))
+
+base_url = 'https://access.line.me/oauth2/v2.1/authorize'
+url = add_params_to_uri(base_url,
+                        client_id='2141412412',
+                        scope=urlparse.quote('openid profile'),
+                        state='ldshlsdgoi341049u12ldjlgj974kljfklsdf')
+print(url)
