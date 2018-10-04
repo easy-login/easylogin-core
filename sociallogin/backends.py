@@ -41,7 +41,7 @@ __PROVIDER_SETTINGS__ = {
         'authorize_uri': 'https://www.facebook.com/{version}/dialog/oauth?response_type=code',
         'token_uri': 'https://graph.facebook.com/{version}/oauth/access_token',
         'refresh_token_uri': '',
-        'profile_uri': 'https://graph.facebook.com/{version}/me?fields={fields}',
+        'profile_uri': 'https://graph.facebook.com/{version}/me',
         'primary_attr': 'id'
     }
 }
@@ -84,9 +84,13 @@ class OAuthBackend(object):
                      .format(allowed_uris, (succ_callback, fail_callback)))
 
         if not self._verify_callback_uri(allowed_uris, succ_callback):
-            raise PermissionDeniedError(msg='Callback URI must be configured in admin settings')
+            raise PermissionDeniedError(
+                msg='Invalid callback_uri value. '
+                    'Check if it is registered in EasyLogin developers site')
         if fail_callback and not self._verify_callback_uri(allowed_uris, fail_callback):
-            raise PermissionDeniedError(msg='Callback URI must be configured in admin settings')
+            raise PermissionDeniedError(
+                msg='Invalid callback_if_failed value. '
+                    'Check if it is registered in EasyLogin developers site')
 
         log = AuthLogs(
             provider=self.provider,
@@ -162,25 +166,22 @@ class OAuthBackend(object):
             'client_secret': channel.client_secret
         })
         if res.status_code != 200:
-            error = res.json()
+            error, desc = self._get_error(res.json())
             self._raise_redirect_error(
-                error=error['error'],
-                msg='Getting %s access token failed: %s' % (self.provider.upper(),
-                                                            error['error_description']),
+                error=error,
+                msg='Getting %s access token failed: %s' % (self.provider.upper(), desc),
                 fail_callback=fail_callback)
         return res.json()
 
     def _get_profile(self, channel, tokens, fail_callback):
-        auth_header = tokens['token_type'] + ' ' + tokens['access_token']
+        authorization = tokens['token_type'] + ' ' + tokens['access_token']
         res = requests.get(self.__profile_uri__(version=channel.api_version),
-                           headers={'Authorization': auth_header})
+                           headers={'Authorization': authorization})
         if res.status_code != 200:
-            print(res)
-            error = res.json()
+            error, desc = self._get_error(res.json())
             self._raise_redirect_error(
-                error=error['error'],
-                msg='Getting %s profile failed: %s' % (self.provider.upper(),
-                                                       error['error_description']),
+                error=error,
+                msg='Getting %s profile failed: %s' % (self.provider.upper(), desc),
                 fail_callback=fail_callback)
 
         attrs = {}
@@ -189,6 +190,9 @@ class OAuthBackend(object):
             if key in fields or key == self.__primary_attribute__():
                 attrs[key] = value
         return attrs[self.__primary_attribute__()], attrs
+
+    def _get_error(self, response):
+        return response['error'], response['error_description']
 
     def _extract_jwt_token(self, body):
         return body.get('id_token')
@@ -285,30 +289,32 @@ class FacebookBackend(OAuthBackend):
             'client_secret': channel.client_secret
         })
         if res.status_code != 200:
-            error = res.json()
+            error, desc = self._get_error(res.json())
+            logger.debug('Getting access token failed: %s', repr(error))
             self._raise_redirect_error(
-                error=error['error'],
-                msg='Getting %s access token failed: %s' % (self.provider.upper(),
-                                                            error['error_description']),
+                error='OAuthException',
+                msg='Getting %s access token failed: %s' % (self.provider.upper(), desc),
                 fail_callback=fail_callback)
         return res.json()
 
     def _get_profile(self, channel, tokens, fail_callback):
-        auth_header = tokens['token_type'] + ' ' + tokens['access_token']
         fields = (channel.required_fields or '').split(__DELIMITER__)
-
-        res = requests.get(self.__profile_uri__(version=channel.api_version),
-                           params={'fields': ','.join(fields)},
-                           headers={'Authorization': auth_header})
+        res = requests.get(self.__profile_uri__(version=channel.api_version), params={
+            'fields': ','.join(fields),
+            'access_token': tokens['access_token']
+        })
         if res.status_code != 200:
-            error = res.json()
+            error, desc = self._get_error(res.json())
+            logger.debug('Getting profile failed: %s', repr(error))
             self._raise_redirect_error(
-                error=error['error'],
-                msg='Getting %s profile failed: %s' % (self.provider.upper(),
-                                                       error['error_description']),
+                error='OAuthException',
+                msg='Getting %s profile failed: %s' % (self.provider.upper(), desc),
                 fail_callback=fail_callback)
 
         attrs = {}
         for key, value in res.json().items():
             attrs[key] = value
         return attrs[self.__primary_attribute__()], attrs
+
+    def _get_error(self, response):
+        return response['error'], response['error']['message']

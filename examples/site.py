@@ -79,8 +79,10 @@ def demo_page():
                            app_id=session['app_id'], api_key=session['api_key'],
                            link_result=request.args.get('link_result', ''),
                            unlink_result=request.args.get('unlink_result', ''),
-                           line=session.get('line'), amazon=session.get('amazon'), 
-                           yahoojp=session.get('yahoojp'))
+                           line=session.get('line'),
+                           amazon=session.get('amazon'),
+                           yahoojp=session.get('yahoojp'),
+                           facebook=session.get('facebook'))
 
 
 @app.route('/logout')
@@ -88,6 +90,7 @@ def logout():
     session['line'] = None
     session['amazon'] = None
     session['yahoojp'] = None
+    session['facebook'] = None
     return redirect('/demo.html')
 
 

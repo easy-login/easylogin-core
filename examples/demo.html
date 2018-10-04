@@ -59,6 +59,18 @@
             </a>
             {% endif %} 
         </div>
+
+        <br/>
+        <div>
+            {% if facebook %}
+            <h4>Logged in FACEBOOK as</h4> <pre>{{ facebook }}</pre>
+            {% else %}
+            <a href="{{ api_host }}/authorize/facebook?app_id={{ app_id }}&callback_uri={{ host }}/auth/callback">
+                <img  width="200" height="45"
+                src="https://comedydefensivedriving.com/images2011/fb-sign-in-button.png"/>
+            </a>
+            {% endif %}
+        </div>
         <br/><br/>
         <a href="/logout">Logout All</a>
     </body>
