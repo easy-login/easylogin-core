@@ -7,10 +7,9 @@ import random
 app = Flask(__name__, template_folder='.')
 app.config['SECRET_KEY'] = b'_5#y2L"F4Q8z\n\xec]/'
 
-APP_ID = 3
-API_KEY = 'api_key'
-HOST = 'http://localhost:8080'
-API_HOST = 'http://localhost:5000'
+APP_ID = 4
+API_KEY = 'VdyRH6ld2lRl1FZ9GecsFJFs5jtRSJxFvA38jfUp7blE7J32'
+API_URL = 'http://localhost:5000'
 
 
 @app.route('/')
@@ -28,8 +27,9 @@ def charts():
                                        random.randint(200, 1000)])
 
 
-@app.route('/setting', methods=['POST'])
-def setting():
+@app.route('/app/setting', methods=['POST'])
+def app_setting():
+    session['api_url'] = request.form.get('api_url', API_URL)
     session['app_id'] = request.form.get('app_id', APP_ID)
     session['api_key'] = request.form.get('api_key', API_KEY)
     return redirect('/demo.html')
@@ -75,8 +75,11 @@ def demo_page():
         session['app_id'] = APP_ID
     if 'api_key' not in session:
         session['api_key'] = API_KEY
-    return render_template('demo.html', host=HOST, api_host=API_HOST,
-                           app_id=session['app_id'], api_key=session['api_key'],
+    return render_template('demo.html', 
+                           demo_url=request.scheme + '://' + request.host,
+                           api_url=session.get('api_url', API_URL),
+                           app_id=session.get('app_id', APP_ID), 
+                           api_key=session.get('api_key', API_KEY),
                            link_result=request.args.get('link_result', ''),
                            unlink_result=request.args.get('unlink_result', ''),
                            line=session.get('line'),

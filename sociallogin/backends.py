@@ -86,11 +86,11 @@ class OAuthBackend(object):
         if not self._verify_callback_uri(allowed_uris, succ_callback):
             raise PermissionDeniedError(
                 msg='Invalid callback_uri value. '
-                    'Check if it is registered in EasyLogin developers site')
+                    'Check if it is registered in EasyLogin developer site')
         if fail_callback and not self._verify_callback_uri(allowed_uris, fail_callback):
             raise PermissionDeniedError(
                 msg='Invalid callback_if_failed value. '
-                    'Check if it is registered in EasyLogin developers site')
+                    'Check if it is registered in EasyLogin developer site')
 
         log = AuthLogs(
             provider=self.provider,
