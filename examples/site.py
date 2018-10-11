@@ -71,12 +71,8 @@ def auth_failed():
 
 @app.route('/demo.html')
 def demo_page():
-    if 'app_id' not in session:
-        session['app_id'] = APP_ID
-    if 'api_key' not in session:
-        session['api_key'] = API_KEY
     return render_template('demo.html', 
-                           demo_url=request.scheme + '://' + request.host,
+                           demo_url=request.environ['HTTP_X_FORWARDED_PROTO'] + '://' + request.host,
                            api_url=session.get('api_url', API_URL),
                            app_id=session.get('app_id', APP_ID), 
                            api_key=session.get('api_key', API_KEY),
