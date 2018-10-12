@@ -29,9 +29,9 @@ def charts():
 
 @app.route('/app/setting', methods=['POST'])
 def app_setting():
-    session['api_url'] = request.form.get('api_url', API_URL)
-    session['app_id'] = request.form.get('app_id', APP_ID)
-    session['api_key'] = request.form.get('api_key', API_KEY)
+    session['api_url'] = request.form.get('api_url')
+    session['app_id'] = request.form.get('app_id')
+    session['api_key'] = request.form.get('api_key')
     return redirect('/demo.html')
 
 
@@ -71,11 +71,17 @@ def auth_failed():
 
 @app.route('/demo.html')
 def demo_page():
+    if 'api_url' not in session:
+        session['api_url'] = API_URL
+    if 'app_id' not in session:
+        session['app_id'] = APP_ID
+    if 'api_key' not in session:
+        session['api_key'] = API_KEY
     return render_template('demo.html', 
                            demo_url=request.environ['HTTP_X_FORWARDED_PROTO'] + '://' + request.host,
-                           api_url=session.get('api_url', API_URL),
-                           app_id=session.get('app_id', APP_ID), 
-                           api_key=session.get('api_key', API_KEY),
+                           api_url=session['api_url'],
+                           app_id=session['app_id'],
+                           api_key=['api_key'],
                            link_result=request.args.get('link_result', ''),
                            unlink_result=request.args.get('unlink_result', ''),
                            line=session.get('line'),
