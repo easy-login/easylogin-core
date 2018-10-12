@@ -81,7 +81,7 @@ def demo_page():
                            demo_url=request.environ['HTTP_X_FORWARDED_PROTO'] + '://' + request.host,
                            api_url=session['api_url'],
                            app_id=session['app_id'],
-                           api_key=['api_key'],
+                           api_key=session['api_key'],
                            link_result=request.args.get('link_result', ''),
                            unlink_result=request.args.get('unlink_result', ''),
                            line=session.get('line'),
