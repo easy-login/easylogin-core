@@ -20,4 +20,4 @@ EXPOSE 5000
 ENV DEBUG True
 
 # Run wsgi.py when the container launches
-CMD ["sh", "runserver.sh"]
+CMD ["sh", "prod.sh"]
