@@ -241,7 +241,7 @@ class LineBackend(OAuthBackend):
         uri = add_params_to_uri(
             uri=self.__authorize_uri__(version=channel.api_version),
             bot_prompt=bot_prompt,
-            nonce=gen_random_token(nbytes=48),
+            nonce=gen_random_token(nbytes=16),
             client_id=channel.client_id,
             redirect_uri=redirect_uri,
             scope=channel.permissions.replace(__DELIMITER__, ' '),
