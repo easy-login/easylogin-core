@@ -113,20 +113,20 @@ def get_associate_token(app_id):
     if not is_valid_provider(provider):
         abort(400, 'Invalid provider')
 
-    tup = (db.session.query(Users._id, SocialProfiles._id, SocialProfiles.provider)
+    tups = (db.session.query(Users._id, SocialProfiles._id, SocialProfiles.provider)
            .join(SocialProfiles, and_(Users._id == SocialProfiles.user_id,
                                       Users.pk == user_pk, Users.app_id == app_id))).all()
-    if not tup:
+    if not tups:
         abort(400, 'User not found')
-    for tup in tup:
+    for tup in tups:
         if provider == tup[2]:
             abort(403, 'User already linked with another social profile for this provider')
-    user_id = tup[0][0]
+    user_id = tups[0][0]
 
     try:
-        nonce = gen_random_token(nbytes=32)
         log = AssociateLogs(provider=provider, app_id=app_id,
-                            user_id=user_id, nonce=nonce)
+                            user_id=user_id,
+                            nonce=gen_random_token(nbytes=32))
         associate_token = log.generate_associate_token()
         db.session.add(log)
         db.session.commit()
@@ -135,7 +135,6 @@ def get_associate_token(app_id):
             'associate_uri': url_for('authorize', _external=True,
                                      provider=provider, app_id=app_id,
                                      token=associate_token,
-                                     callback_uri='http://localhost:8080/auth/callback',
                                      intent=AuthLogs.INTENT_ASSOCIATE)
         })
     except Exception as e:
