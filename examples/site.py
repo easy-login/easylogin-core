@@ -27,6 +27,11 @@ def charts():
                                        random.randint(200, 1000)])
 
 
+@app.route('/pay.html')
+def amazon_pay():
+    return render_template('pay.html')
+
+
 @app.route('/app/setting', methods=['POST'])
 def app_setting():
     session['api_url'] = request.form.get('api_url')
@@ -77,8 +82,9 @@ def demo_page():
         session['app_id'] = APP_ID
     if 'api_key' not in session:
         session['api_key'] = API_KEY
+    url = request.environ.get('HTTP_X_FORWARDED_PROTO', 'http') + '://' + request.host
     return render_template('demo.html', 
-                           demo_url=request.environ['HTTP_X_FORWARDED_PROTO'] + '://' + request.host,
+                           demo_url=url,
                            api_url=session['api_url'],
                            app_id=session['app_id'],
                            api_key=session['api_key'],

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Include the following in your  HTML file -->
+    <style type="text/css">
+        #addressBookWidgetDiv{width: 400px; height: 228px;}
+        #walletWidgetDiv {width: 400px; height: 228px;}
+    </style>
+</head>
+<body>
+<div id="AmazonPayButton">
+</div>
+<div
+    data-ap-widget-type="expressPaymentButton"
+    data-ap-signature="U6RAVwuIaarwc0FQ6%2FwFswN8b9fSf1FYGXhuR88xTVg%3D"
+    data-ap-seller-id="AXRHKH1P12JT4"
+    data-ap-access-key="AKIAJQCADG3WKGT46RLA"
+    data-ap-lwa-client-id="amzn1.application-oa2-client.ab1b795980bf4f9b9cd2edeb040dde8e"
+    data-ap-return-url="http://localhost:8080/pay.html"
+    
+    data-ap-currency-code="USD"
+    data-ap-amount="500"
+    data-ap-note=""
+    data-ap-shipping-address-required="true"
+    data-ap-payment-action="None"
+    >
+</div>
+<div id="addressBookWidgetDiv">
+</div> 
+<div id="walletWidgetDiv">
+</div>    
+<script type="text/javascript">
+    var CLIENT_ID = 'amzn1.application-oa2-client.ab1b795980bf4f9b9cd2edeb040dde8e';
+    var SELLER_ID = 'AXRHKH1P12JT4';
+
+    window.onAmazonLoginReady = function() {
+        amazon.Login.setClientId(CLIENT_ID);
+        console.log('onAmazonLoginReady')
+    };
+    window.onAmazonPaymentsReady = function() {
+        showButton();
+        console.log('onAmazonPaymentsReady')
+    };
+
+    function showButton(){
+        var authRequest; 
+        OffAmazonPayments.Button("AmazonPayButton", SELLER_ID, { 
+            type:  "PwA", 
+            color: "Gold", 
+            size:  "large", 
+
+            authorization: function() { 
+                loginOptions = {
+                    scope: "profile payments:widget payments:shipping_address postal_code", 
+                    interactive: "always",
+                    popup: true,
+                    region: "apac"
+                }; 
+                authRequest = amazon.Login.authorize (loginOptions, 
+                    function(response) {
+                        addressConsentToken = response.access_token;
+                        console.log('Constent token: ' + addressConsentToken)
+                    },
+                    // REDIRECT_URL
+                ); 
+            }, 
+            onSignIn: function(orderReference) {
+                amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
+                console.log('orderReference: ' + JSON.stringify(orderReference))
+                console.log("amazonOrderReferenceId: " + amazonOrderReferenceId)
+
+                showAddressBookWidget();
+                showWalletWidget();
+                console.log("logIn success, render address and wallet widgets")
+            },
+            onError: function(error) { 
+                // your error handling code.
+                alert("The following error occurred: " 
+                    + error.getErrorCode() 
+                    + ' - ' + error.getErrorMessage());
+            } 
+        });
+    }; 
+
+    function showAddressBookWidget() {
+        new OffAmazonPayments.Widgets.AddressBook({
+            sellerId: SELLER_ID,
+            agreementType: 'BillingAgreement',
+            onOrderReferenceCreate: function(orderReference) {
+                // Here is where you can grab the Order Reference ID.
+                amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
+                console.log("onOrderReferenceCreate: " + amazonOrderReferenceId)
+            },
+            onAddressSelect: function(orderReference) {
+                console.log("onAddressSelect " + JSON.stringify(orderReference))
+            },
+            design: {
+                designMode: 'responsive'
+            },
+            // onReady: function(orderReference) {
+            //     // Enter code here that you want to be executed 
+            //     // when the address widget has been rendered. 
+            //     console.log("AddressBook onReady: " + JSON.stringify(orderReference))
+            // },
+            onReady: function(billingAgreement) {
+                var billingAgreementId = billingAgreement.getAmazonBillingAgreementId(); 
+            },
+            onAddressSelect: function(billingAgreement) {
+                console.log("onAddressSelect " + JSON.stringify(billingAgreement))
+            },
+            onError: function(error) {
+                console.log(error.getErrorCode() + ': ' + error.getErrorMessage());
+            }
+        }).bind("addressBookWidgetDiv");
+    }
+
+    function showWalletWidget() {
+        new OffAmazonPayments.Widgets.Wallet({
+            sellerId: SELLER_ID,
+            onPaymentSelect: function(orderReference) {
+                console.log("onPaymentSelect " + JSON.stringify(orderReference))
+            },
+            design: {
+                designMode: 'responsive'
+            },
+            onError: function(error) {
+                console.log(error.getErrorCode() + ': ' + error.getErrorMessage());
+            }
+        }).bind("walletWidgetDiv");
+    }
+</script>
+<script type="text/javascript">
+    document.getElementById('Logout').onclick = function() {
+        amazon.Login.logout();
+        console.log("Click logout")
+    };
+</script>
+<script async="async" src="https://static-na.payments-amazon.com/OffAmazonPayments/us/sandbox/js/Widgets.js">
+</script>
+</body>
+</html>
