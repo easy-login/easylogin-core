@@ -1,7 +1,11 @@
 import json
 from datetime import datetime, timezone, timedelta
 import hashlib
+
 from sqlalchemy import func, and_
+from sqlalchemy.sql import expression
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.types import DateTime
 
 from sociallogin import db, logger
 from sociallogin.utils import b64encode_string, b64decode_string, \
@@ -11,14 +15,33 @@ from sociallogin.exc import BadRequestError, PermissionDeniedError, \
     ConflictError, NotFoundError
 
 
+class utcnow(expression.FunctionElement):
+    type = DateTime()
+
+
+@compiles(utcnow, 'postgresql')
+def pg_utcnow(element, compiler, **kw):
+    return "TIMEZONE('utc', CURRENT_TIMESTAMP)"
+
+
+@compiles(utcnow, 'mssql')
+def ms_utcnow(element, compiler, **kw):
+    return "GETUTCDATE()"
+
+
+@compiles(utcnow, 'mysql')
+def my_utcnow(element, compiler, **kw):
+    return "UTC_TIMESTAMP()"
+
+
 # Define a base model for other database tables to inherit
 class Base(db.Model):
     __abstract__ = True
 
     _id = db.Column("id", db.Integer, primary_key=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow())
-    modified_at = db.Column(db.DateTime, default=datetime.utcnow(),
-                            onupdate=datetime.utcnow())
+    created_at = db.Column(db.DateTime, default=utcnow(), server_default=utcnow())
+    modified_at = db.Column(db.DateTime, default=utcnow(), server_default=utcnow(),
+                            onupdate=utcnow())
 
     def __repr__(self):
         return json.dumps(self.as_dict(), indent=2)
@@ -110,12 +133,12 @@ class SocialProfiles(Base):
     user_pk = db.Column(db.String(255))
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
 
-    def __init__(self, app_id, pk, provider, attrs, last_authorized_at=datetime.utcnow()):
+    def __init__(self, app_id, pk, provider, attrs):
         self.app_id = app_id
         self.pk = pk
         self.provider = provider
         self.attrs = json.dumps(attrs)
-        self.last_authorized_at = last_authorized_at
+        self.last_authorized_at = datetime.utcnow()
         self.alias = generate_64bit_id()
 
     def as_dict(self):
