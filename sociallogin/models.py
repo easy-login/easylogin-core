@@ -80,6 +80,7 @@ class Admins(Base):
     password = db.Column(db.String(64), nullable=False)
     salt = db.Column(db.String(16), nullable=False)
     phone = db.Column(db.String(16))
+    is_superuser = db.Column(db.SmallInteger, nullable=False, default=0)
 
 
 class Apps(Base):
@@ -90,6 +91,7 @@ class Apps(Base):
     description = db.Unicode(db.Unicode(1023))
     allowed_ips = db.Column(db.String(255))
     callback_uris = db.Column(db.Text, nullable=False)
+    _deleted = db.Column("deleted", db.SmallInteger, nullable=False, default=0)
 
     owner_id = db.Column(db.Integer, db.ForeignKey("admins.id"), nullable=False)
 

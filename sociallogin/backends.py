@@ -73,7 +73,7 @@ class OAuthBackend(object):
         self.redirect_uri = url_for('authorize_callback', _external=True, provider=provider)
 
     def build_authorize_uri(self, app_id, succ_callback, fail_callback, **kwargs):
-        app = Apps.query.filter_by(_id=app_id).one_or_none()
+        app = Apps.query.filter_by(_id=app_id, _deleted=0).one_or_none()
         channel = Channels.query.filter_by(app_id=app_id,
                                            provider=self.provider).one_or_none()
         if not app or not channel:
