@@ -152,8 +152,13 @@ class SocialProfiles(Base):
         d['attrs'] = json.loads(d['attrs'], encoding='utf8')
         d['social_id'] = self.alias
         d['user_id'] = d['user_pk']
+
         del d['user_pk']
         del d['alias']
+        del d['mask']
+        del d['pk']
+        del d['app_id']
+
         return d
 
     def link_user_by_id(self, user_id):
@@ -268,6 +273,7 @@ class Users(Base):
     def as_dict(self):
         d = super().as_dict()
         d['user_id'] = d['pk']
+        del d['app_id']
         del d['pk']
         return d
 
