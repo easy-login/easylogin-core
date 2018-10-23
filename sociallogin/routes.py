@@ -38,7 +38,7 @@ def link_user(app_id):
     if social_id <= 0:
         abort(404, 'Social ID not found')
 
-    profile = SocialProfiles.query.filter_by(alias=social_id, app_id=app_id).first()
+    profile = SocialProfiles.query.filter_by(alias=social_id).first()
     if not profile:
         abort(404, 'Social ID not found')
     if profile.user_id:
@@ -60,7 +60,7 @@ def unlink_user(app_id):
         if social_id <= 0:
             abort(404, 'Social ID not found')
 
-        profiles = SocialProfiles.query.filter_by(alias=social_id, app_id=app_id).all()
+        profiles = SocialProfiles.query.filter_by(alias=social_id).all()
         if not profiles:
             abort(404, 'Social ID not found')
         for p in profiles:
@@ -90,7 +90,7 @@ def get_user(app_id):
     if user_pk:
         return jsonify(Users.get_full_as_dict(app_id=app_id, pk=user_pk))
     elif social_id > 0:
-        profile = SocialProfiles.query.filter_by(alias=social_id, app_id=app_id).first()
+        profile = SocialProfiles.query.filter_by(alias=social_id).first()
         if not profile:
             abort(404, 'Social ID not found')
         if profile.user_pk:

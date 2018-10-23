@@ -172,9 +172,9 @@ class SocialProfiles(Base):
             raise NotFoundError('User not found')
 
     def link_user_by_pk(self, user_pk, create_if_not_exist=True):
-        profiles = SocialProfiles.query.filter_by(app_id=self.app_id, user_pk=user_pk).all()
+        profiles = SocialProfiles.query.filter_by(user_pk=user_pk, app_id=self.app_id).all()
         if not profiles:
-            user = Users.query.filter_by(app_id=self.app_id, pk=user_pk).one_or_none()
+            user = Users.query.filter_by(pk=user_pk, app_id=self.app_id).one_or_none()
             if not user:
                 if not create_if_not_exist:
                     raise NotFoundError('User not found')
@@ -209,11 +209,11 @@ class SocialProfiles(Base):
 
     @classmethod
     def delete_by_alias(cls, app_id, alias):
-        profiles = cls.query.filter_by(alias=alias, app_id=app_id).all()
+        profiles = cls.query.filter_by(alias=alias).all()
         if profiles:
             user_pk = profiles[0].user_pk
             if user_pk:
-                Users.delete_user(app_id=app_id, pk=user_pk)
+                Users.delete_user(pk=user_pk, app_id=app_id)
             for p in profiles:
                 p._deleted = 1
                 p.pk = '%d.%d' % (int(time.time()), p._id)
@@ -225,9 +225,9 @@ class SocialProfiles(Base):
 
     @classmethod
     def delete_by_user_pk(cls, app_id, user_pk):
-        res = Users.delete_user(app_id=app_id, pk=user_pk)
+        res = Users.delete_user(pk=user_pk, app_id=app_id)
         if res > 0:
-            cls.query.filter_by(app_id=app_id, user_pk=user_pk).update({
+            cls.query.filter_by(user_pk=user_pk, app_id=app_id).update({
                 '_deleted': 1,
                 'pk': func.concat(int(time.time()), '.', cls._id),
                 'user_pk': None,
@@ -239,7 +239,7 @@ class SocialProfiles(Base):
 
     @classmethod
     def unlink_by_provider(cls, app_id, user_pk, providers):
-        profiles = cls.query.filter_by(app_id=app_id, user_pk=user_pk).all()
+        profiles = cls.query.filter_by(user_pk=user_pk, app_id=app_id).all()
         for p in profiles:
             if p.provider not in providers:
                 continue
@@ -248,7 +248,7 @@ class SocialProfiles(Base):
     @classmethod
     def add_or_update(cls, app_id, scope_id, provider, attrs):
         hashpk = hashlib.sha1((str(app_id) + '.' + provider + '.' + scope_id).encode('utf8')).hexdigest()
-        profile = cls.query.filter_by(app_id=app_id, pk=hashpk).one_or_none()
+        profile = cls.query.filter_by(pk=hashpk).one_or_none()
         exists = True
         if not profile:
             profile = SocialProfiles(app_id=app_id, pk=hashpk, scope_id=scope_id,
@@ -286,14 +286,14 @@ class Users(Base):
     @classmethod
     def delete_user(cls, app_id, pk):
         salt = gen_random_token(nbytes=4, format='hex') + '.' + str(int(time.time()))
-        return cls.query.filter_by(app_id=app_id, pk=pk).update({
+        return cls.query.filter_by(pk=pk, app_id=app_id).update({
             '_deleted': 1,
             'pk': func.concat(salt, '.', cls._id)
         }, synchronize_session=False)
 
     @classmethod
     def get_full_as_dict(cls, app_id, pk):
-        user = cls.query.filter_by(app_id=app_id, pk=pk).one_or_none()
+        user = cls.query.filter_by(pk=pk, app_id=app_id).one_or_none()
         if user:
             profiles = SocialProfiles.query.filter_by(user_id=user._id).all()
             last_profile = None
