@@ -128,10 +128,12 @@ class SocialProfiles(Base):
     attrs = db.Column(db.Unicode(8191), nullable=False)
     last_authorized_at = db.Column("authorized_at", db.DateTime)
     login_count = db.Column(db.Integer, default=1, nullable=False)
-    linked_at = db.Column(db.DateTime)
     _deleted = db.Column("deleted", db.SmallInteger, default=0)
 
+    linked_at = db.Column(db.DateTime)
     alias = db.Column(db.BigInteger, nullable=False)
+    mask = db.Column(db.BigInteger, nullable=False)
+
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     user_pk = db.Column(db.String(255))
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
@@ -142,7 +144,8 @@ class SocialProfiles(Base):
         self.provider = provider
         self.attrs = json.dumps(attrs)
         self.last_authorized_at = datetime.utcnow()
-        self.alias = generate_64bit_id()
+        self.mask = generate_64bit_id(shard=app_id)
+        self.alias = self.mask
 
     def as_dict(self):
         d = super().as_dict()
@@ -194,7 +197,7 @@ class SocialProfiles(Base):
         self.linked_at = None
         self.user_id = None
         self.user_pk = None
-        self.alias = generate_64bit_id()
+        self.alias = self.mask
 
     @classmethod
     def delete_by_alias(cls, app_id, alias):
