@@ -1,6 +1,7 @@
 import json
 from datetime import datetime, timezone, timedelta
 import hashlib
+import time
 
 from sqlalchemy import func, and_
 from sqlalchemy.sql import expression
@@ -8,7 +9,7 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.types import DateTime
 
 from sociallogin import db, logger
-from sociallogin.utils import b64encode_string, b64decode_string, \
+from sociallogin.utils import b64encode_string, b64decode_string, gen_random_token, \
     gen_jwt_token, decode_jwt, convert_to_user_timezone
 from sociallogin.atomic import generate_64bit_id
 from sociallogin.exc import BadRequestError, PermissionDeniedError, \
@@ -128,7 +129,7 @@ class SocialProfiles(Base):
     last_authorized_at = db.Column("authorized_at", db.DateTime)
     login_count = db.Column(db.Integer, default=1, nullable=False)
     linked_at = db.Column(db.DateTime)
-    _deleted = db.Column("deleted", db.Boolean, default=False)
+    _deleted = db.Column("deleted", db.SmallInteger, default=0)
 
     alias = db.Column(db.BigInteger, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
@@ -173,13 +174,13 @@ class SocialProfiles(Base):
         else:
             for p in profiles:
                 if p.provider == self.provider:
-                    raise ConflictError('User linked with a social profile in the same provider')
+                    raise ConflictError('User has linked with a social profile in the same provider')
             profile = profiles[0]
             self._link_unsafe(profile.user_id, user_pk, alias=profile.alias)
 
     def unlink_user_by_pk(self, user_pk):
         if self.user_pk != user_pk:
-            raise ConflictError("Social profile and user don't linked with each other")
+            raise ConflictError("Social profile and user are not linked with each other")
 
         self._unlink_unsafe()
 
@@ -194,6 +195,36 @@ class SocialProfiles(Base):
         self.user_id = None
         self.user_pk = None
         self.alias = generate_64bit_id()
+
+    @classmethod
+    def delete_by_alias(cls, app_id, alias):
+        profiles = cls.query.filter_by(alias=alias, app_id=app_id).all()
+        if profiles:
+            user_pk = profiles[0].user_pk
+            if user_pk:
+                Users.delete_user(app_id=app_id, pk=user_pk)
+            for p in profiles:
+                p._deleted = 1
+                p.pk = '%d.%d' % (int(time.time()), p._id)
+                p.user_pk = None
+                p.user_id = None
+                p.alias = 0
+        else:
+            raise NotFoundError(msg='Social ID not found')
+
+    @classmethod
+    def delete_by_user_pk(cls, app_id, user_pk):
+        res = Users.delete_user(app_id=app_id, pk=user_pk)
+        if res > 0:
+            cls.query.filter_by(app_id=app_id, user_pk=user_pk).update({
+                '_deleted': 1,
+                'pk': func.concat(int(time.time()), '.', cls._id),
+                'user_pk': None,
+                'user_id': None,
+                'alias': 0
+            }, synchronize_session=False)
+        else:
+            raise NotFoundError(msg='User ID not found')
 
     @classmethod
     def unlink_by_provider(cls, app_id, user_pk, providers):
@@ -224,7 +255,7 @@ class Users(Base):
     __tablename__ = 'users'
 
     pk = db.Column(db.String(255), nullable=False)
-    _deleted = db.Column("deleted", db.Boolean, default=False)
+    _deleted = db.Column("deleted", db.SmallInteger, default=0)
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
 
     def __init__(self, app_id, pk):
@@ -236,6 +267,14 @@ class Users(Base):
         d['user_id'] = d['pk']
         del d['pk']
         return d
+
+    @classmethod
+    def delete_user(cls, app_id, pk):
+        salt = gen_random_token(nbytes=4, format='hex') + '.' + str(int(time.time()))
+        return cls.query.filter_by(app_id=app_id, pk=pk).update({
+            '_deleted': 1,
+            'pk': func.concat(salt, '.', cls._id)
+        }, synchronize_session=False)
 
     @classmethod
     def get_full_as_dict(cls, app_id, pk):
@@ -309,7 +348,7 @@ class AuthLogs(Base):
     callback_if_failed = db.Column("callback_failed", db.String(2047))
     nonce = db.Column(db.String(32), nullable=False)
     status = db.Column(db.String(15), nullable=False)
-    is_login = db.Column(db.SmallInteger)
+    is_login = db.Column(db.SmallInteger, nullable=False)
     auth_token = db.Column(db.String(32))
     ua = db.Column(db.String(4095))
     ip = db.Column(db.String(15))

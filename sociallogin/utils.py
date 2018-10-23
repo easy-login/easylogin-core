@@ -43,15 +43,15 @@ def is_same_uri(url1, url2):
     return r1.scheme == r2.scheme and r1.netloc == r2.netloc and r1.path == r2.path
 
 
-def gen_random_token(nbytes=32, output_format='alphanumeric'):
-    if output_format == 'alphanumeric':
+def gen_random_token(nbytes=32, format='alphanumeric'):
+    if format == 'alphanumeric':
         alphabet = string.ascii_letters + string.digits
         return ''.join(secrets.choice(alphabet) for _ in range(nbytes))
-    elif output_format == 'hex':
+    elif format == 'hex':
         return secrets.token_hex(nbytes)
-    elif output_format == 'urlsafe':
+    elif format == 'urlsafe':
         return secrets.token_urlsafe(nbytes)
-    elif output_format == 'base64':
+    elif format == 'base64':
         return base64.standard_b64encode(secrets.token_bytes(nbytes))
     else:
         return os.urandom(nbytes)

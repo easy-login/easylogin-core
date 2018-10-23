@@ -22,7 +22,7 @@ ERROR_CODES = {
 class SocialLoginError(Exception):
     def __init__(self, *args, **kwargs):
         self.error = kwargs.get('error')
-        self.description = kwargs.get('msg')
+        self.description = args[0] if args else kwargs.get('msg')
 
     def __repr__(self):
         return self.error + ': ' + self.description
