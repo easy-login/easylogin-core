@@ -92,8 +92,8 @@ class Admins(Base):
 class Apps(Base):
     __tablename__ = 'apps'
 
-    name = db.Column(db.String(63), nullable=False)
-    api_key = db.Column(db.String(127), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    api_key = db.Column(db.String(64), nullable=False)
     description = db.Unicode(db.Unicode(1023))
     allowed_ips = db.Column(db.String(255))
     callback_uris = db.Column(db.Text, nullable=False)
@@ -144,7 +144,7 @@ class SocialProfiles(Base):
     mask = db.Column(db.BigInteger, nullable=False)
 
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    user_pk = db.Column(db.String(255))
+    user_pk = db.Column(db.String(128))
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
 
     def __init__(self, *args, **kwargs):
@@ -268,7 +268,7 @@ class Users(Base):
 
     HIDDEN_FIELDS = {'pk', 'app_id'}
 
-    pk = db.Column(db.String(255), nullable=False)
+    pk = db.Column(db.String(128), nullable=False)
     _deleted = db.Column("deleted", db.SmallInteger, default=0)
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
 
