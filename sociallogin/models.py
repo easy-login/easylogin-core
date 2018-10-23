@@ -39,6 +39,8 @@ def my_utcnow(element, compiler, **kw):
 class Base(db.Model):
     __abstract__ = True
 
+    HIDDEN_FIELDS = set()
+
     _id = db.Column("id", db.Integer, primary_key=True)
     created_at = db.Column(db.DateTime, default=utcnow(), server_default=utcnow())
     modified_at = db.Column(db.DateTime, default=utcnow(), server_default=utcnow(),
@@ -47,10 +49,13 @@ class Base(db.Model):
     def __repr__(self):
         return json.dumps(self.as_dict(), indent=2)
 
+    def __id__(self):
+        return str(self._id)
+
     def as_dict(self):
         attrs = {}
         for k, v in self.__dict__.items():
-            if k.startswith('_'):
+            if k.startswith('_') or k in self.HIDDEN_FIELDS:
                 continue
             if isinstance(v, datetime):
                 v = self.to_isoformat(v)
@@ -102,9 +107,6 @@ class Apps(Base):
         self.is_active = True
         self.is_anonymous = False
 
-    def get_id(self):
-        return str(self._id)
-
 
 class Channels(Base):
     __tablename__ = 'channels'
@@ -123,11 +125,18 @@ class Channels(Base):
 class SocialProfiles(Base):
     __tablename__ = 'social_profiles'
 
+    HIDDEN_FIELDS = {
+        'pk', 'scope_id', 'draft', 'alias', 'mask',
+        'user_id', 'user_pk', 'app_id'
+    }
+
     provider = db.Column(db.String(15), nullable=False)
     pk = db.Column(db.String(40), unique=True, nullable=False)
     attrs = db.Column(db.Unicode(8191), nullable=False)
+    scope_id = db.Column(db.String(255), nullable=False)
     last_authorized_at = db.Column("authorized_at", db.DateTime)
     login_count = db.Column(db.Integer, default=1, nullable=False)
+    draft = db.Column(db.SmallInteger, default=1, nullable=False)
     _deleted = db.Column("deleted", db.SmallInteger, default=0)
 
     linked_at = db.Column(db.DateTime)
@@ -138,27 +147,21 @@ class SocialProfiles(Base):
     user_pk = db.Column(db.String(255))
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
 
-    def __init__(self, app_id, pk, provider, attrs):
-        self.app_id = app_id
-        self.pk = pk
-        self.provider = provider
-        self.attrs = json.dumps(attrs)
+    def __init__(self, *args, **kwargs):
+        self.app_id = kwargs['app_id']
+        self.provider = kwargs['provider']
+        self.attrs = json.dumps(kwargs['attrs'])
         self.last_authorized_at = datetime.utcnow()
-        self.mask = generate_64bit_id(shard=app_id)
+        self.mask = generate_64bit_id(shard=self.app_id)
         self.alias = self.mask
+        self.scope_id = kwargs['scope_id']
+        self.pk = kwargs['pk']
 
     def as_dict(self):
         d = super().as_dict()
-        d['attrs'] = json.loads(d['attrs'], encoding='utf8')
+        d['attrs'] = json.loads(self.attrs, encoding='utf8')
         d['social_id'] = self.alias
-        d['user_id'] = d['user_pk']
-
-        del d['user_pk']
-        del d['alias']
-        del d['mask']
-        del d['pk']
-        del d['app_id']
-
+        d['user_id'] = self.user_pk
         return d
 
     def link_user_by_id(self, user_id):
@@ -243,12 +246,13 @@ class SocialProfiles(Base):
             p._unlink_unsafe()
 
     @classmethod
-    def add_or_update(cls, app_id, pk, provider, attrs):
-        hashpk = hashlib.sha1((str(app_id) + '.' + provider + '.' + pk).encode('utf8')).hexdigest()
+    def add_or_update(cls, app_id, scope_id, provider, attrs):
+        hashpk = hashlib.sha1((str(app_id) + '.' + provider + '.' + scope_id).encode('utf8')).hexdigest()
         profile = cls.query.filter_by(app_id=app_id, pk=hashpk).one_or_none()
         exists = True
         if not profile:
-            profile = SocialProfiles(app_id=app_id, pk=hashpk, provider=provider, attrs=attrs)
+            profile = SocialProfiles(app_id=app_id, pk=hashpk, scope_id=scope_id,
+                                     provider=provider, attrs=attrs)
             db.session.add(profile)
             db.session.flush()
             exists = False
@@ -261,6 +265,8 @@ class SocialProfiles(Base):
 
 class Users(Base):
     __tablename__ = 'users'
+
+    HIDDEN_FIELDS = {'pk', 'app_id'}
 
     pk = db.Column(db.String(255), nullable=False)
     _deleted = db.Column("deleted", db.SmallInteger, default=0)

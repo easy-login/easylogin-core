@@ -68,6 +68,8 @@ def is_valid_provider(provider):
 
 class OAuthBackend(object):
 
+    JWT_TOKEN_ATTRIBUTE_NAME = 'id_token'
+
     def __init__(self, provider):
         self.provider = provider
         self.redirect_uri = url_for('authorize_callback', _external=True, provider=provider)
@@ -125,11 +127,12 @@ class OAuthBackend(object):
                                            provider=self.provider).one_or_none()
         tokens = self._get_token(channel, code, fail_callback)
         user_id, attrs = self._get_profile(channel, tokens, fail_callback)
+        del attrs[self.__primary_attribute__()]
         try:
             profile, existed = SocialProfiles.add_or_update(
                 app_id=log.app_id,
                 provider=self.provider,
-                pk=user_id, attrs=attrs)
+                scope_id=user_id, attrs=attrs)
             log.set_authorized(social_id=profile._id, is_login=existed,
                                nonce=gen_random_token(nbytes=32))
             token = Tokens(
@@ -138,7 +141,7 @@ class OAuthBackend(object):
                 token_type=tokens['token_type'],
                 expires_at=datetime.utcnow() + timedelta(seconds=tokens['expires_in']),
                 refresh_token=tokens.get('refresh_token'),
-                jwt_token=self._extract_jwt_token(tokens),
+                jwt_token=tokens.get(self.JWT_TOKEN_ATTRIBUTE_NAME),
                 social_id=profile._id
             )
             db.session.add(token)
@@ -193,9 +196,6 @@ class OAuthBackend(object):
 
     def _get_error(self, response):
         return response['error'], response['error_description']
-
-    def _extract_jwt_token(self, body):
-        return body.get('id_token')
 
     def _raise_redirect_error(self, error, msg, fail_callback):
         raise RedirectLoginError(error=error, msg=msg,
