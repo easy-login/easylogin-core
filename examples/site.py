@@ -3,13 +3,15 @@ import urllib.parse as urlparse
 import requests
 import json
 import random
+import os
 
 app = Flask(__name__, template_folder='.')
 app.config['SECRET_KEY'] = b'_5#y2L"F4Q8z\n\xec]/'
 
 APP_ID  = 1
 API_KEY = 'xrcyz2AaN1s9OscnpFLup5DVTi3D7WCIGhYnsmjOyCO8HjAH'
-API_URL = 'https://api.easy-login.jp'    
+API_URL = os.getenv('API_URL', 'https://api.easy-login.jp')
+LOCAL_API_URL = os.getenv('LOCAL_API_URL', 'http://localhost:5000')
 
 
 @app.route('/')
@@ -42,7 +44,8 @@ def link_user(action):
 
     user_id = request.form['user_id']
     social_id = request.form['social_id']
-    r = requests.put(url='http://localhost:5000/{}/users/{}'.format(session['app_id'], action),
+    r = requests.put(url='{}/{}/users/{}'.format(LOCAL_API_URL, session['app_id'], action),
+                     verify=False,
                      json={'user_id': user_id, 'social_id': social_id},
                      headers={'X-Api-Key': session['api_key']})
     msg = str(r.json())
@@ -54,7 +57,8 @@ def auth_callback():
     try:
         token = request.args['token']
         provider = request.args['provider']
-        r = requests.get(url='http://localhost:5000/{}/profiles/authorized'.format(session['app_id']),
+        r = requests.get(url='{}/{}/profiles/authorized'.format(LOCAL_API_URL, session['app_id']),
+                         verify=False,
                          params={'api_key': session['api_key'], 'token': token})
         if r.status_code == 200:
             session[provider] = json.dumps(r.json(), sort_keys=True, indent=2)
