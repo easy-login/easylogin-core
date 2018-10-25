@@ -93,9 +93,8 @@ def convert_CameCase_to_snake_case(s):
 
 
 def add_params_to_uri(uri, **kwargs):
-    pr = urlparse.urlparse(uri)
-    query = urlparse.urlencode(kwargs)
-    return uri + ('?' if not pr.query else '&') + query
+    query = urlparse.urlencode(kwargs, safe='', quote_via=urlparse.quote)
+    return uri + ('?' if uri.find('?') < 0 else '&') + query
 
 
 def update_dict(d1, d2=None, **kwargs):
