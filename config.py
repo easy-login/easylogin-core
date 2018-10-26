@@ -9,7 +9,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 TIME_ZONE = os.getenv('TIME_ZONE', 'Asia/Tokyo')
 
 # SERVER_NAME = 'http://localhost:5000'
-JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'soci@ll0gin.c48COByeIVl0NKUxsfgYYw')
+SECRET_KEY = os.getenv('SECRET_KEY', 'soci@ll0gin.c48COByeIVl0NKUxsfgYYw')
 
 # Define the database
 SQLALCHEMY_DATABASE_URI = os.getenv(

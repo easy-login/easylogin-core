@@ -65,12 +65,12 @@ def gen_jwt_token(sub, exp_in_seconds, **kwargs):
         'exp': now + exp_in_seconds,
         'iat': now,
         'data': kwargs
-    }, key=app.config['JWT_SECRET_KEY'], algorithm='HS256').decode('utf8')
+    }, key=app.config['SECRET_KEY'], algorithm='HS256').decode('utf8')
 
 
 def decode_jwt(encoded):
     try:
-        payload = jwt.decode(encoded, key=app.config['JWT_SECRET_KEY'], 
+        payload = jwt.decode(encoded, key=app.config['SECRET_KEY'],
                              issuer=app.config['SERVER_NAME'], algorithms=['HS256'])
         expire = payload.get('exp', 0)
         if expire < int(time.time()):
