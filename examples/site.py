@@ -81,7 +81,7 @@ def demo_page():
     if 'api_key' not in session:
         session['api_key'] = API_KEY
     demo_url = request.environ.get('HTTP_X_FORWARDED_PROTO', 'http') + '://' + request.host
-    return render_template('demo.html', demo_url=demo_url,
+    return render_template('demo.html', demo_url=urlparse.quote(demo_url),
                            api_url=session['api_url'],
                            app_id=session['app_id'],
                            api_key=session['api_key'],
@@ -90,7 +90,8 @@ def demo_page():
                            line=session.get('line'),
                            amazon=session.get('amazon'),
                            yahoojp=session.get('yahoojp'),
-                           facebook=session.get('facebook'))
+                           facebook=session.get('facebook'),
+                           twitter=session.get('twitter'))
 
 
 @app.route('/logout')
@@ -99,6 +100,7 @@ def logout():
     session['amazon'] = None
     session['yahoojp'] = None
     session['facebook'] = None
+    session['twitter'] = None
     return redirect('/demo.html')
 
 
