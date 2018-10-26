@@ -329,7 +329,7 @@ class Tokens(Base):
     oa_version = db.Column(db.SmallInteger, nullable=False)
     token_type = db.Column(db.String(15), nullable=False)
     access_token = db.Column(db.String(2047))
-    refresh_token = db.Column(db.String(255))
+    refresh_token = db.Column(db.String(2047))
     jwt_token = db.Column(db.String(2047))
     expires_at = db.Column(db.DateTime)
     oa1_token = db.Column(db.String(1023))
