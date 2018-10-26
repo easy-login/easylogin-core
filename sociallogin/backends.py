@@ -137,6 +137,7 @@ class OAuthBackend(object):
         else:
             url, token, secret = self._build_oauth1_authorize_uri(
                 channel=channel,
+                fail_callback=log.get_failed_callback(),
                 state=log.generate_oauth_state(**kwargs))
             logger.debug('Authorize URL: %s', url)
             log.oa1_token = token
@@ -184,7 +185,7 @@ class OAuthBackend(object):
         :param code:
         :return:
         """
-        fail_callback = log.callback_if_failed or log.callback_uri
+        fail_callback = log.get_failed_callback()
         tokens = self._get_token(channel, code, fail_callback)
         user_id, attrs = self._get_profile(channel, tokens, fail_callback)
         del attrs[self.__primary_attribute__()]
@@ -221,7 +222,7 @@ class OAuthBackend(object):
         :param verifier:
         :return:
         """
-        fail_callback = log.callback_if_failed or log.callback_uri
+        fail_callback = log.get_failed_callback()
         tokens = self._get_oauth1_token(
             channel=channel,
             tokens=(log.oa1_token, log.oa1_secret),
@@ -289,7 +290,7 @@ class OAuthBackend(object):
             error, desc = self._get_error(res.json())
             self._raise_redirect_error(
                 error=error,
-                msg='Getting %s access token failed: %s' % (self.provider.upper(), desc),
+                msg='Getting access token failed: %s' % desc,
                 fail_callback=fail_callback)
         return res.json()
 
@@ -308,7 +309,7 @@ class OAuthBackend(object):
             error, desc = self._get_error(res.json())
             self._raise_redirect_error(
                 error=error,
-                msg='Getting %s profile failed: %s' % (self.provider.upper(), desc),
+                msg='Getting profile failed: %s' % desc,
                 fail_callback=fail_callback)
 
         return self._get_attributes(response=res.json(), channel=channel)
@@ -327,16 +328,16 @@ class OAuthBackend(object):
                 attrs[key] = value
         return attrs[self.__primary_attribute__()], attrs
 
-    def _build_oauth1_authorize_uri(self, channel, state):
-        return None, None, None
+    def _build_oauth1_authorize_uri(self, channel, state, fail_callback):
+        raise NotImplementedError()
 
     def _get_oauth1_token(self, channel, tokens, verifier, fail_callback):
-        return None, None
+        raise NotImplementedError()
 
     def _get_oauth1_profile(self, channel, tokens, fail_callback):
-        return None, None
+        raise NotImplementedError()
 
-    def _get_error(self, response):
+    def _get_error(self, response, format_='json'):
         return response['error'], response['error_description']
 
     def _raise_redirect_error(self, error, msg, fail_callback):
@@ -443,7 +444,7 @@ class FacebookBackend(OAuthBackend):
             logger.debug('Getting access token failed: %s', repr(error))
             self._raise_redirect_error(
                 error='OAuthException',
-                msg='Getting %s access token failed: %s' % (self.provider.upper(), desc),
+                msg='Getting access token failed: %s' % desc,
                 fail_callback=fail_callback)
         return res.json()
 
@@ -458,7 +459,7 @@ class FacebookBackend(OAuthBackend):
             logger.debug('Getting profile failed: %s', repr(error))
             self._raise_redirect_error(
                 error='OAuthException',
-                msg='Getting %s profile failed: %s' % (self.provider.upper(), desc),
+                msg='Getting profile failed: %s' % desc,
                 fail_callback=fail_callback)
 
         attrs = {}
@@ -466,7 +467,7 @@ class FacebookBackend(OAuthBackend):
             attrs[key] = value
         return attrs[self.__primary_attribute__()], attrs
 
-    def _get_error(self, response):
+    def _get_error(self, response, format_='json'):
         return response['error'], response['error']['message']
 
 
@@ -476,11 +477,11 @@ class TwitterBackend(OAuthBackend):
     """
     OAUTH_VERSION = 1
 
-    def _build_oauth1_authorize_uri(self, channel, state):
+    def _build_oauth1_authorize_uri(self, channel, state, fail_callback):
         request_token_uri = __PROVIDER_SETTINGS__[self.provider]['request_token_uri']
         callback_uri = add_params_to_uri(self.redirect_uri, state=state)
         auth = self.create_authorization_header(
-            method='POST', 
+            method='POST',
             url=request_token_uri,
             consumer_key=channel.client_id,
             consumer_secret=channel.client_secret,
@@ -489,10 +490,18 @@ class TwitterBackend(OAuthBackend):
         res = requests.post(request_token_uri, headers={'Authorization': auth})
         if res.status_code != 200:
             logger.debug('Getting request token failed, status code: %d', res.status_code)
+            self._raise_redirect_error(
+                error='OAuthException',
+                msg='Getting request token failed, reason unknown',
+                fail_callback=fail_callback)
 
         body = up.parse_qs(res.text)
-        if not body.get('oauth_callback_confirmed'):
-            pass
+        if not body['oauth_callback_confirmed'][0]:
+            logger.debug('Getting request token failed, oauth_callback_confirmed=false')
+            self._raise_redirect_error(
+                error='OAuthException',
+                msg='Getting request token failed: oauth_callback_confirmed=false',
+                fail_callback=fail_callback)
 
         token = body['oauth_token'][0]
         secret = body['oauth_token_secret'][0]
@@ -514,7 +523,13 @@ class TwitterBackend(OAuthBackend):
         res = requests.post(token_uri, headers={'Authorization': auth},
                             data={'oauth_verifier': verifier})
         if res.status_code != 200:
-            logger.debug('Getting access token failed, status code: %d', res.status_code)
+            error, desc = self._get_error(res.text, format_='form')
+            logger.debug('Getting access token failed: %s', desc)
+            self._raise_redirect_error(
+                error='OAuthException',
+                msg='Getting access token failed: %s' % desc,
+                fail_callback=fail_callback)
+
         body = up.parse_qs(res.text)
         return body['oauth_token'][0], body['oauth_token_secret'][0]
 
@@ -537,12 +552,23 @@ class TwitterBackend(OAuthBackend):
             'include_email': 'true'
         })
         if res.status_code != 200:
-            logger.debug('Getting profile failed, status code: %d', res.status_code)
-            raise PermissionDeniedError()
+            error, desc = self._get_error(res.json())
+            logger.debug('Getting profile failed: %s', desc)
+            self._raise_redirect_error(
+                error='OAuthException',
+                msg='Getting profile failed: %s' % desc,
+                fail_callback=fail_callback)
+
         return self._get_attributes(channel, res.json())
 
-    def _get_error(self, response):
-        pass
+    def _get_error(self, response, format_='json'):
+        if format_ == 'json':
+            return response['code'][0], response['message'][0]
+        elif format_ == 'form':
+            qs = up.parse_qs(response)
+            return qs['code'][0], qs['message'][0]
+        else:
+            return 'unknown', ''
 
     @classmethod
     def create_authorization_header(cls, method, url, consumer_key, consumer_secret,

@@ -61,7 +61,7 @@ def auth_callback():
                          params={'api_key': session['api_key'], 'token': token})
         if r.status_code == 200:
             session[provider] = json.dumps(r.json(), sort_keys=True, indent=2)
-        return render_template('result.html', provider=provider, token=token,
+        return render_template('result.html', provider=provider.upper(), token=token,
                                profile=json.dumps(r.json(), sort_keys=True, indent=2))
     except KeyError:
         return _handle_error()
