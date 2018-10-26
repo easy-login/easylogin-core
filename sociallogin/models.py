@@ -381,20 +381,19 @@ class AuthLogs(Base):
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
     social_id = db.Column(db.Integer, db.ForeignKey('social_profiles.id'))
 
-    def __init__(self, provider, app_id, nonce, callback_uri, callback_if_failed=None,
-                 ua=None, ip=None, status=STATUS_UNKNOWN, **kwargs):
+    def __init__(self, provider, app_id, callback_uri, **kwargs):
         self.provider = provider
         self.app_id = app_id
-        self.nonce = nonce
         self.callback_uri = callback_uri
-        self.callback_if_failed = callback_if_failed
-        self.ua = ua[:min(len(ua), 1023)]
-        self.ip = ip
-        self.status = status
+        self.callback_if_failed = kwargs.get('callback_if_failed')
+        self.status = kwargs.get('status', self.STATUS_UNKNOWN)
+        self.nonce = kwargs.get('nonce')
+        self.ua = self._get_ua_safe(kwargs.get('ua'), max_len=1023)
+        self.ip = kwargs.get('ip')
         self.oa1_token = kwargs.get('oa1_token')
         self.oa1_secret = kwargs.get('oa1_secret')
 
-    def safe_get_failed_callback(self):
+    def get_failed_callback(self):
         return self.callback_if_failed or self.callback_uri
 
     def set_authorized(self, social_id, is_login, nonce):
@@ -435,6 +434,10 @@ class AuthLogs(Base):
             raise BadRequestError('Bad format parameter OAuth state')
         except TimeoutError:
             raise PermissionDeniedError('Session expired')
+
+    @staticmethod
+    def _get_ua_safe(ua, max_len):
+        return ua[:min(len(ua), max_len)] if ua else None
 
 
 class AssociateLogs(Base):

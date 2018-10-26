@@ -328,13 +328,13 @@ class OAuthBackend(object):
         return attrs[self.__primary_attribute__()], attrs
 
     def _build_oauth1_authorize_uri(self, channel, state):
-        pass
+        return None, None, None
 
     def _get_oauth1_token(self, channel, tokens, verifier, fail_callback):
-        pass
+        return None, None
 
     def _get_oauth1_profile(self, channel, tokens, fail_callback):
-        pass
+        return None, None
 
     def _get_error(self, response):
         return response['error'], response['error_description']
@@ -491,7 +491,6 @@ class TwitterBackend(OAuthBackend):
             logger.debug('Getting request token failed, status code: %d', res.status_code)
 
         body = up.parse_qs(res.text)
-        print('request token body', body)
         if not body.get('oauth_callback_confirmed'):
             pass
 
@@ -517,7 +516,6 @@ class TwitterBackend(OAuthBackend):
         if res.status_code != 200:
             logger.debug('Getting access token failed, status code: %d', res.status_code)
         body = up.parse_qs(res.text)
-        print('Access token', body)
         return body['oauth_token'][0], body['oauth_token_secret'][0]
 
     def _get_oauth1_profile(self, channel, tokens, fail_callback):
@@ -540,7 +538,6 @@ class TwitterBackend(OAuthBackend):
         })
         if res.status_code != 200:
             logger.debug('Getting profile failed, status code: %d', res.status_code)
-            print(res.text)
             raise PermissionDeniedError()
         return self._get_attributes(channel, res.json())
 
