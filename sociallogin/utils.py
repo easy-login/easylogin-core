@@ -1,8 +1,8 @@
 import base64
 from flask import abort, current_app as app, jsonify
 import urllib.parse as urlparse
-import uuid
 import hashlib
+import hmac
 import jwt
 import time
 import os
@@ -116,3 +116,8 @@ def get_remote_ip(req):
 def convert_to_user_timezone(dt):
     tz = pytz.timezone(app.config['TIME_ZONE'])
     return dt.replace(tzinfo=timezone.utc).astimezone(tz)
+
+
+def calculate_hmac(key, raw, digestmod=hashlib.sha1):
+    hashed = hmac.new(key.encode('utf8'), raw.encode('utf8'), digestmod=digestmod)
+    return base64.standard_b64encode(hashed.digest()).decode('ascii').rstrip('\n')

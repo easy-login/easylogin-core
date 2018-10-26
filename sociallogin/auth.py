@@ -47,13 +47,12 @@ def authorize_callback(provider):
     if not state:
         abort(400, 'Missing parameter state')
 
-    code = request.args.get('code')
-    if not code:
+    if not backend.verify_request_success(request.args):
         error = request.args.get('error')
         desc = request.args.get('error_description')
         callback_uri = backend.handle_authorize_error(state, error, desc)
     else:
-        profile, log, args = backend.handle_authorize_success(state, code)
+        profile, log, args = backend.handle_authorize_success(state, request.args)
         intent = args.get('intent')
         if intent == AuthLogs.INTENT_ASSOCIATE:
             if args.get('provider') != provider:

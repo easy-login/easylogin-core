@@ -322,24 +322,32 @@ class Users(Base):
 class Tokens(Base):
     __tablename__ = 'tokens'
 
+    OA_VERSION_2 = 2
+    OA_VERSION_1A = 1
+
     provider = db.Column(db.String(15), nullable=False)
-    access_token = db.Column(db.String(2047), nullable=False)
-    refresh_token = db.Column(db.String(2047))
+    oa_version = db.Column(db.SmallInteger, nullable=False)
+    token_type = db.Column(db.String(15), nullable=False)
+    access_token = db.Column(db.String(2047))
+    refresh_token = db.Column(db.String(255))
     jwt_token = db.Column(db.String(2047))
-    expires_at = db.Column(db.DateTime, nullable=False)
-    token_type = db.Column(db.String(15))
+    expires_at = db.Column(db.DateTime)
+    oa1_token = db.Column(db.String(1023))
+    oa1_secret = db.Column(db.String(1023))
 
     social_id = db.Column(db.Integer, db.ForeignKey('social_profiles.id'), nullable=False)
 
-    def __init__(self, provider, access_token, expires_at, social_id,
-                 refresh_token=None, jwt_token=None, token_type='Bearer'):
+    def __init__(self, provider, social_id, **kwargs):
         self.provider = provider
-        self.access_token = access_token
-        self.expires_at = expires_at
-        self.refresh_token = refresh_token
-        self.jwt_token = jwt_token
-        self.token_type = token_type
         self.social_id = social_id
+        self.token_type = kwargs.get('token_type', 'Bearer')
+        self.oa_version = kwargs.get('oa_version', self.OA_VERSION_2)
+        self.expires_at = kwargs.get('expires_at')
+        self.access_token = kwargs.get('access_token')
+        self.refresh_token = kwargs.get('refresh_token')
+        self.jwt_token = kwargs.get('jwt_token')
+        self.oa1_token = kwargs.get('oa1_token')
+        self.oa1_secret = kwargs.get('oa1_secret')
 
 
 class AuthLogs(Base):
@@ -365,22 +373,26 @@ class AuthLogs(Base):
     status = db.Column(db.String(15), nullable=False)
     is_login = db.Column(db.SmallInteger, nullable=False)
     auth_token = db.Column(db.String(32))
-    ua = db.Column(db.String(4095))
+    ua = db.Column(db.String(1023))
     ip = db.Column(db.String(15))
+    oa1_token = db.Column(db.String(1023))
+    oa1_secret = db.Column(db.String(1023))
 
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
     social_id = db.Column(db.Integer, db.ForeignKey('social_profiles.id'))
 
     def __init__(self, provider, app_id, nonce, callback_uri, callback_if_failed=None,
-                 ua=None, ip=None, status=STATUS_UNKNOWN):
+                 ua=None, ip=None, status=STATUS_UNKNOWN, **kwargs):
         self.provider = provider
         self.app_id = app_id
         self.nonce = nonce
         self.callback_uri = callback_uri
         self.callback_if_failed = callback_if_failed
-        self.ua = ua
+        self.ua = ua[:min(len(ua), 1023)]
         self.ip = ip
         self.status = status
+        self.oa1_token = kwargs.get('oa1_token')
+        self.oa1_secret = kwargs.get('oa1_secret')
 
     def safe_get_failed_callback(self):
         return self.callback_if_failed or self.callback_uri
