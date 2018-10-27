@@ -107,6 +107,9 @@ class Apps(Base):
         self.is_active = True
         self.is_anonymous = False
 
+    def get_callback_uris(self):
+        return self.callback_uris.split('|')
+
 
 class Channels(Base):
     __tablename__ = 'channels'
@@ -120,6 +123,21 @@ class Channels(Base):
     options = db.Column(db.String(255))
 
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
+
+    def get_permissions(self):
+        return (self.permissions or '').split('|')
+
+    def get_perms_as_oauth_scope(self):
+        return self.permissions.replace('|', ' ')
+
+    def get_required_fields(self):
+        return (self.required_fields or '').split('|')
+
+    def get_options(self):
+        return (self.options or '').split('|')
+
+    def extra_fields_enabled(self):
+        return 'extra_fields' in self.get_options()
 
 
 class SocialProfiles(Base):

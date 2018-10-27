@@ -19,7 +19,7 @@ __PROVIDER_SETTINGS__ = {
         'authorize_uri': 'https://access.line.me/oauth2/{version}/authorize?response_type=code',
         'token_uri': 'https://api.line.me/oauth2/{version}/token/',
         'profile_uri': 'https://api.line.me/v2/profile',
-        'primary_attr': 'userId'
+        'identify_attrs': ['userId']
     },
     'yahoojp': {
         'authorize_uri': '''
@@ -28,7 +28,7 @@ __PROVIDER_SETTINGS__ = {
             '''.strip().replace('\n', '').replace(' ', ''),
         'token_uri': 'https://auth.login.yahoo.co.jp/yconnect/{version}/token',
         'profile_uri': 'https://userinfo.yahooapis.jp/yconnect/{version}/attribute',
-        'primary_attr': 'sub'
+        'identify_attrs': ['sub']
     },
     'amazon': {
         'authorize_uri': '''
@@ -37,24 +37,22 @@ __PROVIDER_SETTINGS__ = {
             '''.strip().replace('\n', '').replace(' ', ''),
         'token_uri': 'https://api.amazon.com/auth/o2/token',
         'profile_uri': 'https://api.amazon.com/user/profile',
-        'primary_attr': 'user_id'
+        'identify_attrs': ['user_id']
     },
     'facebook': {
         'authorize_uri': 'https://www.facebook.com/{version}/dialog/oauth?response_type=code',
         'token_uri': 'https://graph.facebook.com/{version}/oauth/access_token',
         'profile_uri': 'https://graph.facebook.com/{version}/me',
-        'primary_attr': 'id'
+        'identify_attrs': ['id']
     },
     'twitter': {
         'request_token_uri': 'https://api.twitter.com/oauth/request_token',
         'authorize_uri': 'https://api.twitter.com/oauth/authenticate',
         'token_uri': 'https://api.twitter.com/oauth/access_token',
         'profile_uri': 'https://api.twitter.com/{version}/account/verify_credentials.json',
-        'primary_attr': 'id_str'
+        'identify_attrs': ['id_str', 'id']
     }
 }
-
-__DELIMITER__ = '|'
 
 
 def get_backend(provider):
@@ -109,9 +107,7 @@ class OAuthBackend(object):
         if not app or not channel:
             raise NotFoundError(msg='Application not found')
 
-        allowed_uris = [up.unquote_plus(uri) for uri in app.callback_uris.split(__DELIMITER__)]
-        # logger.debug('Allowed URIs: {}. URI to verify: {}'
-        #              .format(allowed_uris, (succ_callback, fail_callback)))
+        allowed_uris = [up.unquote_plus(uri) for uri in app.get_callback_uris()]
         logger.debug('Verify callback URI', style='hybrid', allowed_uris=allowed_uris, 
                      succ_callback=succ_callback, fail_callback=fail_callback)
 
@@ -200,7 +196,6 @@ class OAuthBackend(object):
         fail_callback = log.get_failed_callback()
         tokens = self._get_token(channel, code, fail_callback)
         user_id, attrs = self._get_profile(channel, tokens, fail_callback)
-        del attrs[self.__primary_attribute__()]
 
         try:
             profile, existed = SocialProfiles.add_or_update(
@@ -244,7 +239,6 @@ class OAuthBackend(object):
             channel=channel,
             tokens=tokens,
             fail_callback=fail_callback)
-        del attrs[self.__primary_attribute__()]
 
         try:
             profile, existed = SocialProfiles.add_or_update(
@@ -279,7 +273,7 @@ class OAuthBackend(object):
             uri=self.__authorize_uri__(version=channel.api_version),
             client_id=channel.client_id,
             redirect_uri=self.redirect_uri,
-            scope=channel.permissions.replace(__DELIMITER__, ' '),
+            scope=channel.get_perms_as_oauth_scope(),
             state=state)
         return uri
 
@@ -331,19 +325,26 @@ class OAuthBackend(object):
 
         return self._get_attributes(response=res.json(), channel=channel)
 
-    def _get_attributes(self, channel, response):
+    def _get_attributes(self, channel, response, nofilter=False):
         """
 
         :param response:
         :param channel:
+        :param nofilter:
         :return:
         """
-        attrs = {}
-        fields = (channel.required_fields or '').split(__DELIMITER__)
+        user_id = response[self.__identify_attrs__()[0]]
+        if nofilter or channel.extra_fields_enabled():
+            for key in self.__identify_attrs__():
+                del response[key]
+            return user_id, response
+            
+        attrs = dict()
+        fields = channel.get_required_fields()
         for key, value in response.items():
-            if key in fields or key == self.__primary_attribute__():
+            if key in fields:
                 attrs[key] = value
-        return attrs[self.__primary_attribute__()], attrs
+        return user_id, attrs
 
     def _build_oauth1_authorize_uri(self, channel, state, fail_callback):
         raise NotImplementedError()
@@ -361,8 +362,8 @@ class OAuthBackend(object):
         raise RedirectLoginError(error=error, msg=msg,
                                  redirect_uri=fail_callback, provider=self.provider)
 
-    def __primary_attribute__(self):
-        return __PROVIDER_SETTINGS__[self.provider]['primary_attr']
+    def __identify_attrs__(self):
+        return __PROVIDER_SETTINGS__[self.provider]['identify_attrs']
 
     def __authorize_uri__(self, version=None, numeric_format=False):
         if version and numeric_format:
@@ -385,6 +386,8 @@ class OAuthBackend(object):
 
     @staticmethod
     def _verify_callback_uri(allowed_uris, uri):
+        if not uri:
+            return False
         r1 = up.urlparse(uri)
         for _uri in allowed_uris:
             r2 = up.urlparse(_uri)
@@ -401,7 +404,7 @@ class LineBackend(OAuthBackend):
 
     def _build_authorize_uri(self, channel, state):
         bot_prompt = ''
-        options = (channel.options or '').split(__DELIMITER__)
+        options = channel.get_options()
         if 'add_friend' in options:
             bot_prompt = 'normal'
 
@@ -411,7 +414,7 @@ class LineBackend(OAuthBackend):
             nonce=gen_random_token(nbytes=16),
             client_id=channel.client_id,
             redirect_uri=self.redirect_uri,
-            scope=channel.permissions.replace(__DELIMITER__, ' '),
+            scope=channel.get_perms_as_oauth_scope(),
             state=state)
         return uri
 
@@ -478,10 +481,10 @@ class FacebookBackend(OAuthBackend):
         return res.json()
 
     def _get_profile(self, channel, tokens, fail_callback):
-        fields = (channel.required_fields or '').split(__DELIMITER__)
+        fields = channel.get_required_fields()
         res = requests.get(self.__profile_uri__(version=channel.api_version), params={
             'fields': ','.join(fields),
-            'access_tokens': tokens['access_token']
+            'access_token': tokens['access_token']
         })
         if res.status_code != 200:
             body = res.json()
@@ -492,7 +495,7 @@ class FacebookBackend(OAuthBackend):
                 msg='Getting user attributes from provider failed',
                 fail_callback=fail_callback)
 
-        return self._get_attributes(channel=channel, response=res.json())
+        return self._get_attributes(channel=channel, response=res.json(), nofilter=True)
 
     def _get_error(self, response, action='authorize'):
         if action != 'authorize':
