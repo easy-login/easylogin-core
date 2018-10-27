@@ -10,7 +10,8 @@ from sociallogin import db, logger
 from sociallogin.exc import RedirectLoginError, PermissionDeniedError, \
     UnsupportedProviderError, NotFoundError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
-from sociallogin.utils import gen_random_token, get_remote_ip, add_params_to_uri, calculate_hmac
+from sociallogin.utils import gen_random_token, get_remote_ip, \
+    add_params_to_uri, calculate_hmac
 
 
 __PROVIDER_SETTINGS__ = {
@@ -79,15 +80,19 @@ class OAuthBackend(object):
     JWT_TOKEN_ATTRIBUTE_NAME = 'id_token'
     OAUTH_VERSION = 2
 
+    ERROR_AUTHORIZE_FAILED = 'authorize_failed'
+    ERROR_GET_TOKEN_FAILED = 'get_token_failed'
+    ERROR_GET_PROFILE_FAILED = 'get_profile_failed'
+
     def __init__(self, provider):
         self.provider = provider
         self.redirect_uri = url_for('authorize_callback', _external=True, provider=provider)
 
-    def verify_request_success(self, query):
+    def verify_request_success(self, qs):
         if self.OAUTH_VERSION == 2:
-            return 'code' in query
+            return 'code' in qs
         else:
-            return 'oauth_token' in query and 'oauth_verifier' in query
+            return 'oauth_token' in qs and 'oauth_verifier' in qs
 
     def build_authorize_uri(self, app_id, succ_callback, fail_callback, **kwargs):
         """
@@ -105,8 +110,10 @@ class OAuthBackend(object):
             raise NotFoundError(msg='Application not found')
 
         allowed_uris = [up.unquote_plus(uri) for uri in app.callback_uris.split(__DELIMITER__)]
-        logger.debug('Allowed URIs: {}. URI to verify: {}'
-                     .format(allowed_uris, (succ_callback, fail_callback)))
+        # logger.debug('Allowed URIs: {}. URI to verify: {}'
+        #              .format(allowed_uris, (succ_callback, fail_callback)))
+        logger.debug('Verify callback URI', style='hybrid', allowed_uris=allowed_uris, 
+                     succ_callback=succ_callback, fail_callback=fail_callback)
 
         if not self._verify_callback_uri(allowed_uris, succ_callback):
             raise PermissionDeniedError(
@@ -133,50 +140,55 @@ class OAuthBackend(object):
             url = self._build_authorize_uri(
                 channel=channel,
                 state=log.generate_oauth_state(**kwargs))
-            logger.debug('Authorize URL: %s', url)
+            logger.debug('Authorize URL', url)
         else:
             url, token, secret = self._build_oauth1_authorize_uri(
                 channel=channel,
                 fail_callback=log.get_failed_callback(),
                 state=log.generate_oauth_state(**kwargs))
-            logger.debug('Authorize URL: %s', url)
+            logger.debug('Authorize URL', url)
             log.oa1_token = token
             log.oa1_secret = secret
         return url
 
-    def handle_authorize_error(self, state, error, desc):
+    def handle_authorize_error(self, state, qs):
         """
 
         :param state:
-        :param error:
-        :param desc:
+        :param qs:
         :return:
         """
         log, args = self._verify_and_parse_state(state)
         log.status = AuthLogs.STATUS_FAILED
-        fail_callback = log.callback_if_failed or log.callback_uri
-        self._raise_redirect_error(error=error, msg=desc, fail_callback=fail_callback)
+        fail_callback = log.get_failed_callback()
 
-    def handle_authorize_success(self, state, query):
+        error, desc = self._get_error(qs)
+        logger.debug('Authorize failed', provider=self.provider.upper(), 
+                     error=error, message=desc)
+        self._raise_redirect_error(
+            error=self.ERROR_AUTHORIZE_FAILED, 
+            msg='{}: {}'.format(error, desc), 
+            fail_callback=fail_callback)
+
+    def handle_authorize_success(self, state, qs):
         """
 
         :param state:
-        :param args:
+        :param qs:
         :return:
         """
-        log, args = AuthLogs.parse_from_oauth_state(oauth_state=state)
+        log, args = self._verify_and_parse_state(state)
         channel = Channels.query.filter_by(app_id=log.app_id,
                                            provider=self.provider).one_or_none()
         if self.OAUTH_VERSION == 2:
-            code = query['code']
+            code = qs['code']
             profile = self.handle_oauth2_authorize_success(log, channel, code)
         else:
             profile = self.handle_oauth1_authorize_success(
                 log=log, channel=channel,
-                token=query['oauth_token'],
-                verifier=query['oauth_verifier']
+                token=qs['oauth_token'],
+                verifier=qs['oauth_verifier']
             )
-
         return profile, log, args
 
     def handle_oauth2_authorize_success(self, log, channel, code):
@@ -287,10 +299,13 @@ class OAuthBackend(object):
             'client_secret': channel.client_secret
         })
         if res.status_code != 200:
-            error, desc = self._get_error(res.json())
+            body = res.json()
+            error, desc = self._get_error(body, action='get_token')
+            logger.warn('Getting access token failed', 
+                        provider=self.provider.upper(), **body)
             self._raise_redirect_error(
-                error=error,
-                msg='Getting access token failed: %s' % desc,
+                error=self.ERROR_GET_TOKEN_FAILED,
+                msg='{}: {}'.format(error, desc),
                 fail_callback=fail_callback)
         return res.json()
 
@@ -306,10 +321,12 @@ class OAuthBackend(object):
         res = requests.get(self.__profile_uri__(version=channel.api_version),
                            headers={'Authorization': authorization})
         if res.status_code != 200:
-            error, desc = self._get_error(res.json())
+            body = res.json()
+            logger.warn('Getting profile failed', 
+                        provider=self.provider.upper(), **body)
             self._raise_redirect_error(
-                error=error,
-                msg='Getting profile failed: %s' % desc,
+                error=self.ERROR_GET_PROFILE_FAILED,
+                msg='Getting user attributes from provider failed',
                 fail_callback=fail_callback)
 
         return self._get_attributes(response=res.json(), channel=channel)
@@ -337,7 +354,7 @@ class OAuthBackend(object):
     def _get_oauth1_profile(self, channel, tokens, fail_callback):
         raise NotImplementedError()
 
-    def _get_error(self, response, format_='json'):
+    def _get_error(self, response, action='authorize'):
         return response['error'], response['error_description']
 
     def _raise_redirect_error(self, error, msg, fail_callback):
@@ -411,6 +428,12 @@ class LineBackend(OAuthBackend):
         except jwt.PyJWTError as e:
             logger.error(repr(e))
         return user_id, attrs
+    
+    def _get_error(self, response, action='authorize'):
+        if action == 'get_profile':
+            return 'api_error', response['message']
+        else:
+            return super()._get_error(response, action)
 
 
 class AmazonBackend(OAuthBackend):
@@ -424,7 +447,11 @@ class YahooJpBackend(OAuthBackend):
     """
     Authentication handler for YAHOOJP accounts
     """
-    pass
+    def _get_error(self, response, action='authorize'):
+        if action == 'get_profile':
+            return 'api_error', response['Error']['Message']
+        else:
+            return super()._get_error(response, action)
 
 
 class FacebookBackend(OAuthBackend):
@@ -440,11 +467,13 @@ class FacebookBackend(OAuthBackend):
             'client_secret': channel.client_secret
         })
         if res.status_code != 200:
-            error, desc = self._get_error(res.json())
-            logger.debug('Getting access token failed: %s', repr(error))
+            body = res.json()
+            error, desc = self._get_error(body, action='get_token')
+            logger.warn('Getting access token failed', 
+                        provider=self.provider.upper(), **body)
             self._raise_redirect_error(
-                error='OAuthException',
-                msg='Getting access token failed: %s' % desc,
+                error=self.ERROR_GET_TOKEN_FAILED,
+                msg='{}: {}'.format(error, desc),
                 fail_callback=fail_callback)
         return res.json()
 
@@ -452,23 +481,24 @@ class FacebookBackend(OAuthBackend):
         fields = (channel.required_fields or '').split(__DELIMITER__)
         res = requests.get(self.__profile_uri__(version=channel.api_version), params={
             'fields': ','.join(fields),
-            'access_token': tokens['access_token']
+            'access_tokens': tokens['access_token']
         })
         if res.status_code != 200:
-            error, desc = self._get_error(res.json())
-            logger.debug('Getting profile failed: %s', repr(error))
+            body = res.json()
+            logger.warn('Getting profile failed',
+                        provider=self.provider.upper(), **body)
             self._raise_redirect_error(
-                error='OAuthException',
-                msg='Getting profile failed: %s' % desc,
+                error=self.ERROR_GET_PROFILE_FAILED,
+                msg='Getting user attributes from provider failed',
                 fail_callback=fail_callback)
 
-        attrs = {}
-        for key, value in res.json().items():
-            attrs[key] = value
-        return attrs[self.__primary_attribute__()], attrs
+        return self._get_attributes(channel=channel, response=res.json())
 
-    def _get_error(self, response, format_='json'):
-        return response['error'], response['error']['message']
+    def _get_error(self, response, action='authorize'):
+        if action != 'authorize':
+            return response['error']['type'], response['error']['message']
+        else:
+            return super()._get_error(response, action)
 
 
 class TwitterBackend(OAuthBackend):
@@ -489,17 +519,18 @@ class TwitterBackend(OAuthBackend):
 
         res = requests.post(request_token_uri, headers={'Authorization': auth})
         if res.status_code != 200:
-            logger.debug('Getting request token failed, status code: %d', res.status_code)
+            body = up.parse_qs(res.text)
+            logger.warn('Getting request token failed', code=res.status_code, **body)
             self._raise_redirect_error(
-                error='OAuthException',
-                msg='Getting request token failed, reason unknown',
+                error=self.ERROR_GET_TOKEN_FAILED,
+                msg='Getting request token failed',
                 fail_callback=fail_callback)
 
         body = up.parse_qs(res.text)
         if not body['oauth_callback_confirmed'][0]:
-            logger.debug('Getting request token failed, oauth_callback_confirmed=false')
+            logger.warn('Getting request token failed', oauth_callback_confirmed=0)
             self._raise_redirect_error(
-                error='OAuthException',
+                error=self.ERROR_GET_TOKEN_FAILED,
                 msg='Getting request token failed: oauth_callback_confirmed=false',
                 fail_callback=fail_callback)
 
@@ -523,11 +554,11 @@ class TwitterBackend(OAuthBackend):
         res = requests.post(token_uri, headers={'Authorization': auth},
                             data={'oauth_verifier': verifier})
         if res.status_code != 200:
-            error, desc = self._get_error(res.text, format_='form')
-            logger.debug('Getting access token failed: %s', desc)
+            body = up.parse_qs(res.text)
+            logger.warn('Getting access token failed', code=res.status_code, **body)
             self._raise_redirect_error(
-                error='OAuthException',
-                msg='Getting access token failed: %s' % desc,
+                error=self.ERROR_GET_TOKEN_FAILED,
+                msg='Getting access token failed',
                 fail_callback=fail_callback)
 
         body = up.parse_qs(res.text)
@@ -552,23 +583,20 @@ class TwitterBackend(OAuthBackend):
             'include_email': 'true'
         })
         if res.status_code != 200:
-            error, desc = self._get_error(res.json())
-            logger.debug('Getting profile failed: %s', desc)
+            body = res.json()
+            logger.warn('Getting profile failed', code=res.status_code, **body)
             self._raise_redirect_error(
-                error='OAuthException',
-                msg='Getting profile failed: %s' % desc,
+                error=self.ERROR_GET_PROFILE_FAILED,
+                msg='Getting profile failed',
                 fail_callback=fail_callback)
 
         return self._get_attributes(channel, res.json())
 
-    def _get_error(self, response, format_='json'):
-        if format_ == 'json':
+    def _get_error(self, response, action='authorize'):
+        if action != 'authorize':
             return response['code'][0], response['message'][0]
-        elif format_ == 'form':
-            qs = up.parse_qs(response)
-            return qs['code'][0], qs['message'][0]
         else:
-            return 'unknown', ''
+            return super()._get_error(response, action)
 
     @classmethod
     def create_authorization_header(cls, method, url, consumer_key, consumer_secret,
@@ -596,7 +624,10 @@ class TwitterBackend(OAuthBackend):
         kwargs.update(auth)
         sorted_keys = sorted(kwargs)
         param = '&'.join([k + '=' + up.quote(kwargs[k], safe='') for k in sorted_keys])
-        sign_base = '{}&{}&{}'.format(method, up.quote(url, safe=''), up.quote(param, safe=''))
+        sign_base = '{method}&{base_url}&{param}'.format(
+            method=method, 
+            base_url=up.quote(url, safe=''), 
+            param=up.quote(param, safe=''))
         sign_key = up.quote(consumer_secret) + '&' + up.quote(oauth_token_secret)
 
         return calculate_hmac(key=sign_key, raw=sign_base)

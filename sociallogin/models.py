@@ -430,8 +430,8 @@ class AuthLogs(Base):
                 raise BadRequestError('Invalid state, nonce does not match')
             return log, args
         except (KeyError, ValueError, TypeError, IndexError) as e:
-            logger.warn('Bad format parameter OAuth state: %s', repr(e))
-            raise BadRequestError('Bad format parameter OAuth state')
+            logger.warn('Invalid OAuth state: %s', repr(e), exc_info=1)
+            raise BadRequestError('Invalid OAuth state')
         except TimeoutError:
             raise PermissionDeniedError('Session expired')
 

@@ -39,6 +39,9 @@ class EasyLogger(object):
     def warning(self, msg, *args, style=None, **kwargs):
         self._print_log(logging.WARNING, msg, style, *args, **kwargs)
 
+    def warn(self, msg, *args, style=None, **kwargs):
+        self.warning(msg, *args, style=style, **kwargs)
+
     def error(self, msg, *args, style=None, **kwargs):
         self._print_log(logging.ERROR, msg, style, *args, **kwargs)
 
