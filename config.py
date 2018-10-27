@@ -29,3 +29,4 @@ LOG_FORMAT = os.getenv(
 )
 LOG_DATE_FORMAT = os.getenv('LOG_DATE_FORMAT', '%Y-%m-%d %H:%M:%S')
 LOG_DIR = os.getenv('LOG_DIR', '/var/log/sociallogin')
+LOG_STYLE = os.getenv('LOG_STYLE', 'inline')

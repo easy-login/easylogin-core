@@ -19,7 +19,9 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 # Define logger object
-logger = app.logger
+from sociallogin.utils import EasyLogger
+logger = EasyLogger(impl=app.logger)
+logger.load_from_config(app.config)
 
 # Build the database:
 # This will create the database file using SQLAlchemy
