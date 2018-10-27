@@ -404,8 +404,7 @@ class LineBackend(OAuthBackend):
 
     def _build_authorize_uri(self, channel, state):
         bot_prompt = ''
-        options = channel.get_options()
-        if 'add_friend' in options:
+        if 'add_friend' in channel.get_options():
             bot_prompt = 'normal'
 
         uri = add_params_to_uri(
@@ -443,7 +442,16 @@ class AmazonBackend(OAuthBackend):
     """
     Authentication handler for AMAZON accounts
     """
-    pass
+    def _build_authorize_uri(self, channel, state):
+        scope = channel.get_perms_as_oauth_scope()
+        if 'amazon_pay' in channel.get_options():
+            scope += ' payments:widget payments:shipping_address payments:billing_address'
+        uri = add_params_to_uri(
+            uri=self.__authorize_uri__(version=channel.api_version),
+            client_id=channel.client_id,
+            redirect_uri=self.redirect_uri,
+            scope=scope, state=state)
+        return uri
 
 
 class YahooJpBackend(OAuthBackend):
