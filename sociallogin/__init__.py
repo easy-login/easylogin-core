@@ -1,7 +1,9 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+
 import logging
+import os
 
 
 # Define the WSGI application object
@@ -34,14 +36,16 @@ from sociallogin import auth, routes, exc
 auth.init_app(app)
 
 
-def init_logging(_app):
-    file_handler = logging.FileHandler(filename=_app.config['LOG_DIR'] + '/server.log')
+def init_logging(app_):
+    log_dir = app_.config['LOG_DIR']
+    os.makedirs(name=log_dir, mode=0o755, exist_ok=True)
+    file_handler = logging.FileHandler(filename=log_dir + '/server.log')
     file_handler.setFormatter(logging.Formatter(
-        fmt=_app.config['LOG_FORMAT'],
-        datefmt=_app.config['LOG_DATE_FORMAT']
+        fmt=app_.config['LOG_FORMAT'],
+        datefmt=app_.config['LOG_DATE_FORMAT']
     ))
-    _app.logger.setLevel(app.config['LOG_LEVEL'])
-    _app.logger.addHandler(file_handler)
+    app_.logger.setLevel(app.config['LOG_LEVEL'])
+    app_.logger.addHandler(file_handler)
 
 
 init_logging(app)
