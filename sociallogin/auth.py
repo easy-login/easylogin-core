@@ -1,9 +1,9 @@
 from flask import abort, redirect, request, url_for, jsonify
 
-from sociallogin import app as flask_app, db, login_manager, logger
+from sociallogin import app as flask_app, db, login_manager, logger, get_remote_ip
 from sociallogin.models import Apps, AuthLogs, AssociateLogs
 from sociallogin.backends import get_backend
-from sociallogin.utils import add_params_to_uri, get_remote_ip
+from sociallogin.utils import add_params_to_uri
 from sociallogin.exc import RedirectLoginError
 
 

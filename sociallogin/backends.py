@@ -6,12 +6,11 @@ import requests
 from flask import request, url_for
 import jwt
 
-from sociallogin import db, logger
+from sociallogin import db, logger, get_remote_ip
 from sociallogin.exc import RedirectLoginError, PermissionDeniedError, \
     UnsupportedProviderError, NotFoundError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
-from sociallogin.utils import gen_random_token, get_remote_ip, \
-    add_params_to_uri, calculate_hmac
+from sociallogin.utils import gen_random_token, add_params_to_uri, calculate_hmac
 
 
 __PROVIDER_SETTINGS__ = {
