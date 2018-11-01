@@ -7,13 +7,13 @@ import os
 import secrets
 import string
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import timezone
 import json
 import logging
 
 import pytz
 import jwt
-from flask import abort, current_app as app, jsonify, request
+from flask import abort, current_app as app, request
 
 
 class EasyLogger(object):
@@ -83,20 +83,29 @@ class EasyLogger(object):
         return '"%s"' % s if ' ' in s else s
 
 
-def b64encode_string(s, urlsafe=False, padding=True, charset='utf8'):
-    ib = s.encode(charset)
-    ob = base64.urlsafe_b64encode(ib) if urlsafe else base64.standard_b64encode(ib)
+def base64encode(b, urlsafe=False, padding=True):
+    ob = base64.urlsafe_b64encode(b) if urlsafe else base64.standard_b64encode(b)
     encoded = ob.decode('ascii')
     if not padding:
         encoded = encoded.rstrip('=')
     return encoded
 
 
-def b64decode_string(s, urlsafe=False, charset='utf8'):
+def base64decode(s, urlsafe=False):
     padding = 4 - (len(s) % 4)
     s += ('=' * padding)
-    ib = s.encode('ascii')
-    ob = base64.urlsafe_b64decode(ib) if urlsafe else base64.standard_b64decode(ib)
+    b = s.encode('ascii')
+    ob = base64.urlsafe_b64decode(b) if urlsafe else base64.standard_b64decode(b)
+    return ob
+
+
+def b64encode_string(s, urlsafe=False, padding=True, charset='utf8'):
+    b = s.encode(charset)
+    return base64encode(b, urlsafe, padding)
+
+
+def b64decode_string(s, urlsafe=False, charset='utf8'):
+    ob = base64decode(s, urlsafe)
     return ob.decode(charset)
 
 
@@ -150,13 +159,6 @@ def decode_jwt(encoded):
         return None
 
 
-def make_api_response(payload, success=True):
-    return jsonify({'success': success}) if payload else jsonify({
-        'success': success,
-        'data': payload
-    })
-
-
 def convert_CameCase_to_snake_case(s):
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', s)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
@@ -190,4 +192,4 @@ def convert_to_user_timezone(dt):
 
 def calculate_hmac(key, raw, digestmod=hashlib.sha1):
     hashed = hmac.new(key.encode('utf8'), raw.encode('utf8'), digestmod=digestmod)
-    return base64.standard_b64encode(hashed.digest()).decode('ascii').rstrip('\n')
+    return base64encode(hashed.digest()).rstrip('\n')
