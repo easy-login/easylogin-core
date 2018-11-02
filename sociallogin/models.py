@@ -9,11 +9,12 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.types import DateTime
 
 from sociallogin import db, logger
-from sociallogin.utils import b64encode_string, b64decode_string, gen_random_token, \
-    gen_jwt_token, decode_jwt, convert_to_user_timezone
+from sociallogin.sec import jwt_token_service, easy_token_service
+from sociallogin.utils import b64encode_string, b64decode_string, \
+    gen_random_token, convert_to_user_timezone
 from sociallogin.atomic import generate_64bit_id
-from sociallogin.exc import BadRequestError, PermissionDeniedError, \
-    ConflictError, NotFoundError
+from sociallogin.exc import ConflictError, NotFoundError, \
+    BadRequestError, TokenParseError
 
 
 class utcnow(expression.FunctionElement):
@@ -419,39 +420,36 @@ class AuthLogs(Base):
         self.social_id = social_id
         self.is_login = is_login
         self.status = self.STATUS_AUTHORIZED
-        self.auth_token = self.generate_one_time_token()
 
     def generate_oauth_state(self, **kwargs):
-        return gen_jwt_token(sub=self._id, exp_in_seconds=600,
-                             _nonce=self.nonce, **kwargs)
+        return jwt_token_service.generate(sub=self._id, exp_in_seconds=3600,
+                                          _nonce=self.nonce, **kwargs)
 
-    def generate_one_time_token(self):
-        return self.nonce
-
-    @classmethod
-    def find_by_one_time_token(cls, auth_token):
-        log = cls.query.filter_by(auth_token=auth_token).order_by(cls._id.desc()).first()
-        if not log:
-            raise BadRequestError('Invalid token')
-        if log.status != AuthLogs.STATUS_AUTHORIZED:
-            raise BadRequestError('Token expired or already used')
-        return log
+    def generate_auth_token(self):
+        return easy_token_service.generate(sub=self._id, exp_in_seconds=3600,
+                                           _nonce=self.nonce)
 
     @classmethod
-    def parse_from_oauth_state(cls, oauth_state):
-        try:
-            log_id, args = decode_jwt(oauth_state)
-            log = cls.query.filter_by(_id=log_id).one_or_none()
-            if not log:
-                raise BadRequestError('Invalid state')
-            if log.nonce != args['_nonce']:
-                raise BadRequestError('Invalid state, nonce does not match')
-            return log, args
-        except (KeyError, ValueError, TypeError, IndexError) as e:
-            logger.warn('Invalid OAuth state: %s', repr(e), exc_info=1)
+    def parse_oauth_state(cls, oauth_state):
+        log_id, args = jwt_token_service.decode(token=oauth_state)
+        log = cls.query.filter_by(_id=log_id).one_or_none()
+
+        if not log or log.nonce != args.get('_nonce'):
             raise BadRequestError('Invalid OAuth state')
-        except TimeoutError:
-            raise PermissionDeniedError('Session expired')
+        if log.status != AuthLogs.STATUS_UNKNOWN:
+            raise BadRequestError('Invalid OAuth state')
+        return log, args
+
+    @classmethod
+    def parse_auth_token(cls, auth_token):
+        log_id, args = easy_token_service.decode(token=auth_token)
+        log = cls.query.filter_by(_id=log_id).one_or_none()
+
+        if not log or log.nonce != args.get('_nonce'):
+            raise BadRequestError('Invalid auth token')
+        if log.status != AuthLogs.STATUS_AUTHORIZED:
+            raise BadRequestError('Invalid auth token')
+        return log
 
     @staticmethod
     def _get_ua_safe(ua, max_len):
@@ -508,7 +506,7 @@ class AssociateLogs(Base):
             if log.nonce != params[0]:
                 raise BadRequestError('Invalid associate token, nonce does not match')
             if log.status != cls.STATUS_NEW:
-                raise PermissionDeniedError('Token expired or already used')
+                raise BadRequestError('Token expired or already used')
             return log
         except (KeyError, ValueError, TypeError, IndexError) as e:
             logger.warn('Bad format associate_token: %s', repr(e))

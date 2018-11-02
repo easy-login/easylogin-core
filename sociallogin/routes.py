@@ -1,11 +1,12 @@
 from flask import abort, jsonify, request, url_for
-from flask_login import login_required, current_user as current_app
+from flask_login import login_required
 from sqlalchemy import func, and_
 
 from sociallogin import app as flask_app, db, logger
 from sociallogin.models import SocialProfiles, Users, AuthLogs, AssociateLogs
 from sociallogin.utils import gen_random_token
 from sociallogin.backends import is_valid_provider
+from sociallogin.exc import TokenParseError, BadRequestError
 
 
 @flask_app.route('/<int:app_id>/profiles/authorized')
@@ -14,19 +15,18 @@ def authorized_profile(app_id):
     token = request.args.get('token')
     if not token:
         abort(400, 'Missing parameter token')
-    log = AuthLogs.find_by_one_time_token(auth_token=token)
     try:
+        log = AuthLogs.parse_auth_token(auth_token=token)
         log.status = AuthLogs.STATUS_SUCCEEDED
         profile = SocialProfiles.query.filter_by(_id=log.social_id).first_or_404()
         body = profile.as_dict()
+        db.session.commit()
+
         logger.debug('Profile authenticated', style='hybrid', **body)
         return jsonify(body)
-    except Exception as e:
-        logger.error('Get authorized profile error')
-        log.status = AuthLogs.STATUS_FAILED
-        raise
-    finally:
-        db.session.commit()
+    except TokenParseError as e:
+        logger.warning('Parse auth token failed', error=e.description, token=token)
+        raise BadRequestError('Invalid auth token. ' + e.description)
 
 
 @flask_app.route('/<int:app_id>/users/link', methods=['PUT'])

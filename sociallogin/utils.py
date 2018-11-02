@@ -7,8 +7,6 @@ import secrets
 import string
 import urllib.parse as urlparse
 from datetime import timezone
-import jwt
-import time
 
 import pytz
 from flask import current_app as app
@@ -58,29 +56,6 @@ def gen_random_token(nbytes=32, format='alphanumeric'):
         return base64.standard_b64encode(secrets.token_bytes(nbytes))
     else:
         return os.urandom(nbytes)
-
-
-def gen_jwt_token(sub, exp_in_seconds, **kwargs):
-    now = int(time.time())
-    return jwt.encode({
-        'iss': app.config['SERVER_NAME'],
-        'sub': sub,
-        'exp': now + exp_in_seconds,
-        'iat': now,
-        'data': kwargs
-    }, key=app.config['SECRET_KEY'], algorithm='HS256').decode('utf8')
-
-
-def decode_jwt(encoded):
-    try:
-        payload = jwt.decode(encoded, key=app.config['SECRET_KEY'],
-                             issuer=app.config['SERVER_NAME'], algorithms=['HS256'])
-        expire = payload.get('exp', 0)
-        if expire < int(time.time()):
-            raise TimeoutError()
-        return payload['sub'], payload['data']
-    except (jwt.exceptions.PyJWTError, KeyError):
-        return None
 
 
 def convert_CameCase_to_snake_case(s):

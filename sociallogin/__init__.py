@@ -109,9 +109,9 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 # Define logger object
-# from sociallogin.utils import EasyLogger
 logger = EasyLogger(impl=app.logger)
 logger.load_from_config(app.config)
+init_logging(app)
 
 # Build the database:
 # This will create the database file using SQLAlchemy
@@ -122,5 +122,3 @@ db.session.commit()
 # Import all API endpoint definitions
 from sociallogin import auth, routes, exc
 auth.init_app(app)
-
-init_logging(app)

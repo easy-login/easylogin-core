@@ -67,6 +67,11 @@ class UnsupportedProviderError(NotFoundError):
         super().__init__(msg='Unsupported provider', **kwargs)
 
 
+class TokenParseError(BadRequestError):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
 @app.errorhandler(RedirectLoginError)
 def redirect_login_error(error):
     redirect_uri = add_params_to_uri(error.redirect_uri, **error.as_dict())

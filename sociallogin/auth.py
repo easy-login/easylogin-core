@@ -79,12 +79,13 @@ def authorize_callback(provider):
                 redirect_uri=log.get_failed_callback(),
                 provider=provider)
 
+        token = log.generate_auth_token()
         callback_uri = add_params_to_uri(
             uri=log.callback_uri,
             provider=provider,
-            token=log.auth_token,
+            token=token,
             profile_uri=url_for('authorized_profile', _external=True,
-                                app_id=log.app_id, token=log.auth_token)
+                                app_id=log.app_id, token=token)
         )
 
     db.session.commit()

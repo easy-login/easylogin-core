@@ -8,7 +8,7 @@ import jwt
 
 from sociallogin import db, logger, get_remote_ip
 from sociallogin.exc import RedirectLoginError, PermissionDeniedError, \
-    UnsupportedProviderError, NotFoundError
+    UnsupportedProviderError, NotFoundError, BadRequestError, TokenParseError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
 from sociallogin.utils import gen_random_token, add_params_to_uri, calculate_hmac
 
@@ -381,7 +381,11 @@ class OAuthBackend(object):
 
     @staticmethod
     def _verify_and_parse_state(state):
-        return AuthLogs.parse_from_oauth_state(oauth_state=state)
+        try:
+            return AuthLogs.parse_oauth_state(oauth_state=state)
+        except TokenParseError as e:
+            logger.warning('Parse OAuth state failed', error=e.description, token=state)
+            raise BadRequestError('Invalid OAuth state. ' + e.description)
 
     @staticmethod
     def _verify_callback_uri(allowed_uris, uri):
