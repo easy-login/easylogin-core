@@ -3,6 +3,7 @@ import urllib.parse as urlparse
 import requests
 import json
 import random
+import secrets
 
 
 app = Flask(__name__, template_folder='.')
@@ -87,6 +88,7 @@ def demo_page():
                            api_key=session['api_key'],
                            link_result=request.args.get('link_result', ''),
                            unlink_result=request.args.get('unlink_result', ''),
+                           nonce=secrets.token_hex(nbytes=16),
                            line=session.get('line'),
                            amazon=session.get('amazon'),
                            yahoojp=session.get('yahoojp'),

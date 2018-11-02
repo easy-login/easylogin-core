@@ -16,6 +16,12 @@ def authorize(provider, intent):
     if not callback_uri or not app_id:
         abort(400, 'Missing parameters app_id or callback_uri')
 
+    nonce = request.args.get('nonce', '')
+    if len(nonce) > 255:
+        abort(400, 'Nonce length exceeded limit 255 characters')
+    if nonce and not nonce.isalnum():
+        abort(400, 'Invalid nonce, only alphanumeric string accepted')
+
     backend = get_backend(provider)
     authorize_uri = None
     if intent == AuthLogs.INTENT_ASSOCIATE:
@@ -30,6 +36,7 @@ def authorize(provider, intent):
                 app_id=app_id,
                 succ_callback=callback_uri,
                 fail_callback=callback_if_failed,
+                nonce=nonce,
                 intent=intent,
                 user_id=log.user_id,
                 provider=provider,
@@ -43,6 +50,7 @@ def authorize(provider, intent):
             app_id=app_id,
             succ_callback=callback_uri,
             fail_callback=callback_if_failed,
+            nonce=nonce,
             intent=intent)
 
     db.session.commit()
@@ -57,45 +65,46 @@ def authorize_callback(provider):
         abort(400, 'Missing parameter state')
 
     if not backend.verify_request_success(request.args):
-        callback_uri = backend.handle_authorize_error(state, request.args)
-    else:
-        profile, log, args = backend.handle_authorize_success(state, request.args)
-        intent = args.get('intent')
-        if intent == AuthLogs.INTENT_ASSOCIATE:
-            if args.get('provider') != provider:
-                raise RedirectLoginError(
-                    error='permission_denied',
-                    msg='Target provider does not match',
-                    redirect_uri=log.get_failed_callback(),
-                    provider=provider)
-            elif profile.user_id:
-                raise RedirectLoginError(
-                    error='conflict',
-                    msg='Target social profile already linked with another user',
-                    redirect_uri=log.get_failed_callback(),
-                    provider=provider)
-            profile.link_user_by_id(user_id=args.get('user_id'))
-        elif intent == AuthLogs.INTENT_LOGIN and not log.is_login:
-            raise RedirectLoginError(
-                error='invalid_request',
-                msg='Social profile does not exist, should register instead',
-                redirect_uri=log.get_failed_callback(),
-                provider=provider)
-        elif intent == AuthLogs.INTENT_REGISTER and log.is_login:
-            raise RedirectLoginError(
-                error='invalid_request',
-                msg='Social profile already existed, should login instead',
-                redirect_uri=log.get_failed_callback(),
-                provider=provider)
+        backend.handle_authorize_error(state, request.args)
 
-        token = log.generate_auth_token()
-        callback_uri = add_params_to_uri(
-            uri=log.callback_uri,
-            provider=provider,
-            token=token,
-            profile_uri=url_for('authorized_profile', _external=True,
-                                app_id=log.app_id, token=token)
-        )
+    profile, log, args = backend.handle_authorize_success(state, request.args)
+    intent = args.get('intent')
+    if intent == AuthLogs.INTENT_ASSOCIATE:
+        if args.get('provider') != provider:
+            raise RedirectLoginError(
+                error='permission_denied',
+                msg='Target provider does not match',
+                redirect_uri=log.get_failed_callback(),
+                provider=provider)
+        elif profile.user_id:
+            raise RedirectLoginError(
+                error='conflict',
+                msg='Profile has linked with another user',
+                redirect_uri=log.get_failed_callback(),
+                provider=provider)
+        profile.link_user_by_id(user_id=args.get('user_id'))
+    elif intent == AuthLogs.INTENT_LOGIN and not log.is_login:
+        raise RedirectLoginError(
+            error='invalid_request',
+            msg='Social profile does not exist, should register instead',
+            redirect_uri=log.get_failed_callback(),
+            provider=provider)
+    elif intent == AuthLogs.INTENT_REGISTER and log.is_login:
+        raise RedirectLoginError(
+            error='invalid_request',
+            msg='Social profile already existed, should login instead',
+            redirect_uri=log.get_failed_callback(),
+            provider=provider)
+
+    token = log.generate_auth_token()
+    callback_uri = add_params_to_uri(
+        uri=log.callback_uri,
+        provider=provider,
+        token=token,
+        nonce=args.get('nonce'),
+        profile_uri=url_for('authorized_profile', _external=True,
+                            app_id=log.app_id, token=token)
+    )
 
     db.session.commit()
     return redirect(callback_uri)

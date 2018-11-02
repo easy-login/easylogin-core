@@ -32,13 +32,15 @@ class RedirectLoginError(SocialLoginError):
     def __init__(self, *args, **kwargs):
         self.provider = kwargs['provider']
         self.redirect_uri = kwargs['redirect_uri']
+        self.nonce = kwargs.get('nonce')
         super().__init__(*args, **kwargs)
 
     def as_dict(self):
         return {
             'provider': self.provider,
             'error': self.error,
-            'error_description': self.description
+            'error_description': self.description,
+            'nonce': self.nonce
         }
 
 

@@ -413,6 +413,9 @@ class AuthLogs(Base):
         self.oa1_token = kwargs.get('oa1_token')
         self.oa1_secret = kwargs.get('oa1_secret')
 
+        # client nonce used to prevent csrf attack
+        self.client_nonce = None
+
     def get_failed_callback(self):
         return self.callback_if_failed or self.callback_uri
 
