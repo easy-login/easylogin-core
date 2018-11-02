@@ -74,12 +74,14 @@ def authorize_callback(provider):
             raise RedirectLoginError(
                 error='permission_denied',
                 msg='Target provider does not match',
+                nonce=args.get('nonce'),
                 redirect_uri=log.get_failed_callback(),
                 provider=provider)
         elif profile.user_id:
             raise RedirectLoginError(
                 error='conflict',
                 msg='Profile has linked with another user',
+                nonce=args.get('nonce'),
                 redirect_uri=log.get_failed_callback(),
                 provider=provider)
         profile.link_user_by_id(user_id=args.get('user_id'))
@@ -87,12 +89,14 @@ def authorize_callback(provider):
         raise RedirectLoginError(
             error='invalid_request',
             msg='Social profile does not exist, should register instead',
+            nonce=args.get('nonce'),
             redirect_uri=log.get_failed_callback(),
             provider=provider)
     elif intent == AuthLogs.INTENT_REGISTER and log.is_login:
         raise RedirectLoginError(
             error='invalid_request',
             msg='Social profile already existed, should login instead',
+            nonce=args.get('nonce'),
             redirect_uri=log.get_failed_callback(),
             provider=provider)
 
