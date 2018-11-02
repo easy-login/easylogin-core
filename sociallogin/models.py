@@ -360,7 +360,7 @@ class Tokens(Base):
         self.provider = provider
         self.social_id = social_id
         self.token_type = kwargs.get('token_type', 'Bearer')
-        self.oa_version = kwargs.get('oa_version', self.OA_VERSION_2)
+        self.oa_version = kwargs.get('oa_version') or self.OA_VERSION_2
         self.expires_at = kwargs.get('expires_at')
         self.access_token = kwargs.get('access_token')
         self.refresh_token = kwargs.get('refresh_token')
@@ -377,7 +377,7 @@ class AuthLogs(Base):
     STATUS_SUCCEEDED = 'succeeded'
     STATUS_FAILED = 'failed'
 
-    INTENT_AUTHENTICATE = 'authenticate'
+    INTENT_AUTHENTICATE = 'auth'
     INTENT_ASSOCIATE = 'associate'
     INTENT_LOGIN = 'login'
     INTENT_REGISTER = 'register'
@@ -391,7 +391,7 @@ class AuthLogs(Base):
     nonce = db.Column(db.String(32), nullable=False)
     status = db.Column(db.String(15), nullable=False)
     is_login = db.Column(db.SmallInteger, nullable=False)
-    auth_token = db.Column(db.String(32))
+    intent = db.Column(db.String(32))
     ua = db.Column(db.String(1023))
     ip = db.Column(db.String(15))
     oa1_token = db.Column(db.String(1023))
@@ -405,8 +405,9 @@ class AuthLogs(Base):
         self.app_id = app_id
         self.callback_uri = callback_uri
         self.callback_if_failed = kwargs.get('callback_if_failed')
-        self.status = kwargs.get('status', self.STATUS_UNKNOWN)
+        self.status = kwargs.get('status') or self.STATUS_UNKNOWN
         self.nonce = kwargs.get('nonce')
+        self.intent = kwargs.get('intent') or self.INTENT_AUTHENTICATE
         self.ua = self._get_ua_safe(kwargs.get('ua'), max_len=1023)
         self.ip = kwargs.get('ip')
         self.oa1_token = kwargs.get('oa1_token')

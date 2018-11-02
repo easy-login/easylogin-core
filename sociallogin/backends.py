@@ -125,6 +125,7 @@ class OAuthBackend(object):
             ua=request.headers['User-Agent'],
             ip=get_remote_ip(request),
             nonce=gen_random_token(nbytes=32),
+            intent=kwargs.get('intent'),
             callback_uri=succ_callback,
             callback_if_failed=fail_callback
         )
