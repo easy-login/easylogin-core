@@ -6,7 +6,7 @@ from sociallogin import app as flask_app, db, logger
 from sociallogin.models import SocialProfiles, Users, AuthLogs, AssociateLogs
 from sociallogin.utils import gen_random_token
 from sociallogin.backends import is_valid_provider
-from sociallogin.exc import TokenParseError, BadRequestError
+from sociallogin.exc import TokenParseError
 
 
 @flask_app.route('/<int:app_id>/profiles/authorized')
@@ -26,7 +26,7 @@ def authorized_profile(app_id):
         return jsonify(body)
     except TokenParseError as e:
         logger.warning('Parse auth token failed', error=e.description, token=token)
-        raise BadRequestError('Invalid auth token. ' + e.description)
+        abort(400, 'Invalid auth token. ' + e.description)
 
 
 @flask_app.route('/<int:app_id>/users/link', methods=['PUT'])
@@ -134,26 +134,22 @@ def get_associate_token(app_id):
             .join(SocialProfiles, and_(Users._id == SocialProfiles.user_id,
                                        Users.pk == user_pk, Users.app_id == app_id))).all()
     if not tups:
-        abort(400, 'User not found')
+        abort(404, 'User ID not found')
     for tup in tups:
         if provider == tup[2]:
-            abort(403, 'User already linked with another social profile for this provider')
+            abort(409, 'User has linked with another social profile for this provider')
     user_id = tups[0][0]
 
-    try:
-        log = AssociateLogs(provider=provider, app_id=app_id,
-                            user_id=user_id,
-                            nonce=gen_random_token(nbytes=32))
-        associate_token = log.generate_associate_token()
-        db.session.add(log)
-        db.session.commit()
-        return jsonify({
-            'token': associate_token,
-            'associate_uri': url_for('authorize', _external=True,
-                                     provider=provider, app_id=app_id,
-                                     token=associate_token,
-                                     intent=AuthLogs.INTENT_ASSOCIATE)
-        })
-    except Exception as e:
-        logger.error(repr(e))
-        raise
+    log = AssociateLogs(provider=provider, app_id=app_id,
+                        user_id=user_id,
+                        nonce=gen_random_token(nbytes=32))
+    associate_token = log.generate_associate_token()
+    db.session.add(log)
+    db.session.commit()
+    return jsonify({
+        'token': associate_token,
+        'associate_uri': url_for('authorize', _external=True,
+                                 provider=provider, app_id=app_id,
+                                 token=associate_token,
+                                 intent=AuthLogs.INTENT_ASSOCIATE)
+    })

@@ -4,7 +4,7 @@ from sociallogin import app as flask_app, db, login_manager, logger, get_remote_
 from sociallogin.models import Apps, AuthLogs, AssociateLogs
 from sociallogin.backends import get_backend
 from sociallogin.utils import add_params_to_uri
-from sociallogin.exc import RedirectLoginError
+from sociallogin.exc import RedirectLoginError, TokenParseError
 
 
 @flask_app.route('/authorize/<provider>', defaults={'intent': None})
@@ -17,18 +17,27 @@ def authorize(provider, intent):
         abort(400, 'Missing parameters app_id or callback_uri')
 
     backend = get_backend(provider)
+    authorize_uri = None
     if intent == AuthLogs.INTENT_ASSOCIATE:
         assoc_token = request.args.get('token')
-        log = AssociateLogs.parse_from_associate_token(assoc_token)
-        log.status = AssociateLogs.STATUS_AUTHORIZING
-        authorize_uri = backend.build_authorize_uri(
-            app_id=app_id,
-            succ_callback=callback_uri,
-            fail_callback=callback_if_failed,
-            intent=intent,
-            user_id=log.user_id,
-            provider=provider,
-            assoc_id=log._id)
+        try:
+            log = AssociateLogs.parse_associate_token(assoc_token)
+            if log.provider != provider:
+                abort(400, 'Invalid target provider, must be {}'.format(log.provider))
+
+            log.status = AssociateLogs.STATUS_AUTHORIZING
+            authorize_uri = backend.build_authorize_uri(
+                app_id=app_id,
+                succ_callback=callback_uri,
+                fail_callback=callback_if_failed,
+                intent=intent,
+                user_id=log.user_id,
+                provider=provider,
+                assoc_id=log._id)
+        except TokenParseError as e:
+            logger.warning('Parse associate token failed',
+                           error=e.description, token=assoc_token)
+            abort(400, 'Invalid associate token. ' + e.description)
     else:
         authorize_uri = backend.build_authorize_uri(
             app_id=app_id,

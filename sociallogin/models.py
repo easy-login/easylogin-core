@@ -427,7 +427,7 @@ class AuthLogs(Base):
                                           _nonce=self.nonce, **kwargs)
 
     def generate_auth_token(self):
-        return easy_token_service.generate(sub=self._id, exp_in_seconds=3600,
+        return easy_token_service.generate(sub=self._id, exp_in_seconds=600,
                                            _nonce=self.nonce)
 
     @classmethod
@@ -480,8 +480,8 @@ class AssociateLogs(Base):
         self.status = status
 
     def generate_associate_token(self):
-        return b64encode_string('{}.{}'.format(self.nonce, str(self.user_id)),
-                                urlsafe=True, padding=False)
+        return easy_token_service.generate(sub=self._id, exp_in_seconds=600,
+                                           _nonce=self.nonce)
 
     @classmethod
     def add_or_reset(cls, provider, app_id, user_id, nonce):
@@ -498,17 +498,12 @@ class AssociateLogs(Base):
         return log
 
     @classmethod
-    def parse_from_associate_token(cls, associate_token):
-        try:
-            params = b64decode_string(associate_token, urlsafe=True).split('.')
-            log = cls.query.filter_by(user_id=int(params[1])).order_by(cls._id.desc()).first()
-            if not log:
-                raise BadRequestError('Invalid associate token')
-            if log.nonce != params[0]:
-                raise BadRequestError('Invalid associate token, nonce does not match')
-            if log.status != cls.STATUS_NEW:
-                raise BadRequestError('Token expired or already used')
-            return log
-        except (KeyError, ValueError, TypeError, IndexError) as e:
-            logger.warn('Bad format associate_token: %s', repr(e))
-            raise BadRequestError('Bad format associate_token')
+    def parse_associate_token(cls, associate_token):
+        log_id, args = easy_token_service.decode(token=associate_token)
+        log = cls.query.filter_by(_id=log_id).one_or_none()
+
+        if not log or log.nonce != args.get('_nonce'):
+            raise BadRequestError('Invalid associate token')
+        if log.status != cls.STATUS_NEW:
+            raise BadRequestError('Invalid associate token')
+        return log
