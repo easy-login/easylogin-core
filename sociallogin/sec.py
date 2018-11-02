@@ -10,6 +10,8 @@ from sociallogin import app
 
 
 class EasyTokenService:
+    PREFIX = 'ESLG'
+
     def __init__(self, key=None):
         self.key = key
 
@@ -24,11 +26,12 @@ class EasyTokenService:
         sign = calculate_hmac(self.key, raw, digestmod=hashlib.sha256)
         payload['sign'] = sign
 
-        return base64encode(pickle.dumps(payload), urlsafe=True, padding=False)
+        token = base64encode(pickle.dumps(payload), urlsafe=True, padding=False)
+        return self.PREFIX + token
 
     def decode(self, token):
         try:
-            data = base64decode(token, urlsafe=True)
+            data = base64decode(token[4:], urlsafe=True)
             payload = pickle.loads(data)
             sign = payload['sign']
             del payload['sign']
