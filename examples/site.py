@@ -3,13 +3,15 @@ import urllib.parse as urlparse
 import requests
 import json
 import random
+import secrets
+
 
 app = Flask(__name__, template_folder='.')
 app.config['SECRET_KEY'] = b'_5#y2L"F4Q8z\n\xec]/'
 
 APP_ID  = 1
 API_KEY = 'xrcyz2AaN1s9OscnpFLup5DVTi3D7WCIGhYnsmjOyCO8HjAH'
-API_URL = 'https://api.easy-login.jp'    
+API_URL = 'https://api.easy-login.jp'
 
 
 @app.route('/')
@@ -47,7 +49,8 @@ def link_user(action):
 
     user_id = request.form['user_id']
     social_id = request.form['social_id']
-    r = requests.put(url='http://localhost:5000/{}/users/{}'.format(session['app_id'], action),
+    r = requests.put(url='{}/{}/users/{}'.format(session['api_url'], session['app_id'], action),
+                     verify=False,
                      json={'user_id': user_id, 'social_id': social_id},
                      headers={'X-Api-Key': session['api_key']})
     msg = str(r.json())
@@ -59,11 +62,12 @@ def auth_callback():
     try:
         token = request.args['token']
         provider = request.args['provider']
-        r = requests.get(url='http://localhost:5000/{}/profiles/authorized'.format(session['app_id']),
+        r = requests.get(url='{}/{}/profiles/authorized'.format(session['api_url'], session['app_id']),
+                         verify=False,
                          params={'api_key': session['api_key'], 'token': token})
         if r.status_code == 200:
             session[provider] = json.dumps(r.json(), sort_keys=True, indent=2)
-        return render_template('result.html', provider=provider, token=token,
+        return render_template('result.html', provider=provider.upper(), token=token,
                                profile=json.dumps(r.json(), sort_keys=True, indent=2))
     except KeyError:
         return _handle_error()
@@ -82,18 +86,19 @@ def demo_page():
         session['app_id'] = APP_ID
     if 'api_key' not in session:
         session['api_key'] = API_KEY
-    url = request.environ.get('HTTP_X_FORWARDED_PROTO', 'http') + '://' + request.host
-    return render_template('demo.html', 
-                           demo_url=url,
+    demo_url = request.environ.get('HTTP_X_FORWARDED_PROTO', 'http') + '://' + request.host
+    return render_template('demo.html', demo_url=urlparse.quote(demo_url),
                            api_url=session['api_url'],
                            app_id=session['app_id'],
                            api_key=session['api_key'],
                            link_result=request.args.get('link_result', ''),
                            unlink_result=request.args.get('unlink_result', ''),
+                           nonce=secrets.token_hex(nbytes=16),
                            line=session.get('line'),
                            amazon=session.get('amazon'),
                            yahoojp=session.get('yahoojp'),
-                           facebook=session.get('facebook'))
+                           facebook=session.get('facebook'),
+                           twitter=session.get('twitter'))
 
 
 @app.route('/logout')
@@ -102,6 +107,7 @@ def logout():
     session['amazon'] = None
     session['yahoojp'] = None
     session['facebook'] = None
+    session['twitter'] = None
     return redirect('/demo.html')
 
 

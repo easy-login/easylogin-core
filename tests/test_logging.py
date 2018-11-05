@@ -1,10 +1,6 @@
-from flask import Flask,request
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-
 import logging
-import os
 import json
+import traceback
 
 
 class EasyLogger(object):
@@ -17,9 +13,6 @@ class EasyLogger(object):
         self.impl = impl
         self.style = style
 
-    def load_from_config(self, config):
-        self.style = config['LOG_STYLE']
-
     def debug(self, msg, *args, style=None, **kwargs):
         self._print_log(logging.DEBUG, msg, style, *args, **kwargs)
 
@@ -28,9 +21,6 @@ class EasyLogger(object):
 
     def warning(self, msg, *args, style=None, **kwargs):
         self._print_log(logging.WARNING, msg, style, *args, **kwargs)
-
-    def warn(self, msg, *args, style=None, **kwargs):
-        self.warning(msg, *args, style=style, **kwargs)
 
     def error(self, msg, *args, style=None, **kwargs):
         self._print_log(logging.ERROR, msg, style, *args, **kwargs)
@@ -47,8 +37,8 @@ class EasyLogger(object):
         style = style or self.style
         if style == self.STYLE_INLINE:
             arg_str = ' '.join(args)
-            kwarg_str = ' '.join(['%s=%s' % (k, self._check_quote(v))
-                                  for k, v in kwargs.items()])
+            kwarg_str = ' '.join(['%s=%s' % (k, self._check_quote(v)) 
+                                 for k, v in kwargs.items()])
             msg += ' \t' + arg_str + '\t' + kwarg_str
         elif style == self.STYLE_JSON:
             msg = '\n' + json.dumps({
@@ -65,7 +55,7 @@ class EasyLogger(object):
                 msg += '\t' + str(args or '')
             if kwargs:
                 msg += '\t' + str(kwargs or '')
-        self.impl.log(lvl, '%s - %s' % (get_remote_ip(request), msg), exc_info=exc_info)
+        self.impl.log(lvl, '[192.168.9.89] - ' + msg, exc_info=exc_info)
 
     @staticmethod
     def _check_quote(s):
@@ -73,52 +63,25 @@ class EasyLogger(object):
         return '"%s"' % s if ' ' in s else s
 
 
-def init_logging(app_):
-    log_dir = app_.config['LOG_DIR']
-    os.makedirs(log_dir, mode=0o755, exist_ok=True)
-    file_handler = logging.FileHandler(filename=log_dir + '/server.log')
-    file_handler.setFormatter(logging.Formatter(
-        fmt=app_.config['LOG_FORMAT'],
-        datefmt=app_.config['LOG_DATE_FORMAT']
-    ))
-    app_.logger.setLevel(app.config['LOG_LEVEL'])
-    app_.logger.addHandler(file_handler)
+# logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+logFormatter = logging.Formatter("[%(asctime)s] [%(levelname)-5.5s] - %(message)s")
+rootLogger = logging.getLogger()
+rootLogger.setLevel(logging.INFO)
 
+consoleHandler = logging.StreamHandler()
+consoleHandler.setFormatter(logFormatter)
+rootLogger.addHandler(consoleHandler)
 
-def get_remote_ip(req):
-    if req.environ.get('HTTP_X_FORWARDED_FOR'):
-        return req.environ['HTTP_X_FORWARDED_FOR']
-    elif req.environ.get('HTTP_X_REAL_IP'):
-        return req.environ['HTTP_X_REAL_IP']
-    else:
-        return req.remote_addr
-
-
-# Define the WSGI application object
-app = Flask(__name__)
-
-# Configurations
-app.config.from_object('config')
-
-# Define the database object which is imported
-# by modules and controllers
-db = SQLAlchemy(app)
-
-# Define Login Manager object
-login_manager = LoginManager()
-login_manager.init_app(app)
-
-# Define logger object
-logger = EasyLogger(impl=app.logger)
-logger.load_from_config(app.config)
-init_logging(app)
-
-# Build the database:
-# This will create the database file using SQLAlchemy
-from sociallogin import models
-db.create_all()
-db.session.commit()
-
-# Import all API endpoint definitions
-from sociallogin import auth, routes, exc
-auth.init_app(app)
+log = EasyLogger(impl=rootLogger, style=EasyLogger.STYLE_JSON)
+try:
+    log.info('test message from new my logger', 'nhatanh', 'tjeubaoit',
+             name='abu', nickname='bangbang songoku', age=28)
+    log.info('style simple will be overrided', 'abu', 'tjeubaoit', 'nhatanh', 
+             name='nhatanh', age=28, style='inline')
+    m = dict()
+    print(m['ok'])
+except Exception as e:
+    import sys
+    # traceback.print_exc(file=sys.stderr)
+    # rootLogger.exception('msg %s %s %s', 'nhatanh', 'abu', 'tjeubaoit', exc_info=1)
+    log.exception(repr(e.__dict__), repr(e), style='hybrid')
