@@ -7,8 +7,8 @@ from sociallogin.utils import add_params_to_uri
 from sociallogin.exc import RedirectLoginError, TokenParseError
 
 
-@flask_app.route('/authorize/<provider>', defaults={'intent': None})
-@flask_app.route('/authorize/<provider>/<intent>')
+@flask_app.route('/auth/<provider>', defaults={'intent': None})
+@flask_app.route('/auth/<provider>/<intent>')
 def authorize(provider, intent):
     app_id = request.args.get('app_id')
     callback_uri = request.args.get('callback_uri')
@@ -57,7 +57,7 @@ def authorize(provider, intent):
     return redirect(authorize_uri)
 
 
-@flask_app.route('/authorize/<provider>/approval_state')
+@flask_app.route('/auth/<provider>/callback')
 def authorize_callback(provider):
     backend = get_backend(provider)
     state = request.args.get('state')
