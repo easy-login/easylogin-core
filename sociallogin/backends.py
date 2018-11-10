@@ -439,9 +439,8 @@ class AmazonBackend(OAuthBackend):
     Authentication handler for AMAZON accounts
     """
     def _build_authorize_uri(self, channel, state):
-        scope = channel.get_perms_as_oauth_scope()
-        if 'amazon_pay' in channel.get_options():
-            scope += ' payments:widget payments:shipping_address payments:billing_address'
+        amz_pay_enabled = 'amazon_pay' in channel.get_options()
+        scope = channel.get_perms_as_oauth_scope(lpwa=amz_pay_enabled)
         uri = add_params_to_uri(
             uri=self.__authorize_uri__(version=channel.api_version),
             client_id=channel.client_id,

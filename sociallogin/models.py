@@ -128,8 +128,16 @@ class Channels(Base):
     def get_permissions(self):
         return (self.permissions or '').split('|')
 
-    def get_perms_as_oauth_scope(self):
-        return self.permissions.replace('|', ' ')
+    def get_perms_as_oauth_scope(self, lpwa=False):
+        """
+
+        :param lpwa: Is require extra permissions for Amazon Pay
+        :return:
+        """
+        perms = self.permissions.replace('|', ' ')
+        if lpwa:
+            perms += ' payments:widget payments:shipping_address payments:billing_address'
+        return perms
 
     def get_required_fields(self):
         return (self.required_fields or '').split('|')
@@ -368,6 +376,10 @@ class Tokens(Base):
         self.oa1_token = kwargs.get('oa1_token')
         self.oa1_secret = kwargs.get('oa1_secret')
 
+    @classmethod
+    def find_latest_by_social_id(cls, social_id):
+        return cls.query.filter_by(social_id=social_id).order_by(cls._id.desc()).first()
+
 
 class AuthLogs(Base):
     __tablename__ = 'auth_logs'
@@ -429,9 +441,9 @@ class AuthLogs(Base):
         return jwt_token_service.generate(sub=self._id, exp_in_seconds=3600,
                                           _nonce=self.nonce, **kwargs)
 
-    def generate_auth_token(self):
+    def generate_auth_token(self, **kwargs):
         return easy_token_service.generate(sub=self._id, exp_in_seconds=600,
-                                           _nonce=self.nonce)
+                                           _nonce=self.nonce, **kwargs)
 
     @classmethod
     def parse_oauth_state(cls, oauth_state):
@@ -482,9 +494,9 @@ class AssociateLogs(Base):
         self.nonce = nonce
         self.status = status
 
-    def generate_associate_token(self):
+    def generate_associate_token(self, **kwargs):
         return easy_token_service.generate(sub=self._id, exp_in_seconds=600,
-                                           _nonce=self.nonce)
+                                           _nonce=self.nonce, **kwargs)
 
     @classmethod
     def add_or_reset(cls, provider, app_id, user_id, nonce):

@@ -1,9 +1,11 @@
-from flask import abort, redirect, request, url_for, jsonify
+from urllib import parse as up
+import json
+from flask import abort, redirect, request, url_for, jsonify, make_response
 
 from sociallogin import app as flask_app, db, login_manager, logger, get_remote_ip
-from sociallogin.models import Apps, AuthLogs, AssociateLogs
+from sociallogin.models import Apps, AuthLogs, AssociateLogs, Tokens, Channels
 from sociallogin.backends import get_backend
-from sociallogin.utils import add_params_to_uri
+from sociallogin.utils import add_params_to_uri, unix_time_millis
 from sociallogin.exc import RedirectLoginError, TokenParseError
 
 
@@ -111,7 +113,10 @@ def authorize_callback(provider):
     )
 
     db.session.commit()
-    return redirect(callback_uri)
+    if provider == 'amazon':
+        return _make_response_for_amazon_pay(callback_uri, profile)
+    else:
+        return redirect(callback_uri)
 
 
 @flask_app.route('/ip')
@@ -162,6 +167,24 @@ def _extract_api_key(req):
     if authorization:
         api_key = authorization.replace('ApiKey ', '', 1)
         return api_key
+
+
+def _make_response_for_amazon_pay(redirect_uri, profile):
+    token = Tokens.find_latest_by_social_id(social_id=profile._id)
+    channel = Channels.query.filter_by(app_id=profile.app_id,
+                                       provider='amazon').one_or_none()
+    cookie_object = {
+        "access_token": token.access_token,
+        "max_age": 3300,
+        "expiration_date": unix_time_millis(token.expires_at),
+        "client_id": channel.client_id,
+        "scope": channel.get_perms_as_oauth_scope(lpwa=True)
+    }
+    resp = make_response(redirect(redirect_uri))
+    resp.set_cookie(key='amazon_Login_state_cache',
+                    value=up.quote(json.dumps(cookie_object), safe=''),
+                    expires=None, max_age=3300)
+    return resp
 
 
 def init_app(app):

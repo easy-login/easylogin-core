@@ -6,10 +6,17 @@ import re
 import secrets
 import string
 import urllib.parse as urlparse
-from datetime import timezone
+from datetime import timezone, datetime
 
 import pytz
 from flask import current_app as app
+
+
+epoch = datetime.utcfromtimestamp(0)
+
+
+def unix_time_millis(dt):
+    return int((dt - epoch).total_seconds() * 1000.0)
 
 
 def base64encode(b, urlsafe=False, padding=True):
