@@ -45,7 +45,6 @@ def link_user(action):
     user_id = request.form['user_id']
     social_id = request.form['social_id']
     r = requests.put(url='{}/{}/users/{}'.format(session['api_url'], session['app_id'], action),
-                     verify=False,
                      json={'user_id': user_id, 'social_id': social_id},
                      headers={'X-Api-Key': session['api_key']})
     msg = str(r.json())
