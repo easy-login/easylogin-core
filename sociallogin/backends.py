@@ -177,23 +177,20 @@ class OAuthBackend(object):
         channel = Channels.query.filter_by(app_id=log.app_id,
                                            provider=self.provider).one_or_none()
         if self.OAUTH_VERSION == 2:
-            code = qs['code']
-            profile = self.handle_oauth2_authorize_success(log, channel, code)
+            profile = self.handle_oauth2_authorize_success(log, channel, qs)
         else:
-            profile = self.handle_oauth1_authorize_success(
-                log=log, channel=channel,
-                verifier=qs['oauth_verifier']
-            )
+            profile = self.handle_oauth1_authorize_success(log, channel, qs)
         return profile, log, args
 
-    def handle_oauth2_authorize_success(self, log, channel, code):
+    def handle_oauth2_authorize_success(self, log, channel, qs):
         """
 
         :param log:
         :param channel:
-        :param code:
+        :param qs:
         :return:
         """
+        code = qs['code']
         tokens = self._get_token(log, channel, code)
         user_id, attrs = self._get_profile(log, channel, tokens)
         try:
@@ -219,14 +216,15 @@ class OAuthBackend(object):
             db.session.rollback()
             raise
 
-    def handle_oauth1_authorize_success(self, log, channel, verifier):
+    def handle_oauth1_authorize_success(self, log, channel, qs):
         """
 
         :param log:
         :param channel:
-        :param verifier:
+        :param qs:
         :return:
         """
+        verifier = qs['oauth_verifier']
         tokens = self._get_oauth1_token(log, channel, verifier)
         user_id, attrs = self._get_oauth1_profile(log, channel, tokens)
         try:

@@ -67,7 +67,7 @@ def authorize_callback(provider):
     if not backend.verify_request_success(request.args):
         backend.handle_authorize_error(state, request.args)
 
-    profile, log, args = backend.handle_authorize_success(state, request.args)
+    profile, log, args = backend.handle_authorize_success(state, qs=request.args)
     intent = args.get('intent')
     if intent == AuthLogs.INTENT_ASSOCIATE:
         if args.get('provider') != provider:
