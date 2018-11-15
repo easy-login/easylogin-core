@@ -9,21 +9,42 @@ from sociallogin.backends import is_valid_provider
 from sociallogin.exc import TokenParseError
 
 
-@flask_app.route('/<int:app_id>/profiles/authorized')
+@flask_app.route('/<int:app_id>/profiles/authorized', methods=['POST'])
 @login_required
 def authorized_profile(app_id):
-    token = request.args.get('token')
-    if not token:
-        abort(400, 'Missing parameter token')
+    body = request.json
+    token = body['token']
     try:
         log = AuthLogs.parse_auth_token(auth_token=token)
-        log.status = AuthLogs.STATUS_SUCCEEDED
+        activate_profile = body['activate_profile']
+        if log.is_login:
+            log.status = AuthLogs.STATUS_SUCCEEDED
+        elif activate_profile:
+            log.status = AuthLogs.STATUS_SUCCEEDED
+            SocialProfiles.activate(profile_id=log.social_id)
+        else:
+            log.status = AuthLogs.STATUS_WAIT_REGISTER
         profile = SocialProfiles.query.filter_by(_id=log.social_id).first_or_404()
         body = profile.as_dict()
         db.session.commit()
 
         logger.debug('Profile authenticated', style='hybrid', **body)
         return jsonify(body)
+    except TokenParseError as e:
+        logger.warning('Parse auth token failed', error=e.description, token=token)
+        abort(400, 'Invalid auth token. ' + e.description)
+
+
+@flask_app.route('/<int:app_id>/profiles/activate', methods=['POST'])
+@login_required
+def activate(app_id):
+    token = request.json['token']
+    try:
+        log = AuthLogs.parse_auth_token(auth_token=token)
+        log.status = AuthLogs.STATUS_SUCCEEDED
+        SocialProfiles.activate(profile_id=log.social_id)
+        db.session.commit()
+        return jsonify({'success': True})
     except TokenParseError as e:
         logger.warning('Parse auth token failed', error=e.description, token=token)
         abort(400, 'Invalid auth token. ' + e.description)
@@ -44,7 +65,7 @@ def link_user(app_id):
     if profile.user_id:
         abort(409, 'Social profile has linked with an exists user')
 
-    profile.link_user_by_pk(user_pk)
+    profile.link_user_by_pk(user_pk, create_if_not_exist=body.get('create_user', True))
     db.session.commit()
     return jsonify({'success': True})
 

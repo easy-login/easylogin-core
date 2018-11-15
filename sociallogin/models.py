@@ -1,20 +1,18 @@
-import json
-from datetime import datetime, timezone, timedelta
 import hashlib
+import json
 import time
+from datetime import datetime
 
-from sqlalchemy import func, and_
-from sqlalchemy.sql import expression
+from sqlalchemy import func
 from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql import expression
 from sqlalchemy.types import DateTime
 
-from sociallogin import db, logger
-from sociallogin.sec import jwt_token_service, easy_token_service
-from sociallogin.utils import b64encode_string, b64decode_string, \
-    gen_random_token, convert_to_user_timezone
+from sociallogin import db
 from sociallogin.atomic import generate_64bit_id
-from sociallogin.exc import ConflictError, NotFoundError, \
-    BadRequestError, TokenParseError
+from sociallogin.exc import ConflictError, NotFoundError, BadRequestError
+from sociallogin.sec import jwt_token_service as jwts, easy_token_service as ests
+from sociallogin.utils import gen_random_token, convert_to_user_timezone
 
 
 class utcnow(expression.FunctionElement):
@@ -145,8 +143,7 @@ class SocialProfiles(Base):
     __tablename__ = 'social_profiles'
 
     HIDDEN_FIELDS = {
-        'pk', 'scope_id', 'draft', 'alias', 'mask',
-        'user_id', 'user_pk', 'app_id'
+        'pk', 'scope_id', 'alias', 'mask', 'user_id', 'user_pk', 'app_id'
     }
 
     provider = db.Column(db.String(15), nullable=False)
@@ -154,8 +151,8 @@ class SocialProfiles(Base):
     attrs = db.Column(db.Unicode(8191), nullable=False)
     scope_id = db.Column(db.String(255), nullable=False)
     last_authorized_at = db.Column("authorized_at", db.DateTime)
-    login_count = db.Column(db.Integer, default=1, nullable=False)
-    draft = db.Column(db.SmallInteger, default=1, nullable=False)
+    login_count = db.Column(db.Integer, default=0, nullable=False)
+    verified = db.Column(db.SmallInteger, default=0, nullable=False)
     _deleted = db.Column("deleted", db.SmallInteger, default=0)
 
     linked_at = db.Column(db.DateTime)
@@ -266,20 +263,28 @@ class SocialProfiles(Base):
 
     @classmethod
     def add_or_update(cls, app_id, scope_id, provider, attrs):
-        hashpk = hashlib.sha1((str(app_id) + '.' + provider + '.' + scope_id).encode('utf8')).hexdigest()
+        hashpk = hashlib.sha1('{}.{}.{}'.format(app_id, provider, scope_id).encode('utf8')).hexdigest()
         profile = cls.query.filter_by(pk=hashpk).one_or_none()
-        exists = True
+        exists = False
         if not profile:
             profile = SocialProfiles(app_id=app_id, pk=hashpk, scope_id=scope_id,
                                      provider=provider, attrs=attrs)
             db.session.add(profile)
             db.session.flush()
-            exists = False
         else:
+            if profile.verified:
+                profile.login_count += 1
+                exists = True
             profile.last_authorized_at = datetime.utcnow()
-            profile.login_count += 1
             profile.attrs = json.dumps(attrs)
         return profile, exists
+
+    @classmethod
+    def activate(cls, profile_id):
+        return cls.query.filter_by(_id=profile_id).update({
+            'verified': 1,
+            'login_count': 1
+        }, synchronize_session=False)
 
 
 class Users(Base):
@@ -374,6 +379,7 @@ class AuthLogs(Base):
 
     STATUS_UNKNOWN = 'unknown'
     STATUS_AUTHORIZED = 'authorized'
+    STATUS_WAIT_REGISTER = 'wait_reg'
     STATUS_SUCCEEDED = 'succeeded'
     STATUS_FAILED = 'failed'
 
@@ -405,6 +411,7 @@ class AuthLogs(Base):
         self.app_id = app_id
         self.callback_uri = callback_uri
         self.callback_if_failed = kwargs.get('callback_if_failed')
+
         self.status = kwargs.get('status') or self.STATUS_UNKNOWN
         self.nonce = kwargs.get('nonce')
         self.intent = kwargs.get('intent') or self.INTENT_AUTHENTICATE
@@ -426,32 +433,32 @@ class AuthLogs(Base):
         self.status = self.STATUS_AUTHORIZED
 
     def generate_oauth_state(self, **kwargs):
-        return jwt_token_service.generate(sub=self._id, exp_in_seconds=3600,
-                                          _nonce=self.nonce, **kwargs)
+        return jwts.generate(sub=self._id, exp_in_seconds=3600,
+                             _nonce=self.nonce, **kwargs)
 
     def generate_auth_token(self):
-        return easy_token_service.generate(sub=self._id, exp_in_seconds=600,
-                                           _nonce=self.nonce)
+        return ests.generate(sub=self._id, exp_in_seconds=3600,
+                             _nonce=self.nonce)
 
     @classmethod
     def parse_oauth_state(cls, oauth_state):
-        log_id, args = jwt_token_service.decode(token=oauth_state)
+        log_id, args = jwts.decode(token=oauth_state)
         log = cls.query.filter_by(_id=log_id).one_or_none()
 
         if not log or log.nonce != args.get('_nonce'):
             raise BadRequestError('Invalid OAuth state')
-        if log.status != AuthLogs.STATUS_UNKNOWN:
+        if log.status != cls.STATUS_UNKNOWN:
             raise BadRequestError('Invalid OAuth state')
         return log, args
 
     @classmethod
     def parse_auth_token(cls, auth_token):
-        log_id, args = easy_token_service.decode(token=auth_token)
+        log_id, args = ests.decode(token=auth_token)
         log = cls.query.filter_by(_id=log_id).one_or_none()
 
         if not log or log.nonce != args.get('_nonce'):
             raise BadRequestError('Invalid auth token')
-        if log.status != AuthLogs.STATUS_AUTHORIZED:
+        if log.status not in [cls.STATUS_AUTHORIZED, cls.STATUS_WAIT_REGISTER]:
             raise BadRequestError('Invalid auth token')
         return log
 
@@ -483,8 +490,8 @@ class AssociateLogs(Base):
         self.status = status
 
     def generate_associate_token(self):
-        return easy_token_service.generate(sub=self._id, exp_in_seconds=600,
-                                           _nonce=self.nonce)
+        return ests.generate(sub=self._id, exp_in_seconds=600,
+                             _nonce=self.nonce)
 
     @classmethod
     def add_or_reset(cls, provider, app_id, user_id, nonce):
@@ -502,7 +509,7 @@ class AssociateLogs(Base):
 
     @classmethod
     def parse_associate_token(cls, associate_token):
-        log_id, args = easy_token_service.decode(token=associate_token)
+        log_id, args = ests.decode(token=associate_token)
         log = cls.query.filter_by(_id=log_id).one_or_none()
 
         if not log or log.nonce != args.get('_nonce'):
