@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+</head>
+<body>
+
+<h3>Social profile attributes</h3>
+<pre>{{ attrs }}</pre>
+
+<h3>Create your account</h3>
+<div>
+    <form method="post" action="/register.html">
+        <label style="display: block;width: 250px"> Fullname :</label>
+        <input type="text" name="app_id" value="{{ app_id }}"><br/><br/>
+
+        <label style="display: block;width: 250px"> Phone :</label>
+        <input type="text" name="api_key" value="{{ api_key }}"><br/><br/>
+
+        <input type="submit" value="Register" name="submit"/>
+        <span style="margin-left: 30px"><input type="submit" value="Cancel" name="submit"></span>
+    </form>
+</div>
+</body>
+</html>

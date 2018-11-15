@@ -4,13 +4,13 @@
         <div>
             <form action="/app/setting" method="POST">
                 <label style="margin-right: 20px"> API URL :</label>
-                <input type="text" name="api_url" value="{{ api_url }}" style="width: 400px; margin-bottom: 10px"><br/>
+                <input type="text" name="api_url" value="{{ api_url }}" style="width: 500px; margin-bottom: 10px"><br/>
 
                 <label style="margin-right: 32px"> App ID :</label>
                 <input type="text" name="app_id" value="{{ app_id }}"><br/>
 
                 <label style="margin-right: 25px"> API Key :</label>
-                <input type="text" name="api_key" value="{{ api_key }}" style="width: 400px; margin-top: 10px">
+                <input type="text" name="api_key" value="{{ api_key }}" style="width: 500px; margin-top: 10px">
                 <input type="submit" value="Save">
             </form>
         </div>
@@ -40,7 +40,7 @@
                 {% if line %}
                 <h4>Logged in LINE as</h4> <pre>{{ line }}</pre>
                 {% else %}
-                <a href="{{ api_url }}/auth/line?nonce={{ nonce }}&app_id={{ app_id }}&callback_uri={{ demo_url }}/auth/callback">
+                <a href="/auth/line">
                     <img width="200" height="120"
                     src="https://static.tildacdn.com/tild3361-3663-4634-b664-306631636532/option_login.png"/>
                 </a>
@@ -50,7 +50,7 @@
                 {% if facebook %}
                 <h4>Logged in FACEBOOK as</h4> <pre>{{ facebook }}</pre>
                 {% else %}
-                <a href="{{ api_url }}/auth/facebook?nonce={{ nonce }}&app_id={{ app_id }}&callback_uri={{ demo_url }}/auth/callback">
+                <a href="/auth/facebook">
                     <img  width="200" height="45"
                     src="https://comedydefensivedriving.com/images2011/fb-sign-in-button.png"/>
                 </a>
@@ -63,7 +63,7 @@
                 {% if amazon %}
                 <h4>Logged in AMAZON as</h4> <pre>{{ amazon }}</pre>
                 {% else %}
-                <a href="{{ api_url }}/auth/amazon?nonce={{ nonce }}&app_id={{ app_id }}&callback_uri={{ demo_url }}/auth/callback&callback_if_failed={{ demo_url }}/auth/failed">
+                <a href="/auth/amazon">
                     <img  width="200" height="46"
                     src="https://images-na.ssl-images-amazon.com/images/G/01/lwa/btnLWA_gold_195x46._CB487591031_.png"/>
                 </a>
@@ -73,7 +73,7 @@
                 {% if twitter %}
                 <h4>Logged in TWITTER as</h4> <pre>{{ twitter }}</pre>
                 {% else %}
-                <a href="{{ api_url }}/auth/twitter?nonce={{ nonce }}&app_id={{ app_id }}&callback_uri={{ demo_url }}/auth/callback">
+                <a href="/auth/twitter">
                     <img  width="206" height="49" style="margin-left:-3px"
                     src="https://termsfeed.com/blog/wp-content/uploads/2016/06/sign-in-twitter-button-example.jpg"/>
                 </a>
@@ -87,7 +87,7 @@
                 {% if yahoojp %}
                 <h4>Logged in YAHOO JAPAN as</h4> <pre>{{ yahoojp }}</pre>
                 {% else %}
-                <a href="{{ api_url }}/auth/yahoojp?nonce={{ nonce }}&app_id={{ app_id }}&callback_uri={{ demo_url }}/auth/callback">
+                <a href="/auth/yahoojp">
                     <img width="200" height="60"
                     src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhmemZ_t4AJU4bt3jYQQic5uH0tjuHL4HNyUPk2KsxCHvnFqTe"/>
                 </a>
