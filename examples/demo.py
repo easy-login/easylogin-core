@@ -32,7 +32,7 @@ def charts():
 
 @app.route('/app/setting', methods=['POST'])
 def app_setting():
-    resp = make_response(redirect('/index.html'))
+    resp = make_response(redirect('/demo.html'))
     _set_cookie(resp, 'api_url', request.form.get('api_url'))
     _set_cookie(resp, 'app_id', request.form.get('app_id'))
     _set_cookie(resp, 'api_key', request.form.get('api_key'))
