@@ -16,9 +16,8 @@ API_URL = 'https://api.easy-login.jp'
 
 
 @app.route('/')
-@app.route('/demo.html')
 def homepage():
-    return redirect('/index.html'), 301
+    return redirect('/demo.html'), 301
 
 
 @app.route('/chart.html')
@@ -55,7 +54,7 @@ def link_user(action):
                      json={'user_id': user_id, 'social_id': social_id},
                      headers={'X-Api-Key': request.cookies['api_key']})
     msg = str(r.json())
-    return redirect('/index.html?{}_result={}'.format(action, msg))
+    return redirect('/demo.html?{}_result={}'.format(action, msg))
 
 
 @app.route('/auth/<provider>')
@@ -126,7 +125,7 @@ def register():
                                    profile=session[provider])
         else:
             session[provider] = None
-            return redirect('/index.html')
+            return redirect('/demo.html')
 
 
 @app.route('/auth/failed')
@@ -134,13 +133,13 @@ def auth_failed():
     return _handle_error()
 
 
-@app.route('/index.html')
+@app.route('/demo.html')
 def index():
     api_url = request.cookies.get('api_url', API_URL)
     app_id = request.cookies.get('app_id', APP_ID)
     api_key = request.cookies.get('api_key', API_KEY)
 
-    view = render_template('index.html', api_url=api_url, app_id=app_id, api_key=api_key,
+    view = render_template('demo.html', api_url=api_url, app_id=app_id, api_key=api_key,
                            link_result=request.args.get('link_result', ''),
                            unlink_result=request.args.get('unlink_result', ''),
                            line=session.get('line'),
@@ -162,7 +161,7 @@ def logout():
     session['yahoojp'] = None
     session['facebook'] = None
     session['twitter'] = None
-    return redirect('/index.html')
+    return redirect('/demo.html')
 
 
 def _set_cookie(resp, key, val):
