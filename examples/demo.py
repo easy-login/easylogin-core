@@ -89,7 +89,6 @@ def auth_callback():
         if activate_profile or profile['verified']:
             return render_template('result.html',
                                    provider=provider.upper(),
-                                   token=token,
                                    profile=session[provider])
         else:
             attrs = urlparse.quote_plus(json.dumps(profile['attrs'], indent=2))
