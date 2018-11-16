@@ -127,8 +127,8 @@ def verify_app_auth(req):
             raise ValueError('Missing authorization credentials')
 
         app_id = request.view_args['app_id']
-        (api_key, ips) = (db.session.query(Apps.api_key, Apps.allowed_ips)
-                          .filter_by(_id=app_id, _deleted=0).one_or_none())
+        (api_key, ips, ops) = (db.session.query(Apps.api_key, Apps.allowed_ips, Apps.options)
+                               .filter_by(_id=app_id, _deleted=0).one_or_none())
         if client_api_key != api_key:
             raise ValueError('API key does not match')
         if ips:
@@ -141,6 +141,7 @@ def verify_app_auth(req):
         app = Apps()
         app._id = app_id
         app.is_authenticated = True
+        app.options = ops
         return app
     except PermissionError:
         abort(403, 'Your IP is not allowed to access this API')

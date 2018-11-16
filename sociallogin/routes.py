@@ -1,5 +1,5 @@
 from flask import abort, jsonify, request, url_for
-from flask_login import login_required
+from flask_login import login_required, current_user as app
 from sqlalchemy import func, and_
 
 from sociallogin import app as flask_app, db, logger
@@ -9,21 +9,20 @@ from sociallogin.backends import is_valid_provider
 from sociallogin.exc import TokenParseError
 
 
-@flask_app.route('/<int:app_id>/profiles/authorized', methods=['POST'])
+@flask_app.route('/<int:app_id>/profiles/authorized', methods=['GET'])
 @login_required
 def authorized_profile(app_id):
-    body = request.json
-    token = body['token']
+    token = request.args.get('token')
     try:
         log = AuthLogs.parse_auth_token(auth_token=token)
-        activate_profile = body['activate_profile']
         if log.is_login:
             log.status = AuthLogs.STATUS_SUCCEEDED
-        elif activate_profile:
-            log.status = AuthLogs.STATUS_SUCCEEDED
-            SocialProfiles.activate(profile_id=log.social_id)
-        else:
+        elif app.registration_page_enabled():
             log.status = AuthLogs.STATUS_WAIT_REGISTER
+        else:
+            SocialProfiles.activate(profile_id=log.social_id)
+            log.status = AuthLogs.STATUS_SUCCEEDED
+
         profile = SocialProfiles.query.filter_by(_id=log.social_id).first_or_404()
         body = profile.as_dict()
         db.session.commit()
@@ -38,7 +37,7 @@ def authorized_profile(app_id):
 @flask_app.route('/<int:app_id>/profiles/activate', methods=['POST'])
 @login_required
 def activate(app_id):
-    token = request.json['token']
+    token = request.json.get('token')
     try:
         log = AuthLogs.parse_auth_token(auth_token=token)
         log.status = AuthLogs.STATUS_SUCCEEDED

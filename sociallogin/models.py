@@ -96,8 +96,9 @@ class Apps(Base):
     description = db.Unicode(db.Unicode(1023))
     allowed_ips = db.Column(db.String(255))
     callback_uris = db.Column(db.Text, nullable=False)
-    _deleted = db.Column("deleted", db.SmallInteger, nullable=False, default=0)
+    options = db.Column(db.String(255))
 
+    _deleted = db.Column("deleted", db.SmallInteger, nullable=False, default=0)
     owner_id = db.Column(db.Integer, db.ForeignKey("admins.id"), nullable=False)
 
     def __init__(self):
@@ -108,6 +109,12 @@ class Apps(Base):
 
     def get_callback_uris(self):
         return self.callback_uris.split('|')
+
+    def get_options(self):
+        return (self.options or '').split('|')
+
+    def registration_page_enabled(self):
+        return 'reg_page' in self.options()
 
 
 class Channels(Base):
