@@ -1,9 +1,9 @@
 import hashlib
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from sqlalchemy import func
+from sqlalchemy import func, and_
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import expression
 from sqlalchemy.types import DateTime
@@ -41,9 +41,8 @@ class Base(db.Model):
     HIDDEN_FIELDS = set()
 
     _id = db.Column("id", db.Integer, primary_key=True)
-    created_at = db.Column(db.DateTime, default=utcnow(), server_default=utcnow())
-    modified_at = db.Column(db.DateTime, default=utcnow(), server_default=utcnow(),
-                            onupdate=utcnow())
+    created_at = db.Column(db.DateTime, default=utcnow())
+    modified_at = db.Column(db.DateTime, default=utcnow(), onupdate=utcnow())
 
     def __repr__(self):
         return json.dumps(self.as_dict(), indent=2)
@@ -77,15 +76,39 @@ class Providers(Base):
     options = db.Column(db.String(1023))
 
 
+class SystemSettings(Base):
+    __tablename__ = 'system_settings'
+
+    _last_update_ = datetime.now()
+    _cache_ = dict()
+
+    name = db.Column(db.String(32), nullable=False)
+    value = db.Column(db.String(64), nullable=False)
+
+    @classmethod
+    def all_as_dict(cls):
+        now = datetime.now()
+        # keep cache in 10 minutes
+        if not cls._cache_ or cls._last_update_ + timedelta(minutes=10) < now:
+            rows = cls.query.all()
+            cls._cache_ = {e.name: e.value for e in rows}
+            cls._last_update_ = now
+        return cls._cache_
+
+
 class Admins(Base):
     __tablename__ = 'admins'
+
+    LEVEL_NORMAL = 0
+    LEVEL_PREMIUM = 1
+    LEVEL_PREMIUM_ONLY_LINE = 2
+    LEVEL_PREMIUM_ONLY_AMAZON = 3
 
     username = db.Column(db.String(32), nullable=False)
     email = db.Column(db.String(32), nullable=False)
     password = db.Column(db.String(64), nullable=False)
-    salt = db.Column(db.String(16), nullable=False)
-    phone = db.Column(db.String(16))
     is_superuser = db.Column(db.SmallInteger, nullable=False, default=0)
+    level = db.Column(db.SmallInteger, nullable=False, default=0)
 
 
 class Apps(Base):
@@ -93,7 +116,6 @@ class Apps(Base):
 
     name = db.Column(db.String(255), nullable=False)
     api_key = db.Column(db.String(64), nullable=False)
-    description = db.Unicode(db.Unicode(1023))
     allowed_ips = db.Column(db.String(255))
     callback_uris = db.Column(db.Text, nullable=False)
     options = db.Column(db.String(255))
@@ -113,8 +135,8 @@ class Apps(Base):
     def get_options(self):
         return (self.options or '').split('|')
 
-    def registration_page_enabled(self):
-        return 'reg_page' in self.options()
+    def option_enabled(self, key):
+        return key in self.get_options()
 
 
 class Channels(Base):
@@ -142,8 +164,8 @@ class Channels(Base):
     def get_options(self):
         return (self.options or '').split('|')
 
-    def extra_fields_enabled(self):
-        return 'extra_fields' in self.get_options()
+    def option_enabled(self, key):
+        return key in self.get_options()
 
 
 class SocialProfiles(Base):
@@ -185,6 +207,9 @@ class SocialProfiles(Base):
         d['attrs'] = json.loads(self.attrs, encoding='utf8')
         d['social_id'] = self.alias
         d['user_id'] = self.user_pk
+        if self._allow_get_scope_id():
+            # d['attrs'][self.provider + '_id'] = self.scope_id
+            d['scope_id'] = self.scope_id
         return d
 
     def link_user_by_id(self, user_id):
@@ -229,6 +254,20 @@ class SocialProfiles(Base):
         self.user_id = None
         self.user_pk = None
         self.alias = self.mask
+
+    def _allow_get_scope_id(self):
+        ss = SystemSettings.all_as_dict()
+        return_scoped_id = ss.get('return_scoped_id', 'never')
+        if return_scoped_id == 'always':
+            return True
+        elif return_scoped_id == 'never':
+            return False
+
+        level = (db.session.query(Admins.level).join(
+            Admins, and_(Admins._id == Apps.owner_id, Apps._id == self.app_id))).first()
+        return (level == Admins.LEVEL_PREMIUM
+                or (level == Admins.LEVEL_PREMIUM_ONLY_AMAZON and self.provider == 'amazon')
+                or (level == Admins.LEVEL_PREMIUM_ONLY_LINE and self.provider == 'line'))
 
     @classmethod
     def delete_by_alias(cls, app_id, alias):
@@ -284,6 +323,7 @@ class SocialProfiles(Base):
                 exists = True
             profile.last_authorized_at = datetime.utcnow()
             profile.attrs = json.dumps(attrs)
+            profile.scope_id = scope_id
         return profile, exists
 
     @classmethod

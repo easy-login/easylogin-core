@@ -9,15 +9,15 @@ from sociallogin.backends import is_valid_provider
 from sociallogin.exc import TokenParseError
 
 
-@flask_app.route('/<int:app_id>/profiles/authorized', methods=['GET'])
+@flask_app.route('/<int:app_id>/profiles/authorized', methods=['POST'])
 @login_required
 def authorized_profile(app_id):
-    token = request.args.get('token')
+    token = request.json.get('token')
     try:
         log = AuthLogs.parse_auth_token(auth_token=token)
         if log.is_login:
             log.status = AuthLogs.STATUS_SUCCEEDED
-        elif app.registration_page_enabled():
+        elif app.option_enabled(key='reg_page'):
             log.status = AuthLogs.STATUS_WAIT_REGISTER
         else:
             SocialProfiles.activate(profile_id=log.social_id)

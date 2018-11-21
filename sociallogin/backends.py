@@ -3,15 +3,14 @@ from datetime import datetime, timedelta
 import time
 
 import requests
-from flask import request, url_for
 import jwt
+from flask import request, url_for
 
 from sociallogin import db, logger, get_remote_ip
 from sociallogin.exc import RedirectLoginError, PermissionDeniedError, \
     UnsupportedProviderError, NotFoundError, BadRequestError, TokenParseError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
 from sociallogin.utils import gen_random_token, add_params_to_uri, calculate_hmac
-
 
 __PROVIDER_SETTINGS__ = {
     'line': {
@@ -107,7 +106,7 @@ class OAuthBackend(object):
             raise NotFoundError(msg='Application not found')
 
         allowed_uris = [up.unquote_plus(uri) for uri in app.get_callback_uris()]
-        logger.debug('Verify callback URI', style='hybrid', allowed_uris=allowed_uris, 
+        logger.debug('Verify callback URI', style='hybrid', allowed_uris=allowed_uris,
                      succ_callback=succ_callback, fail_callback=fail_callback)
 
         if not self._verify_callback_uri(allowed_uris, succ_callback):
@@ -160,7 +159,7 @@ class OAuthBackend(object):
         logger.info('Authorize failed', provider=self.provider.upper(),
                     error=error, message=desc)
         self._raise_redirect_error(
-            error=self.ERROR_AUTHORIZE_FAILED, 
+            error=self.ERROR_AUTHORIZE_FAILED,
             msg='{}, {}'.format(error, desc),
             nonce=args.get('nonce'),
             fail_callback=log.get_failed_callback())
@@ -282,7 +281,7 @@ class OAuthBackend(object):
         if res.status_code != 200:
             body = res.json()
             error, desc = self._get_error(body, action='get_token')
-            logger.warn('Getting access token failed', 
+            logger.warn('Getting access token failed',
                         provider=self.provider.upper(), **body)
             self._raise_redirect_error(
                 error=self.ERROR_GET_TOKEN_FAILED,
@@ -304,7 +303,7 @@ class OAuthBackend(object):
                            headers={'Authorization': authorization})
         if res.status_code != 200:
             body = res.json()
-            logger.warn('Getting profile failed', 
+            logger.warn('Getting profile failed',
                         provider=self.provider.upper(), **body)
             self._raise_redirect_error(
                 error=self.ERROR_GET_PROFILE_FAILED,
@@ -323,15 +322,15 @@ class OAuthBackend(object):
         :return:
         """
         user_id = response[self.__identify_attrs__()[0]]
-        if nofilter or channel.extra_fields_enabled():
+        if nofilter or channel.option_enabled(key='extra_fields'):
             for key in self.__identify_attrs__():
                 del response[key]
             return user_id, response
-            
+
         attrs = dict()
-        fields = channel.get_required_fields()
+        req_fields = channel.get_required_fields()
         for key, value in response.items():
-            if key in fields:
+            if key in req_fields:
                 attrs[key] = value
         return user_id, attrs
 
@@ -424,7 +423,7 @@ class LineBackend(OAuthBackend):
         except jwt.PyJWTError as e:
             logger.error(repr(e))
         return user_id, attrs
-    
+
     def _get_error(self, response, action='authorize'):
         if action == 'get_profile':
             return 'api_error', response['message']
@@ -436,6 +435,7 @@ class AmazonBackend(OAuthBackend):
     """
     Authentication handler for AMAZON accounts
     """
+
     def _build_authorize_uri(self, channel, state):
         scope = channel.get_perms_as_oauth_scope()
         if 'amazon_pay' in channel.get_options():
@@ -452,6 +452,7 @@ class YahooJpBackend(OAuthBackend):
     """
     Authentication handler for YAHOOJP accounts
     """
+
     def _get_error(self, response, action='authorize'):
         if action == 'get_profile':
             return 'api_error', response['Error']['Message']
@@ -474,7 +475,7 @@ class FacebookBackend(OAuthBackend):
         if res.status_code != 200:
             body = res.json()
             error, desc = self._get_error(body, action='get_token')
-            logger.warn('Getting access token failed', 
+            logger.warn('Getting access token failed',
                         provider=self.provider.upper(), **body)
             self._raise_redirect_error(
                 error=self.ERROR_GET_TOKEN_FAILED,
@@ -553,7 +554,7 @@ class TwitterBackend(OAuthBackend):
     def _get_oauth1_token(self, log, channel, verifier):
         token_uri = self.__token_uri__(version=channel.api_version)
         auth = self.create_authorization_header(
-            method='POST', 
+            method='POST',
             url=token_uri,
             consumer_key=channel.client_id,
             consumer_secret=channel.client_secret,
@@ -636,8 +637,8 @@ class TwitterBackend(OAuthBackend):
         sorted_keys = sorted(kwargs)
         param = '&'.join([k + '=' + up.quote(kwargs[k], safe='') for k in sorted_keys])
         sign_base = '{method}&{base_url}&{param}'.format(
-            method=method, 
-            base_url=up.quote(url, safe=''), 
+            method=method,
+            base_url=up.quote(url, safe=''),
             param=up.quote(param, safe=''))
         sign_key = up.quote(consumer_secret) + '&' + up.quote(oauth_token_secret)
 
