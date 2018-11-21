@@ -191,6 +191,7 @@ def _make_response_for_amazon_pay(channel, profile, redirect_uri):
     resp = make_response(redirect(redirect_uri))
     resp.set_cookie(key='amazon_Login_state_cache',
                     value=up.quote(json.dumps(cookie_object), safe=''),
+                    domain=up.urlparse(redirect_uri).netloc,
                     expires=None, max_age=3300)
     return resp
 
