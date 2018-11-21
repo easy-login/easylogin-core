@@ -9,8 +9,8 @@ from sociallogin.utils import add_params_to_uri, unix_time_millis
 from sociallogin.exc import RedirectLoginError, TokenParseError
 
 
-@flask_app.route('/authorize/<provider>', defaults={'intent': None})
-@flask_app.route('/authorize/<provider>/<intent>')
+@flask_app.route('/auth/<provider>', defaults={'intent': None})
+@flask_app.route('/auth/<provider>/<intent>')
 def authorize(provider, intent):
     app_id = request.args.get('app_id')
     callback_uri = request.args.get('callback_uri')
@@ -59,7 +59,7 @@ def authorize(provider, intent):
     return redirect(authorize_uri)
 
 
-@flask_app.route('/authorize/<provider>/approval_state')
+@flask_app.route('/auth/<provider>/callback')
 def authorize_callback(provider):
     backend = get_backend(provider)
     state = request.args.get('state')
@@ -69,7 +69,7 @@ def authorize_callback(provider):
     if not backend.verify_request_success(request.args):
         backend.handle_authorize_error(state, request.args)
 
-    profile, log, args = backend.handle_authorize_success(state, request.args)
+    profile, log, args = backend.handle_authorize_success(state, qs=request.args)
     intent = args.get('intent')
     if intent == AuthLogs.INTENT_ASSOCIATE:
         if args.get('provider') != provider:
@@ -132,8 +132,8 @@ def verify_app_auth(req):
             raise ValueError('Missing authorization credentials')
 
         app_id = request.view_args['app_id']
-        (api_key, ips) = (db.session.query(Apps.api_key, Apps.allowed_ips)
-                          .filter_by(_id=app_id, _deleted=0).one_or_none())
+        (api_key, ips, ops) = (db.session.query(Apps.api_key, Apps.allowed_ips, Apps.options)
+                               .filter_by(_id=app_id, _deleted=0).one_or_none())
         if client_api_key != api_key:
             raise ValueError('API key does not match')
         if ips:
@@ -146,6 +146,7 @@ def verify_app_auth(req):
         app = Apps()
         app._id = app_id
         app.is_authenticated = True
+        app.options = ops
         return app
     except PermissionError:
         abort(403, 'Your IP is not allowed to access this API')

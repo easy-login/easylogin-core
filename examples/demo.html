@@ -1,102 +1,109 @@
-<html>
-    <body>
-        <h4>Application settings</h4>
-        <div>
-            <form action="/app/setting" method="POST">
-                <label style="margin-right: 20px"> API URL :</label>
-                <input type="text" name="api_url" value="{{ api_url }}" style="width: 500px; margin-bottom: 10px"><br/>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EasyLogin Demo page</title>
+</head>
+<body>
+<h4>Application settings</h4>
+<div>
+    <form action="/app/setting" method="POST">
+        <label style="margin-right: 20px"> API URL :</label>
+        <input type="text" name="api_url" value="{{ api_url }}" style="width: 500px; margin-bottom: 10px"><br/>
 
-                <label style="margin-right: 32px"> App ID :</label>
-                <input type="text" name="app_id" value="{{ app_id }}"><br/>
+        <label style="margin-right: 32px"> App ID :</label>
+        <input type="text" name="app_id" value="{{ app_id }}"><br/>
 
-                <label style="margin-right: 25px"> API Key :</label>
-                <input type="text" name="api_key" value="{{ api_key }}" style="width: 500px; margin-top: 10px">
-                <input type="submit" value="Save">
-            </form>
-        </div>
-        <h4>Link/Unlink User with/from Social Profile</h4>
-        <div>
-            <form action="/user/link" method="POST">
-                User ID:
-                <input type="text" name="user_id">
-                Social ID:
-                <input type="text" name="social_id" style="width: 350px;">
-                <input type="submit" value="Link">
-                <span>{{ link_result }}</span>
-            </form>
-            <form action="/user/unlink" method="POST">
-                User ID:
-                <input type="text" name="user_id">
-                Social ID:
-                <input type="text" name="social_id" style="width: 350px;">
-                <input type="submit" value="Unlink">
-                <span>{{ unlink_result }}</span>
-            </form>
-        </div>
+        <label style="margin-right: 25px"> API Key :</label>
+        <input type="text" name="api_key" value="{{ api_key }}" style="width: 500px; margin-top: 10px">
+        <input type="submit" value="Save">
+    </form>
+</div>
+<h4>Link User with Social Profile</h4>
+<div>
+    <form action="/user/link" method="POST">
+        User ID:
+        <input type="text" name="user_id">
+        Social ID:
+        <input type="text" name="social_id" style="width: 350px;">
+        <input type="submit" value="Link">
+        <span>{{ link_result }}</span>
+    </form>
+</div>
+<h4>Unlink User from Social Profile</h4>
+<div>
+    <form action="/user/unlink" method="POST">
+        User ID:
+        <input type="text" name="user_id">
+        Social ID:
+        <input type="text" name="social_id" style="width: 350px;">
+        <input type="submit" value="Unlink">
+        <span>{{ unlink_result }}</span>
+    </form>
+</div>
 
-        <table width="100%">
-            <tr>
-            <td>
-                {% if line %}
-                <h4>Logged in LINE as</h4> <pre>{{ line }}</pre>
-                {% else %}
-                <a href="{{ api_url }}/authorize/line?nonce={{ nonce }}&app_id={{ app_id }}&callback_uri={{ demo_url }}/auth/callback">
-                    <img width="200" height="120"
-                    src="https://static.tildacdn.com/tild3361-3663-4634-b664-306631636532/option_login.png"/>
-                </a>
-                {% endif %}
-            </td>
-            <td>
-                {% if facebook %}
-                <h4>Logged in FACEBOOK as</h4> <pre>{{ facebook }}</pre>
-                {% else %}
-                <a href="{{ api_url }}/authorize/facebook?nonce={{ nonce }}&app_id={{ app_id }}&callback_uri={{ demo_url }}/auth/callback">
-                    <img  width="200" height="45"
-                    src="https://comedydefensivedriving.com/images2011/fb-sign-in-button.png"/>
-                </a>
-                {% endif %}
-            </td>
-            </tr>
+<div>
+    <a href="/auth/line">
+        <img width="200" height="120"
+             src="https://static.tildacdn.com/tild3361-3663-4634-b664-306631636532/option_login.png"/>
+    </a>
+</div>
+<div>
+    <a href="/auth/amazon">
+        <img width="200" height="46"
+             src="https://images-na.ssl-images-amazon.com/images/G/01/lwa/btnLWA_gold_195x46._CB487591031_.png"/>
+    </a>
+</div>
+<div>
+    <a href="/auth/yahoojp">
+        <img width="200" height="60"
+             src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhmemZ_t4AJU4bt3jYQQic5uH0tjuHL4HNyUPk2KsxCHvnFqTe"/>
+    </a>
+</div>
+<div>
+    <a href="/auth/facebook">
+        <img width="200" height="45"
+             src="https://comedydefensivedriving.com/images2011/fb-sign-in-button.png"/>
+    </a>
+</div>
+<div>
+    <a href="/auth/twitter">
+        <img width="206" height="49" style="margin-left:-3px"
+             src="https://termsfeed.com/blog/wp-content/uploads/2016/06/sign-in-twitter-button-example.jpg"/>
+    </a>
+</div>
 
-            <tr>
-            <td>
-                {% if amazon %}
-                <h4>Logged in AMAZON as</h4> <pre>{{ amazon }}</pre>
-                {% else %}
-                <a href="{{ api_url }}/authorize/amazon?nonce={{ nonce }}&app_id={{ app_id }}&callback_uri={{ demo_url }}/auth/callback&callback_if_failed={{ demo_url }}/auth/failed">
-                    <img  width="200" height="46"
-                    src="https://images-na.ssl-images-amazon.com/images/G/01/lwa/btnLWA_gold_195x46._CB487591031_.png"/>
-                </a>
-                {% endif %} 
-            </td>
-            <td>
-                {% if twitter %}
-                <h4>Logged in TWITTER as</h4> <pre>{{ twitter }}</pre>
-                {% else %}
-                <a href="{{ api_url }}/authorize/twitter?nonce={{ nonce }}&app_id={{ app_id }}&callback_uri={{ demo_url }}/auth/callback">
-                    <img  width="206" height="49" style="margin-left:-3px"
-                    src="https://termsfeed.com/blog/wp-content/uploads/2016/06/sign-in-twitter-button-example.jpg"/>
-                </a>
-                {% endif %} 
-            </td>
-            </tr>
-
-            <tr>
-            <td>
-            <div style="margin-top: 30px">
-                {% if yahoojp %}
-                <h4>Logged in YAHOO JAPAN as</h4> <pre>{{ yahoojp }}</pre>
-                {% else %}
-                <a href="{{ api_url }}/authorize/yahoojp?nonce={{ nonce }}&app_id={{ app_id }}&callback_uri={{ demo_url }}/auth/callback">
-                    <img width="200" height="60"
-                    src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhmemZ_t4AJU4bt3jYQQic5uH0tjuHL4HNyUPk2KsxCHvnFqTe"/>
-                </a>
-                {% endif %} 
-            </div>
-            </td>
-            </tr>
-        </table>
-        <br/><br/>
-        <a href="/logout">Logout All</a>
-    </body>
+<div>
+    {% if line %}
+    <h4>Logged in LINE as</h4>
+    <pre>{{ line }}</pre>
+    {% endif %}
+</div>
+<div>
+    {% if facebook %}
+    <h4>Logged in FACEBOOK as</h4>
+    <pre>{{ facebook }}</pre>
+    {% endif %}
+</div>
+<div>
+    {% if amazon %}
+    <h4>Logged in AMAZON as</h4>
+    <pre>{{ amazon }}</pre>
+    {% endif %}
+</div>
+<div>
+    {% if twitter %}
+    <h4>Logged in TWITTER as</h4>
+    <pre>{{ twitter }}</pre>
+    {% endif %}
+</div>
+<div>
+    {% if yahoojp %}
+    <h4>Logged in YAHOO JAPAN as</h4>
+    <pre>{{ yahoojp }}</pre>
+    {% endif %}
+</div>
+<br/><br/>
+<a href="/logout">Logout All</a>
+</body>
 </html>
