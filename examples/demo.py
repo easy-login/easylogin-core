@@ -79,13 +79,15 @@ def auth_callback():
         app_id = request.cookies['app_id']
         url = '{}/{}/profiles/authorized'.format(api_url, app_id)
 
-        activate_profile = provider in ['facebook', 'twitter']
         r = requests.post(url=url, verify=False,
-                          json={'activate_profile': activate_profile, 'token': token},
+                          json={'token': token},
                           headers={'X-Api-Key': request.cookies['api_key']})
+        if r.status_code != 200:
+            return redirect('/demo.html')
+
         profile = r.json()
         session[provider] = json.dumps(profile, sort_keys=True, indent=2)
-        if activate_profile or profile['verified']:
+        if profile['verified']:
             return render_template('result.html',
                                    provider=provider.upper(),
                                    profile=session[provider])
@@ -113,19 +115,19 @@ def register():
         submit = request.form.get('submit', '')
         if 'register' == submit.lower():
             url = '{}/{}/profiles/activate'.format(api_url, app_id)
-            _ = requests.post(url=url, verify=False,
+            r = requests.post(url=url, verify=False,
                               json={'token': session['token']},
                               headers={'X-Api-Key': request.cookies['api_key']})
-            profile = json.loads(session[provider], encoding='utf8')
-            profile['verified'] = 1
-            session[provider] = json.dumps(profile, sort_keys=True, indent=2)
-            return render_template('result.html',
-                                   provider=provider.upper(),
-                                   token=session['token'],
-                                   profile=session[provider])
-        else:
-            session[provider] = None
-            return redirect('/demo.html')
+            if r.status_code == 200:
+                profile = json.loads(session[provider], encoding='utf8')
+                profile['verified'] = 1
+                session[provider] = json.dumps(profile, sort_keys=True, indent=2)
+                return render_template('result.html',
+                                       provider=provider.upper(),
+                                       token=session['token'],
+                                       profile=session[provider])
+        session[provider] = None
+        return redirect('/demo.html')
 
 
 @app.route('/auth/failed')
