@@ -1,4 +1,4 @@
-from flask import Flask,request
+from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 
@@ -124,9 +124,11 @@ init_logging(app)
 # Build the database:
 # This will create the database file using SQLAlchemy
 from sociallogin import models
+
 db.create_all()
 db.session.commit()
 
 # Import all API endpoint definitions
 from sociallogin import auth, routes, exc
+
 auth.init_app(app)
