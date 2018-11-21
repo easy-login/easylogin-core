@@ -30,6 +30,11 @@ def charts():
                                        random.randint(200, 1000)])
 
 
+@app.route('/pay.html')
+def pay():
+    return render_template('pay.html')
+
+
 @app.route('/app/setting', methods=['POST'])
 def app_setting():
     resp = make_response(redirect('/demo.html'))

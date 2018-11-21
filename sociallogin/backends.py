@@ -179,7 +179,7 @@ class OAuthBackend(object):
             profile = self.handle_oauth2_authorize_success(log, channel, qs)
         else:
             profile = self.handle_oauth1_authorize_success(log, channel, qs)
-        return profile, log, args
+        return channel, profile, log, args
 
     def handle_oauth2_authorize_success(self, log, channel, qs):
         """

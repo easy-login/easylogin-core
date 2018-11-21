@@ -56,7 +56,11 @@ def authorize(provider, intent):
             intent=intent)
 
     db.session.commit()
-    return redirect(authorize_uri)
+    resp = make_response(redirect(authorize_uri))
+    # resp = make_response(jsonify({'result': 'ok'}))
+    from datetime import datetime
+    resp.set_cookie('test_cookie', str(datetime.now()))
+    return resp
 
 
 @flask_app.route('/auth/<provider>/callback')
@@ -69,8 +73,9 @@ def authorize_callback(provider):
     if not backend.verify_request_success(request.args):
         backend.handle_authorize_error(state, request.args)
 
-    profile, log, args = backend.handle_authorize_success(state, qs=request.args)
+    channel, profile, log, args = backend.handle_authorize_success(state, request.args)
     intent = args.get('intent')
+
     if intent == AuthLogs.INTENT_ASSOCIATE:
         if args.get('provider') != provider:
             raise RedirectLoginError(
@@ -114,7 +119,11 @@ def authorize_callback(provider):
 
     db.session.commit()
     if provider == 'amazon':
-        return _make_response_for_amazon_pay(callback_uri, profile)
+        return _make_response_for_amazon_pay(
+            channel=channel,
+            profile=profile,
+            redirect_uri=callback_uri
+        )
     else:
         return redirect(callback_uri)
 
@@ -170,10 +179,8 @@ def _extract_api_key(req):
         return api_key
 
 
-def _make_response_for_amazon_pay(redirect_uri, profile):
+def _make_response_for_amazon_pay(channel, profile, redirect_uri):
     token = Tokens.find_latest_by_social_id(social_id=profile._id)
-    channel = Channels.query.filter_by(app_id=profile.app_id,
-                                       provider='amazon').one_or_none()
     cookie_object = {
         "access_token": token.access_token,
         "max_age": 3300,
