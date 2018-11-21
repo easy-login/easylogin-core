@@ -84,13 +84,13 @@ def init_logging(app_):
     app_.logger.setLevel(app.config['LOG_LEVEL'])
     app_.logger.addHandler(file_handler)
 
-    import sentry_sdk
-    from sentry_sdk.integrations.flask import FlaskIntegration
-
-    sentry_sdk.init(
-        dsn="https://889175480fbc46daa8de150c01886aa9@sentry.io/1317697",
-        integrations=[FlaskIntegration()]
-    )
+    # import sentry_sdk
+    # from sentry_sdk.integrations.flask import FlaskIntegration
+    #
+    # sentry_sdk.init(
+    #     dsn="https://889175480fbc46daa8de150c01886aa9@sentry.io/1317697",
+    #     integrations=[FlaskIntegration()]
+    # )
 
 
 def get_remote_ip(req):
