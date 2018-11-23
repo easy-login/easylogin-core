@@ -8,6 +8,12 @@
     </style>
 </head>
 <body>
+<div id="AmazonLoginButton">
+    <img class=" amazonpay-button-inner-image" style="cursor: pointer; max-height: 64px;" 
+        alt="AmazonPay" id="AmazonLoginButtonImg" onclick="onAmazonLoginButtonClicked()"
+        src="https://d2ldlvi1yef00y.cloudfront.net/default/us/sandbox/lwa/gold/large/LwA.png">
+</div>
+<br/>
 <div id="AmazonPayButton">
 </div>
 <!--div
@@ -29,34 +35,48 @@
 </div> 
 <div id="walletWidgetDiv">
 </div>    
+<script>
+    function getCookie(cname) {
+        var name = cname + "=";
+        var ca = document.cookie.split(';');
+        for(var i = 0; i < ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') {
+                c = c.substring(1);
+            }
+            if (c.indexOf(name) == 0) {
+                return c.substring(name.length, c.length);
+            }
+        }
+        return "";
+    }
+
+    function onAmazonLoginButtonClicked() {
+        console.log('onAmazonLoginButton clicked');
+        var cachedToken = getCookie('amazon_Login_state_cache');
+        if (cachedToken != "") {
+            alert("You already logged in");
+            document.getElementById("OffAmazonPaymentsWidgets0").click();
+        } else {
+            window.location.href = '/auth/amazon?return_url=/pay.html';
+        }
+    }
+</script>
 <script type="text/javascript">
-    // var CLIENT_ID = 'amzn1.application-oa2-client.ab1b795980bf4f9b9cd2edeb040dde8e';
-    var CLIENT_ID = 'amzn1.application-oa2-client.e4f978fd4ef347ddbf8206d16f0df5eb';
+    var CLIENT_ID = 'amzn1.application-oa2-client.ab1b795980bf4f9b9cd2edeb040dde8e';
+    // var CLIENT_ID = 'amzn1.application-oa2-client.e4f978fd4ef347ddbf8206d16f0df5eb';
     var SELLER_ID = 'AXRHKH1P12JT4';
 
     window.onAmazonLoginReady = function() {
         amazon.Login.setClientId(CLIENT_ID);
-        console.log('onAmazonLoginReady')
-
-        // function getURLParameter(name, source) {
-        //     return decodeURIComponent((new RegExp('[?|&|#]' + name + '=' +
-        //       '([^&]+?)(&|#|;|$)').exec(source) || [,""])[1].replace(/\+/g,
-        //       '%20')) || null;
-        //   }
-
-        //   var accessToken = getURLParameter("access_token", location.hash);
-
-        //   if (typeof accessToken === 'string' && accessToken.match(/^Atza/)) {
-        //     document.cookie = "amazon_Login_accessToken=" + accessToken;
-        //     console.log("accessToken " + accessToken)
-        //   }
+        console.log('onAmazonLoginReady');
     };
     window.onAmazonPaymentsReady = function() {
-        showButton();
-        console.log('onAmazonPaymentsReady')
+        showAmazonPayButton();
+        console.log('onAmazonPaymentsReady');
     };
 
-    function showButton(){
+    function showAmazonPayButton(){
         var authRequest; 
         OffAmazonPayments.Button("AmazonPayButton", SELLER_ID, { 
             type:  "PwA", 
@@ -66,27 +86,27 @@
             authorization: function() { 
                 loginOptions = {
                     scope: "profile payments:widget payments:shipping_address postal_code", 
-                    interactive: "auto",
-                    popup: true,
-                    region: "apac"
+                    interactive: "never",
+                    popup: true
                 }; 
                 authRequest = amazon.Login.authorize (loginOptions, 
                     function(response) {
                         addressConsentToken = response.access_token;
-                        // console.log('response: ' + JSON.stringify(response))
-                        console.log('Constent token: ' + addressConsentToken)
-                    },
-                    // "http://localhost:8080/pay.html"
+                        console.log('Constent token: ' + addressConsentToken);
+                    }
                 ); 
             }, 
             onSignIn: function(orderReference) {
                 amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
-                console.log('orderReference: ' + JSON.stringify(orderReference))
-                console.log("amazonOrderReferenceId: " + amazonOrderReferenceId)
+                console.log("amazonOrderReferenceId: " + amazonOrderReferenceId);
 
-                showAddressBookWidget();
-                showWalletWidget();
-                console.log("logIn success, render address and wallet widgets")
+                if (!amazonOrderReferenceId) {
+                    alert('amazonOrderReferenceId null');
+                } else {
+                    showAddressBookWidget();
+                    showWalletWidget();
+                    console.log("logIn success, render address and wallet widgets");
+                }
             },
             onError: function(error) { 
                 // your error handling code.
@@ -144,12 +164,12 @@
         }).bind("walletWidgetDiv");
     }
 </script>
-<script type="text/javascript">
+<!-- <script type="text/javascript">
     document.getElementById('Logout').onclick = function() {
         amazon.Login.logout();
         console.log("Click logout")
     };
-</script>
+</script> -->
 <script async="async" src="https://static-na.payments-amazon.com/OffAmazonPayments/us/sandbox/js/Widgets.js">
 </script>
 </body>

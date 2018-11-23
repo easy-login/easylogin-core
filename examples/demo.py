@@ -64,11 +64,12 @@ def link_user(action):
 
 @app.route('/auth/<provider>')
 def authenticate(provider):
+    return_url = request.args.get('return_url', '')
     api_url = request.cookies['api_url']
     demo_url = request.environ.get('HTTP_X_FORWARDED_PROTO', 'http') + '://' + request.host
     qs = {
         'app_id': request.cookies['app_id'],
-        'callback_uri': demo_url + '/auth/callback',
+        'callback_uri': demo_url + '/auth/callback?return_url=' + urlparse.quote_plus(return_url),
         'nonce': secrets.token_hex(16)
     }
     auth_url = '{}/auth/{}?'.format(api_url, provider) + urlparse.urlencode(qs)
@@ -89,6 +90,10 @@ def auth_callback():
                           headers={'X-Api-Key': request.cookies['api_key']})
         if r.status_code != 200:
             return redirect('/demo.html')
+
+        return_url = request.args.get('return_url')
+        if return_url:
+            return redirect(return_url)
 
         profile = r.json()
         session[provider] = json.dumps(profile, sort_keys=True, indent=2)
