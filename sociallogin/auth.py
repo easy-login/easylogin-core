@@ -188,6 +188,8 @@ def _make_response_for_amazon_pay(channel, profile, redirect_uri):
         "scope": channel.get_perms_as_oauth_scope(lpwa=True)
     }
     resp = make_response(redirect(redirect_uri))
+    domain = extract_domain_for_cookie(redirect_uri)
+    logger.debug('Set cookie', domain=domain)
     resp.set_cookie(key='amazon_Login_state_cache',
                     value=up.quote(json.dumps(cookie_object), safe=''),
                     domain=extract_domain_for_cookie(redirect_uri),
