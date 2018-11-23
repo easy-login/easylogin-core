@@ -55,10 +55,11 @@
         console.log('onAmazonLoginButton clicked');
         var cachedToken = getCookie('amazon_Login_state_cache');
         if (cachedToken != "") {
-            alert("You already logged in");
-            document.getElementById("OffAmazonPaymentsWidgets0").click();
+            if (confirm('You are already logged in. Do you want re-authenticate ?')) {
+                window.location.href = '/auth/amazon?return_url=/pay.html&sandbox=true';
+            }
         } else {
-            window.location.href = '/auth/amazon?return_url=/pay.html';
+            window.location.href = '/auth/amazon?return_url=/pay.html&sandbox=true';
         }
     }
 </script>

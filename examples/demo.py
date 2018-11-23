@@ -70,7 +70,8 @@ def authenticate(provider):
     qs = {
         'app_id': request.cookies['app_id'],
         'callback_uri': demo_url + '/auth/callback?return_url=' + urlparse.quote_plus(return_url),
-        'nonce': secrets.token_hex(16)
+        'nonce': secrets.token_hex(16),
+        'sandbox': request.args.get('sandbox', '')
     }
     auth_url = '{}/auth/{}?'.format(api_url, provider) + urlparse.urlencode(qs)
     return redirect(auth_url)
