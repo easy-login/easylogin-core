@@ -113,28 +113,28 @@
                     function(response) {
                         addressConsentToken = response.access_token;
                         console.log('Constent token: ' + addressConsentToken);
-                        if (!addressConsentToken) {
-                            alert('You must log in before can pay')
-                        } else {                            
-                            console.log("logIn success, render address and wallet widgets");
-                            showAddressBookWidget();
-                            showWalletWidget();                        
-                        }                    
+                        // if (!addressConsentToken) {
+                        //     alert('You must log in before can pay')
+                        // } else {                            
+                        //     console.log("logIn success, render address and wallet widgets");
+                        //     showAddressBookWidget();
+                        //     showWalletWidget();                        
+                        // }                    
                     }
                 ); 
             }, 
-            // onSignIn: function(orderReference) {
-            //     amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
-            //     console.log("amazonOrderReferenceId: " + amazonOrderReferenceId);
+            onSignIn: function(orderReference) {
+                amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
+                console.log("amazonOrderReferenceId: " + amazonOrderReferenceId);
 
-            //     if (!amazonOrderReferenceId) {
-            //         alert('amazonOrderReferenceId null');
-            //     } else {
-            //         showAddressBookWidget();
-            //         showWalletWidget();
-            //         console.log("logIn success, render address and wallet widgets");
-            //     }
-            // },
+                if (!amazonOrderReferenceId) {
+                    alert('amazonOrderReferenceId null');
+                } else {
+                    showAddressBookWidget();
+                    showWalletWidget();
+                    console.log("logIn success, render address and wallet widgets");
+                }
+            },
             onError: function(error) { 
                 // your error handling code.
                 alert("The following error occurred: " 
