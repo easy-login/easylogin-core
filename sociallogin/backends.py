@@ -201,8 +201,8 @@ class OAuthBackend(object):
         :return:
         """
         code = qs['code']
-        tokens = self._get_token(log, channel, code)
-        user_id, attrs = self._get_profile(log, channel, tokens)
+        tokens = self._get_token(log=log, channel=channel, code=code)
+        user_id, attrs = self._get_profile(log=log, channel=channel, tokens=tokens)
         try:
             profile, existed = SocialProfiles.add_or_update(
                 app_id=log.app_id,
@@ -235,8 +235,8 @@ class OAuthBackend(object):
         :return:
         """
         verifier = qs['oauth_verifier']
-        tokens = self._get_oauth1_token(log, channel, verifier)
-        user_id, attrs = self._get_oauth1_profile(log, channel, tokens)
+        tokens = self._get_oauth1_token(log=log, channel=channel, verifier=verifier)
+        user_id, attrs = self._get_oauth1_profile(log=log, channel=channel, tokens=tokens)
         try:
             profile, existed = SocialProfiles.add_or_update(
                 app_id=log.app_id,
