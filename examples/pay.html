@@ -8,6 +8,16 @@
     </style>
 </head>
 <body>
+<div id="settingForm">
+    <form action="/app/setting" method="POST">
+        <label style="margin-right: 20px"> Amazon Client ID :</label>
+        <input type="text" id="amz_client" name="amz_client_id" value="" 
+            style="width: 500px; margin-bottom: 10px"><br/>
+
+        <label style="margin-right: 32px"> Amazon Seller ID :</label>
+        <input type="text" id="amz_seller" name="amz_seller_id" value=""><br/>
+    </form>
+</div>
 <div id="AmazonLoginButton">
     <img class=" amazonpay-button-inner-image" style="cursor: pointer; max-height: 48px;"
         alt="AmazonPay" id="AmazonLoginButtonImg" onclick="onAmazonLoginButtonClicked()"
@@ -65,9 +75,15 @@
     }
 </script>
 <script type="text/javascript">
-    var CLIENT_ID = 'amzn1.application-oa2-client.ab1b795980bf4f9b9cd2edeb040dde8e';
+    var CLIENT_ID = document.getElementById("amz_client").value
+    if (!CLIENT_ID) {
+        CLIENT_ID = 'amzn1.application-oa2-client.ab1b795980bf4f9b9cd2edeb040dde8e';
+    }
     // var CLIENT_ID = 'amzn1.application-oa2-client.e4f978fd4ef347ddbf8206d16f0df5eb';
-    var SELLER_ID = 'AXRHKH1P12JT4';
+    var SELLER_ID = document.getElementById("amz_seller").value
+    if (!SELLER_ID) {
+        SELLER_ID = 'AXRHKH1P12JT4';
+    }
 
     window.onAmazonLoginReady = function() {
         amazon.Login.setClientId(CLIENT_ID);
@@ -76,6 +92,8 @@
     window.onAmazonPaymentsReady = function() {
         showAmazonPayButton();
         console.log('onAmazonPaymentsReady');
+        console.log('amz client ID: ' + CLIENT_ID);
+        console.log('amz seller ID: ' + SELLER_ID);
     };
 
     function showAmazonPayButton(){
