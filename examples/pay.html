@@ -76,30 +76,29 @@
     }
 </script>
 <script type="text/javascript">
-    var CLIENT_ID = getCookie('amz_client_id');
-    if (!CLIENT_ID) {
-        CLIENT_ID = 'amzn1.application-oa2-client.ab1b795980bf4f9b9cd2edeb040dde8e';
+    var clientId = getCookie('amz_client_id');
+    if (!clientId) {
+        clientId = 'amzn1.application-oa2-client.ab1b795980bf4f9b9cd2edeb040dde8e';
     }
-    // var CLIENT_ID = 'amzn1.application-oa2-client.e4f978fd4ef347ddbf8206d16f0df5eb';
-    var SELLER_ID = getCookie('amz_seller_id');
-    if (!SELLER_ID) {
-        SELLER_ID = 'AXRHKH1P12JT4';
+    var sellerId = getCookie('amz_seller_id');
+    if (!sellerId) {
+        sellerId = 'AXRHKH1P12JT4';
     }
 
     window.onAmazonLoginReady = function() {
-        amazon.Login.setClientId(CLIENT_ID);
+        amazon.Login.setClientId(clientId);
         console.log('onAmazonLoginReady');
     };
     window.onAmazonPaymentsReady = function() {
         showAmazonPayButton();
         console.log('onAmazonPaymentsReady');
-        console.log('amz client ID: ' + CLIENT_ID);
-        console.log('amz seller ID: ' + SELLER_ID);
+        console.log('amz client ID: ' + clientId);
+        console.log('amz seller ID: ' + sellerId);
     };
 
     function showAmazonPayButton(){
         var authRequest; 
-        OffAmazonPayments.Button("AmazonPayButton", SELLER_ID, { 
+        OffAmazonPayments.Button("AmazonPayButton", sellerId, { 
             type:  "PwA", 
             color: "Gold", 
             size:  "large", 
@@ -124,18 +123,18 @@
                     }
                 ); 
             }, 
-            onSignIn: function(orderReference) {
-                amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
-                console.log("amazonOrderReferenceId: " + amazonOrderReferenceId);
+            // onSignIn: function(orderReference) {
+            //     amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
+            //     console.log("amazonOrderReferenceId: " + amazonOrderReferenceId);
 
-                if (!amazonOrderReferenceId) {
-                    alert('amazonOrderReferenceId null');
-                } else {
-                    showAddressBookWidget();
-                    showWalletWidget();
-                    console.log("logIn success, render address and wallet widgets");
-                }
-            },
+            //     if (!amazonOrderReferenceId) {
+            //         alert('amazonOrderReferenceId null');
+            //     } else {
+            //         showAddressBookWidget();
+            //         showWalletWidget();
+            //         console.log("logIn success, render address and wallet widgets");
+            //     }
+            // },
             onError: function(error) { 
                 // your error handling code.
                 alert("The following error occurred: " 
@@ -147,7 +146,7 @@
 
     function showAddressBookWidget() {
         new OffAmazonPayments.Widgets.AddressBook({
-            sellerId: SELLER_ID,
+            sellerId: sellerId,
             onOrderReferenceCreate: function(orderReference) {
                 // Here is where you can grab the Order Reference ID.
                 amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
@@ -172,7 +171,7 @@
 
     function showWalletWidget() {
         new OffAmazonPayments.Widgets.Wallet({
-            sellerId: SELLER_ID,
+            sellerId: sellerId,
             onPaymentSelect: function(orderReference) {
                 console.log("onPaymentSelect " + JSON.stringify(orderReference))
             },
