@@ -162,7 +162,7 @@ class Channels(Base):
         :return:
         """
         perms = self.permissions.replace('|', ' ')
-        if lpwa:
+        if self.provider == 'amazon' and lpwa:
             perms += ' payments:widget payments:shipping_address payments:billing_address'
         return perms
 
@@ -446,6 +446,7 @@ class AuthLogs(Base):
     INTENT_ASSOCIATE = 'associate'
     INTENT_LOGIN = 'login'
     INTENT_REGISTER = 'register'
+    INTENT_PAY_WITH_AMAZON = 'lpwa'
 
     ACTION_LOGIN = 1
     ACTION_REGISTER = 0

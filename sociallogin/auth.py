@@ -5,7 +5,7 @@ from flask import abort, redirect, request, url_for, jsonify, make_response
 from sociallogin import app as flask_app, db, login_manager, logger, get_remote_ip
 from sociallogin.models import Apps, AuthLogs, AssociateLogs, Tokens
 from sociallogin.backends import get_backend
-from sociallogin.utils import add_params_to_uri, unix_time_millis
+from sociallogin.utils import add_params_to_uri, unix_time_millis, smart_str2bool
 from sociallogin.exc import RedirectLoginError, TokenParseError
 
 
@@ -24,7 +24,8 @@ def authorize(provider, intent):
     if nonce and not nonce.isalnum():
         abort(400, 'Invalid nonce, only alphanumeric string accepted')
 
-    backend = get_backend(provider)
+    sandbox = request.args.get('sandbox')
+    backend = get_backend(provider, sandbox=smart_str2bool(sandbox))
     authorize_uri = None
     if intent == AuthLogs.INTENT_ASSOCIATE:
         assoc_token = request.args.get('token')
@@ -38,6 +39,7 @@ def authorize(provider, intent):
                 app_id=app_id,
                 succ_callback=callback_uri,
                 fail_callback=callback_if_failed,
+                sandbox=sandbox,
                 nonce=nonce,
                 intent=intent,
                 user_id=log.user_id,
@@ -52,6 +54,7 @@ def authorize(provider, intent):
             app_id=app_id,
             succ_callback=callback_uri,
             fail_callback=callback_if_failed,
+            sandbox=sandbox,
             nonce=nonce,
             intent=intent)
 
@@ -66,7 +69,7 @@ def authorize_callback(provider):
     if not state:
         abort(400, 'Missing parameter state')
 
-    if not backend.verify_request_success(request.args):
+    if not backend.verify_callback_success(request.args):
         backend.handle_authorize_error(state, request.args)
 
     channel, profile, log, args = backend.handle_authorize_success(state, request.args)

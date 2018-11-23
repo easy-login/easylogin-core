@@ -10,7 +10,8 @@ from sociallogin import db, logger, get_remote_ip
 from sociallogin.exc import RedirectLoginError, PermissionDeniedError, \
     UnsupportedProviderError, NotFoundError, BadRequestError, TokenParseError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
-from sociallogin.utils import gen_random_token, add_params_to_uri, calculate_hmac
+from sociallogin.utils import gen_random_token, add_params_to_uri, calculate_hmac, \
+    smart_str2bool, unix_time_millis
 
 __PROVIDER_SETTINGS__ = {
     'line': {
@@ -37,6 +38,11 @@ __PROVIDER_SETTINGS__ = {
         'profile_uri': 'https://api.amazon.com/user/profile',
         'identify_attrs': ['user_id']
     },
+    'amazon_sandbox': {
+        'authorize_uri': 'https://www.amazon.com/ap/oa?response_type=code&sandbox=true',
+        'token_uri': 'https://api.sandbox.amazon.com/auth/o2/token',
+        'profile_uri': 'https://api.sandbox.amazon.com/user/profile'
+    },
     'facebook': {
         'authorize_uri': 'https://www.facebook.com/{version}/dialog/oauth?response_type=code',
         'token_uri': 'https://graph.facebook.com/{version}/oauth/access_token',
@@ -53,17 +59,17 @@ __PROVIDER_SETTINGS__ = {
 }
 
 
-def get_backend(provider):
+def get_backend(provider, sandbox=False):
     if provider == 'line':
-        return LineBackend(provider)
+        return LineBackend(provider, sandbox)
     elif provider == 'amazon':
-        return AmazonBackend(provider)
+        return AmazonBackend(provider, sandbox)
     elif provider == 'yahoojp':
-        return YahooJpBackend(provider)
+        return YahooJpBackend(provider, sandbox)
     elif provider == 'facebook':
-        return FacebookBackend(provider)
+        return FacebookBackend(provider, sandbox)
     elif provider == 'twitter':
-        return TwitterBackend(provider)
+        return TwitterBackend(provider, sandbox)
     else:
         raise UnsupportedProviderError()
 
@@ -80,11 +86,12 @@ class OAuthBackend(object):
     ERROR_GET_TOKEN_FAILED = 'get_token_failed'
     ERROR_GET_PROFILE_FAILED = 'get_profile_failed'
 
-    def __init__(self, provider):
+    def __init__(self, provider, sandbox):
         self.provider = provider
         self.redirect_uri = url_for('authorize_callback', _external=True, provider=provider)
+        self.sandbox = sandbox
 
-    def verify_request_success(self, qs):
+    def verify_callback_success(self, qs):
         if self.OAUTH_VERSION == 2:
             return 'code' in qs
         else:
@@ -103,7 +110,7 @@ class OAuthBackend(object):
         channel = Channels.query.filter_by(app_id=app_id,
                                            provider=self.provider).one_or_none()
         if not app or not channel:
-            raise NotFoundError(msg='Application not found')
+            raise NotFoundError(msg='Application or channel not found')
 
         allowed_uris = [up.unquote_plus(uri) for uri in app.get_callback_uris()]
         logger.debug('Verify callback URI', style='hybrid', allowed_uris=allowed_uris,
@@ -173,6 +180,10 @@ class OAuthBackend(object):
         """
         log, args = self._verify_and_parse_state(state)
         log.client_nonce = args.get('nonce')
+        if smart_str2bool(args.get('sandbox')):
+            self.sandbox = True
+            logger.info('Handle auth callback in sandbox mode', provider=self.provider)
+
         channel = Channels.query.filter_by(app_id=log.app_id,
                                            provider=self.provider).one_or_none()
         if self.OAUTH_VERSION == 2:
@@ -437,14 +448,32 @@ class AmazonBackend(OAuthBackend):
     """
 
     def _build_authorize_uri(self, channel, state):
-        amz_pay_enabled = 'amazon_pay' in channel.get_options()
-        scope = channel.get_perms_as_oauth_scope(lpwa=amz_pay_enabled)
+        amz_pay_enabled = channel.option_enabled('amazon_pay')
         uri = add_params_to_uri(
             uri=self.__authorize_uri__(version=channel.api_version),
             client_id=channel.client_id,
             redirect_uri=self.redirect_uri,
-            scope=scope, state=state)
+            scope=channel.get_perms_as_oauth_scope(lpwa=amz_pay_enabled),
+            state=state)
         return uri
+
+    def __authorize_uri__(self, version=None, numeric_format=False):
+        if self.sandbox:
+            return __PROVIDER_SETTINGS__['amazon_sandbox']['authorize_uri']
+        else:
+            return super().__authorize_uri__(version, numeric_format)
+
+    def __token_uri__(self, version=None, numeric_format=False):
+        if self.sandbox:
+            return __PROVIDER_SETTINGS__['amazon_sandbox']['token_uri']
+        else:
+            return super().__token_uri__(version, numeric_format)
+
+    def __profile_uri__(self, version=None, numeric_format=False):
+        if self.sandbox:
+            return __PROVIDER_SETTINGS__['amazon_sandbox']['profile_uri']
+        else:
+            return super().__profile_uri__(version, numeric_format)
 
 
 class YahooJpBackend(OAuthBackend):

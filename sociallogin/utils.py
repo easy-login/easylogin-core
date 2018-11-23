@@ -90,3 +90,11 @@ def convert_to_user_timezone(dt):
 def calculate_hmac(key, raw, digestmod=hashlib.sha1):
     hashed = hmac.new(key.encode('utf8'), raw.encode('utf8'), digestmod=digestmod)
     return base64encode(hashed.digest()).rstrip('\n')
+
+
+def smart_str2bool(s):
+    try:
+        i = int(s)
+        return i != 0
+    except (TypeError, ValueError):
+        return s == 'true'
