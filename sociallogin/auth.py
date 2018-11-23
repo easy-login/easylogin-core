@@ -3,7 +3,7 @@ import json
 from flask import abort, redirect, request, url_for, jsonify, make_response
 
 from sociallogin import app as flask_app, db, login_manager, logger, get_remote_ip
-from sociallogin.models import Apps, AuthLogs, AssociateLogs, Tokens, Channels
+from sociallogin.models import Apps, AuthLogs, AssociateLogs, Tokens
 from sociallogin.backends import get_backend
 from sociallogin.utils import add_params_to_uri, unix_time_millis
 from sociallogin.exc import RedirectLoginError, TokenParseError
@@ -56,11 +56,7 @@ def authorize(provider, intent):
             intent=intent)
 
     db.session.commit()
-    resp = make_response(redirect(authorize_uri))
-    # resp = make_response(jsonify({'result': 'ok'}))
-    from datetime import datetime
-    resp.set_cookie('test_cookie', str(datetime.now()))
-    return resp
+    return redirect(authorize_uri)
 
 
 @flask_app.route('/auth/<provider>/callback')
@@ -191,9 +187,21 @@ def _make_response_for_amazon_pay(channel, profile, redirect_uri):
     resp = make_response(redirect(redirect_uri))
     resp.set_cookie(key='amazon_Login_state_cache',
                     value=up.quote(json.dumps(cookie_object), safe=''),
-                    domain=up.urlparse(redirect_uri).netloc,
+                    domain=extract_domain_for_cookie(redirect_uri),
                     expires=None, max_age=3300)
     return resp
+
+
+def extract_domain_for_cookie(url, subdomain=True):
+    netloc = up.urlparse(url).netloc
+    if netloc.startswith('localhost'):
+        return None
+    else:
+        parts = netloc.split('.')
+        domain = parts[-2] + '.' + parts[-1]
+        if subdomain:
+            domain = '.' + domain
+        return domain
 
 
 def init_app(app):
