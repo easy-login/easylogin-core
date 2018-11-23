@@ -44,6 +44,14 @@ def app_setting():
     return resp
 
 
+@app.route('/pay/setting', methods=['POST'])
+def pay_setting():
+    resp = make_response(redirect('/pay.html'))
+    _set_cookie(resp, 'amz_client_id', request.form.get('amz_client_id'))
+    _set_cookie(resp, 'amz_seller_id', request.form.get('amz_seller_id'))
+    return resp
+
+
 @app.route('/user/<action>', methods=['POST'])
 def link_user(action):
     if action not in ['link', 'unlink']:

@@ -8,14 +8,15 @@
     </style>
 </head>
 <body>
-<div id="settingForm">
-    <form action="/app/setting" method="POST">
+<div id="settingForm" style="margin-bottom: 20px">
+    <form action="/pay/setting" method="POST">
         <label style="margin-right: 20px"> Amazon Client ID :</label>
         <input type="text" id="amz_client" name="amz_client_id" value="" 
-            style="width: 500px; margin-bottom: 10px"><br/>
+            style="width: 400px; margin-bottom: 10px"><br/>
 
-        <label style="margin-right: 32px"> Amazon Seller ID :</label>
-        <input type="text" id="amz_seller" name="amz_seller_id" value=""><br/>
+        <label style="margin-right: 20px"> Amazon Seller ID :</label>
+        <input type="text" id="amz_seller" name="amz_seller_id" value="">
+        <input type="submit" value="Save">
     </form>
 </div>
 <div id="AmazonLoginButton">
@@ -75,12 +76,12 @@
     }
 </script>
 <script type="text/javascript">
-    var CLIENT_ID = document.getElementById("amz_client").value
+    var CLIENT_ID = getCookie('amz_client_id');
     if (!CLIENT_ID) {
         CLIENT_ID = 'amzn1.application-oa2-client.ab1b795980bf4f9b9cd2edeb040dde8e';
     }
     // var CLIENT_ID = 'amzn1.application-oa2-client.e4f978fd4ef347ddbf8206d16f0df5eb';
-    var SELLER_ID = document.getElementById("amz_seller").value
+    var SELLER_ID = getCookie('amz_seller_id');
     if (!SELLER_ID) {
         SELLER_ID = 'AXRHKH1P12JT4';
     }
@@ -123,18 +124,18 @@
                     }
                 ); 
             }, 
-            // onSignIn: function(orderReference) {
-            //     amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
-            //     console.log("amazonOrderReferenceId: " + amazonOrderReferenceId);
+            onSignIn: function(orderReference) {
+                amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
+                console.log("amazonOrderReferenceId: " + amazonOrderReferenceId);
 
-            //     if (!amazonOrderReferenceId) {
-            //         alert('amazonOrderReferenceId null');
-            //     } else {
-            //         showAddressBookWidget();
-            //         showWalletWidget();
-            //         console.log("logIn success, render address and wallet widgets");
-            //     }
-            // },
+                if (!amazonOrderReferenceId) {
+                    alert('amazonOrderReferenceId null');
+                } else {
+                    showAddressBookWidget();
+                    showWalletWidget();
+                    console.log("logIn success, render address and wallet widgets");
+                }
+            },
             onError: function(error) { 
                 // your error handling code.
                 alert("The following error occurred: " 
