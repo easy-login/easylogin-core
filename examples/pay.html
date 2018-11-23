@@ -9,9 +9,10 @@
 </head>
 <body>
 <div id="AmazonLoginButton">
-    <img class=" amazonpay-button-inner-image" style="cursor: pointer; max-height: 64px;" 
+    <img class=" amazonpay-button-inner-image" style="cursor: pointer; max-height: 48px;"
         alt="AmazonPay" id="AmazonLoginButtonImg" onclick="onAmazonLoginButtonClicked()"
         src="https://d2ldlvi1yef00y.cloudfront.net/default/us/sandbox/lwa/gold/large/LwA.png">
+    <a href="#" id="Logout">Logout</a>
 </div>
 <br/>
 <div id="AmazonPayButton">
@@ -94,21 +95,28 @@
                     function(response) {
                         addressConsentToken = response.access_token;
                         console.log('Constent token: ' + addressConsentToken);
+                        if (!addressConsentToken) {
+                            alert('You must log in before can pay')
+                        } else {                            
+                            console.log("logIn success, render address and wallet widgets");
+                            showAddressBookWidget();
+                            showWalletWidget();                        
+                        }                    
                     }
                 ); 
             }, 
-            onSignIn: function(orderReference) {
-                amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
-                console.log("amazonOrderReferenceId: " + amazonOrderReferenceId);
+            // onSignIn: function(orderReference) {
+            //     amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
+            //     console.log("amazonOrderReferenceId: " + amazonOrderReferenceId);
 
-                if (!amazonOrderReferenceId) {
-                    alert('amazonOrderReferenceId null');
-                } else {
-                    showAddressBookWidget();
-                    showWalletWidget();
-                    console.log("logIn success, render address and wallet widgets");
-                }
-            },
+            //     if (!amazonOrderReferenceId) {
+            //         alert('amazonOrderReferenceId null');
+            //     } else {
+            //         showAddressBookWidget();
+            //         showWalletWidget();
+            //         console.log("logIn success, render address and wallet widgets");
+            //     }
+            // },
             onError: function(error) { 
                 // your error handling code.
                 alert("The following error occurred: " 
@@ -121,7 +129,6 @@
     function showAddressBookWidget() {
         new OffAmazonPayments.Widgets.AddressBook({
             sellerId: SELLER_ID,
-            agreementType: 'BillingAgreement',
             onOrderReferenceCreate: function(orderReference) {
                 // Here is where you can grab the Order Reference ID.
                 amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
@@ -137,12 +144,6 @@
                 // Enter code here that you want to be executed 
                 // when the address widget has been rendered. 
                 console.log("AddressBook onReady: " + JSON.stringify(orderReference))
-            },
-            // onReady: function(billingAgreement) {
-            //     var billingAgreementId = billingAgreement.getAmazonBillingAgreementId(); 
-            // },
-            onAddressSelect: function(billingAgreement) {
-                console.log("onAddressSelect " + JSON.stringify(billingAgreement))
             },
             onError: function(error) {
                 console.log(error.getErrorCode() + ': ' + error.getErrorMessage());
@@ -165,12 +166,12 @@
         }).bind("walletWidgetDiv");
     }
 </script>
-<!-- <script type="text/javascript">
+<script type="text/javascript">
     document.getElementById('Logout').onclick = function() {
         amazon.Login.logout();
         console.log("Click logout")
     };
-</script> -->
+</script>
 <script async="async" src="https://static-na.payments-amazon.com/OffAmazonPayments/us/sandbox/js/Widgets.js">
 </script>
 </body>
