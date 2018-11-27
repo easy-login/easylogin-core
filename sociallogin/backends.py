@@ -169,9 +169,8 @@ class OAuthBackend(object):
         error, desc = self._get_error(qs)
         logger.info('Authorize failed', provider=self.provider.upper(),
                     error=error, message=desc)
-        self._raise_redirect_error(
-            error=self.ERROR_AUTHORIZE_FAILED,
-            msg='{}, {}'.format(error, desc))
+        self._raise_redirect_error(error=self.ERROR_AUTHORIZE_FAILED,
+                                   msg='{}, {}'.format(error, desc))
 
     def handle_authorize_success(self, state, qs):
         """
@@ -202,11 +201,13 @@ class OAuthBackend(object):
         elif intent == AuthLogs.INTENT_LOGIN and not self.log.is_login:
             self._raise_redirect_error(
                 error='invalid_request',
-                msg='Social profile does not exist, should register instead')
+                msg='Social profile does not exist, should register instead'
+            )
         elif intent == AuthLogs.INTENT_REGISTER and self.log.is_login:
             self._raise_redirect_error(
                 error='invalid_request',
-                msg='Social profile already existed, should login instead')
+                msg='Social profile already existed, should login instead'
+            )
 
         auth_token = self.log.generate_auth_token()
         callback_uri = add_params_to_uri(
@@ -329,9 +330,8 @@ class OAuthBackend(object):
             error, desc = self._get_error(body, action='get_token')
             logger.warn('Getting access token failed',
                         provider=self.provider.upper(), **body)
-            self._raise_redirect_error(
-                error=self.ERROR_GET_TOKEN_FAILED,
-                msg='{}: {}'.format(error, desc))
+            self._raise_redirect_error(error=self.ERROR_GET_TOKEN_FAILED,
+                                       msg='{}: {}'.format(error, desc))
         return res.json()
 
     def _get_profile(self, tokens):
@@ -508,11 +508,14 @@ class AmazonBackend(OAuthBackend):
 
     def _build_authorize_uri(self, state):
         amz_pay_enabled = self.channel.option_enabled('amazon_pay')
+        scope = self.channel.get_perms_as_oauth_scope()
+        if amz_pay_enabled:
+            scope += ' payments:widget payments:shipping_address'
         uri = add_params_to_uri(
             uri=self.__authorize_uri__(version=self.channel.api_version),
             client_id=self.channel.client_id,
             redirect_uri=self.__provider_callback_uri__(),
-            scope=self.channel.get_perms_as_oauth_scope(lpwa=amz_pay_enabled),
+            scope=scope,
             state=state)
         return uri
 

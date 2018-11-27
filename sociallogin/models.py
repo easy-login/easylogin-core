@@ -155,16 +155,8 @@ class Channels(Base):
     def get_permissions(self):
         return (self.permissions or '').split('|')
 
-    def get_perms_as_oauth_scope(self, lpwa=False):
-        """
-
-        :param lpwa: Is require extra permissions for Amazon Pay
-        :return:
-        """
-        perms = self.permissions.replace('|', ' ')
-        if self.provider == 'amazon' and lpwa:
-            perms += ' payments:widget payments:shipping_address payments:billing_address'
-        return perms
+    def get_perms_as_oauth_scope(self):
+        return (self.permissions or '').replace('|', ' ')
 
     def get_required_fields(self):
         return (self.required_fields or '').split('|')
