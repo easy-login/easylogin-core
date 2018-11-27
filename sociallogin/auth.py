@@ -25,24 +25,25 @@ def authorize(provider, intent):
     sandbox = request.args.get('sandbox')
     backend = get_backend(provider, sandbox=smart_str2bool(sandbox))
     authorize_uri = None
+    extra = dict()
+
     if intent == AuthLogs.INTENT_ASSOCIATE:
         assoc_token = request.args.get('token')
         try:
-            log = AssociateLogs.parse_associate_token(assoc_token)
-            if log.provider != provider:
-                abort(400, 'Invalid target provider, must be {}'.format(log.provider))
+            alog = AssociateLogs.parse_associate_token(assoc_token)
+            if alog.provider != provider:
+                abort(400, 'Invalid target provider, must be {}'.format(alog.provider))
 
-            log.status = AssociateLogs.STATUS_AUTHORIZING
+            alog.status = AssociateLogs.STATUS_AUTHORIZING
             authorize_uri = backend.build_authorize_uri(
                 app_id=app_id,
+                intent=intent,
                 succ_callback=callback_uri,
                 fail_callback=callback_if_failed,
                 sandbox=sandbox,
-                nonce=nonce,
-                intent=intent,
-                user_id=log.user_id,
+                user_id=alog.user_id,
                 provider=provider,
-                assoc_id=log._id)
+                assoc_id=alog._id, **extra)
         except TokenParseError as e:
             logger.warning('Parse associate token failed',
                            error=e.description, token=assoc_token)
@@ -50,11 +51,10 @@ def authorize(provider, intent):
     else:
         authorize_uri = backend.build_authorize_uri(
             app_id=app_id,
+            intent=intent,
             succ_callback=callback_uri,
             fail_callback=callback_if_failed,
-            sandbox=sandbox,
-            nonce=nonce,
-            intent=intent)
+            sandbox=sandbox, **extra)
 
     db.session.commit()
     return redirect(authorize_uri)

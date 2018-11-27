@@ -103,10 +103,11 @@ class OAuthBackend(object):
         else:
             return 'oauth_token' in qs and 'oauth_verifier' in qs
 
-    def build_authorize_uri(self, app_id, succ_callback, fail_callback, **kwargs):
+    def build_authorize_uri(self, app_id, intent, succ_callback, fail_callback, **kwargs):
         """
 
         :param app_id:
+        :param intent:
         :param succ_callback:
         :param fail_callback:
         :param kwargs:
@@ -122,11 +123,11 @@ class OAuthBackend(object):
         logger.debug('Verify callback URI', style='hybrid', allowed_uris=allowed_uris,
                      succ_callback=succ_callback, fail_callback=fail_callback)
 
-        if not self._verify_callback_uri(allowed_uris, succ_callback):
+        if not self.verify_callback_uri(allowed_uris, succ_callback):
             raise PermissionDeniedError(
                 msg='Invalid callback_uri value. '
                     'Check if it is registered in EasyLogin developer site')
-        if fail_callback and not self._verify_callback_uri(allowed_uris, fail_callback):
+        if fail_callback and not self.verify_callback_uri(allowed_uris, fail_callback):
             raise PermissionDeniedError(
                 msg='Invalid callback_if_failed value. '
                     'Check if it is registered in EasyLogin developer site')
@@ -137,7 +138,7 @@ class OAuthBackend(object):
             ua=request.headers['User-Agent'],
             ip=get_remote_ip(request),
             nonce=gen_random_token(nbytes=32),
-            intent=kwargs.get('intent'),
+            intent=intent,
             callback_uri=succ_callback,
             callback_if_failed=fail_callback
         )
@@ -162,7 +163,7 @@ class OAuthBackend(object):
         :param qs:
         :return:
         """
-        self.log, self.args = self._verify_and_parse_state(state)
+        self.log, self.args = self.verify_and_parse_state(state)
         self.log.status = AuthLogs.STATUS_FAILED
 
         error, desc = self._get_error(qs)
@@ -179,7 +180,7 @@ class OAuthBackend(object):
         :param qs:
         :return:
         """
-        self.log, self.args = self._verify_and_parse_state(state)
+        self.log, self.args = self.verify_and_parse_state(state)
         if smart_str2bool(self.args.get('sandbox')):
             self._enable_sandbox()
         self.channel = Channels.query.filter_by(app_id=self.log.app_id,
@@ -189,7 +190,7 @@ class OAuthBackend(object):
         else:
             self.profile, self.token = self.handle_oauth1_authorize_success(qs)
 
-        intent = self.args.get('intent')
+        intent = self.log.intent
         if intent == AuthLogs.INTENT_ASSOCIATE:
             if self.args.get('provider') != self.provider:
                 self._raise_redirect_error(error='permission_denied',
@@ -197,7 +198,7 @@ class OAuthBackend(object):
             elif self.profile.user_id:
                 self._raise_redirect_error(error='conflict',
                                            msg='Profile has linked with another user')
-                self.profile.link_user_by_id(user_id=self.args.get('user_id'))
+            self.profile.link_user_by_id(user_id=self.args.get('user_id'))
         elif intent == AuthLogs.INTENT_LOGIN and not self.log.is_login:
             self._raise_redirect_error(
                 error='invalid_request',
@@ -350,9 +351,7 @@ class OAuthBackend(object):
                         provider=self.provider.upper(), **body)
             self._raise_redirect_error(
                 error=self.ERROR_GET_PROFILE_FAILED,
-                msg='Getting user attributes from provider failed',
-                nonce=self.log.client_nonce,
-                fail_callback=self.log.get_failed_callback())
+                msg='Getting user attributes from provider failed')
 
         return self._get_attributes(response=res.json())
 
@@ -397,7 +396,7 @@ class OAuthBackend(object):
     def _get_error(self, response, action='authorize'):
         return response['error'], response['error_description']
 
-    def _raise_redirect_error(self, error, msg, **kwargs):
+    def _raise_redirect_error(self, error, msg):
         raise RedirectLoginError(error=error, msg=msg,
                                  nonce=self.args.get('nonce'),
                                  redirect_uri=self.log.get_failed_callback(),
@@ -428,7 +427,7 @@ class OAuthBackend(object):
         return url_for('authorize_callback', _external=True, provider=self.provider)
 
     @staticmethod
-    def _verify_and_parse_state(state):
+    def verify_and_parse_state(state):
         try:
             return AuthLogs.parse_oauth_state(oauth_state=state)
         except TokenParseError as e:
@@ -436,7 +435,7 @@ class OAuthBackend(object):
             raise BadRequestError('Invalid OAuth state. ' + e.description)
 
     @staticmethod
-    def _verify_callback_uri(allowed_uris, uri):
+    def verify_callback_uri(allowed_uris, uri):
         if not uri:
             return False
         r1 = up.urlparse(uri)
