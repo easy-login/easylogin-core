@@ -101,8 +101,8 @@ class Admins(Base):
 
     LEVEL_NORMAL = 0
     LEVEL_PREMIUM = 1
-    LEVEL_PREMIUM_ONLY_LINE = 2
-    LEVEL_PREMIUM_ONLY_AMAZON = 3
+    LEVEL_LINE_PLUS = 2
+    LEVEL_AMAZON_PLUS = 3
 
     username = db.Column(db.String(32), nullable=False)
     email = db.Column(db.String(32), nullable=False)
@@ -266,8 +266,8 @@ class SocialProfiles(Base):
         level = (db.session.query(Admins.level).join(
             Admins, and_(Admins._id == Apps.owner_id, Apps._id == self.app_id))).first()
         return (level == Admins.LEVEL_PREMIUM
-                or (level == Admins.LEVEL_PREMIUM_ONLY_AMAZON and self.provider == 'amazon')
-                or (level == Admins.LEVEL_PREMIUM_ONLY_LINE and self.provider == 'line'))
+                or (level == Admins.LEVEL_AMAZON_PLUS and self.provider == 'amazon')
+                or (level == Admins.LEVEL_LINE_PLUS and self.provider == 'line'))
 
     @classmethod
     def delete_by_alias(cls, app_id, alias):
