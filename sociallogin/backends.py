@@ -91,6 +91,11 @@ class OAuthBackend(object):
         self.provider = provider
         self.redirect_uri = url_for('authorize_callback', _external=True, provider=provider)
         self.sandbox = sandbox
+        self.channel = None
+        self.log = None
+        self.token = None
+        self.profile = None
+        self.args = None
 
     def verify_callback_success(self, qs):
         if self.OAUTH_VERSION == 2:
@@ -108,9 +113,9 @@ class OAuthBackend(object):
         :return:
         """
         app = Apps.query.filter_by(_id=app_id, _deleted=0).one_or_none()
-        channel = Channels.query.filter_by(app_id=app_id,
-                                           provider=self.provider).one_or_none()
-        if not app or not channel:
+        self.channel = Channels.query.filter_by(app_id=app_id,
+                                                provider=self.provider).one_or_none()
+        if not app or not self.channel:
             raise NotFoundError(msg='Application or channel not found')
 
         allowed_uris = [up.unquote_plus(uri) for uri in app.get_callback_uris()]
@@ -126,7 +131,7 @@ class OAuthBackend(object):
                 msg='Invalid callback_if_failed value. '
                     'Check if it is registered in EasyLogin developer site')
 
-        log = AuthLogs(
+        self.log = AuthLogs(
             provider=self.provider,
             app_id=app_id,
             ua=request.headers['User-Agent'],
@@ -136,21 +141,18 @@ class OAuthBackend(object):
             callback_uri=succ_callback,
             callback_if_failed=fail_callback
         )
-        db.session.add(log)
+        db.session.add(self.log)
         db.session.flush()
 
         if self.OAUTH_VERSION == 2:
-            url = self._build_authorize_uri(
-                channel=channel,
-                state=log.generate_oauth_state(**kwargs))
+            url = self._build_authorize_uri(state=self.log.generate_oauth_state(**kwargs))
             logger.debug('Authorize URL', url)
         else:
-            url, token, secret = self._build_oauth1_authorize_uri(
-                log=log, channel=channel,
-                state=log.generate_oauth_state(**kwargs))
-            logger.debug('Authorize URL', url)
-            log.oa1_token = token
-            log.oa1_secret = secret
+            url, oa1_token, oa1_secret = self._build_oauth1_authorize_uri(
+                state=self.log.generate_oauth_state(**kwargs))
+            self.log.oa1_token = oa1_token
+            self.log.oa1_secret = oa1_secret
+        logger.debug('Authorize URL', url)
         return url
 
     def handle_authorize_error(self, state, qs):
@@ -160,17 +162,15 @@ class OAuthBackend(object):
         :param qs:
         :return:
         """
-        log, args = self._verify_and_parse_state(state)
-        log.status = AuthLogs.STATUS_FAILED
+        self.log, self.args = self._verify_and_parse_state(state)
+        self.log.status = AuthLogs.STATUS_FAILED
 
         error, desc = self._get_error(qs)
         logger.info('Authorize failed', provider=self.provider.upper(),
                     error=error, message=desc)
         self._raise_redirect_error(
             error=self.ERROR_AUTHORIZE_FAILED,
-            msg='{}, {}'.format(error, desc),
-            nonce=args.get('nonce'),
-            fail_callback=log.get_failed_callback())
+            msg='{}, {}'.format(error, desc))
 
     def handle_authorize_success(self, state, qs):
         """
@@ -179,63 +179,48 @@ class OAuthBackend(object):
         :param qs:
         :return:
         """
-        log, args = self._verify_and_parse_state(state)
-        log.client_nonce = args.get('nonce')
-        if smart_str2bool(args.get('sandbox')):
+        self.log, self.args = self._verify_and_parse_state(state)
+        if smart_str2bool(self.args.get('sandbox')):
             self.sandbox = True
             logger.debug('Handle auth callback in sandbox mode', provider=self.provider)
 
-        channel = Channels.query.filter_by(app_id=log.app_id,
-                                           provider=self.provider).one_or_none()
+        self.channel = Channels.query.filter_by(app_id=self.log.app_id,
+                                                provider=self.provider).one_or_none()
         if self.OAUTH_VERSION == 2:
-            profile = self.handle_oauth2_authorize_success(log, channel, qs)
+            self.profile, self.token = self.handle_oauth2_authorize_success(qs)
         else:
-            profile = self.handle_oauth1_authorize_success(log, channel, qs)
+            self.profile, self.token = self.handle_oauth1_authorize_success(qs)
 
-        intent = args.get('intent')
+        intent = self.args.get('intent')
         if intent == AuthLogs.INTENT_ASSOCIATE:
-            if args.get('provider') != self.provider:
-                self._raise_redirect_error(
-                    error='permission_denied',
-                    msg='Target provider does not match',
-                    nonce=args.get('nonce'),
-                    fail_callback=log.get_failed_callback())
-            elif profile.user_id:
-                self._raise_redirect_error(
-                    error='conflict',
-                    msg='Profile has linked with another user',
-                    nonce=args.get('nonce'),
-                    fail_callback=log.get_failed_callback())
-            profile.link_user_by_id(user_id=args.get('user_id'))
-        elif intent == AuthLogs.INTENT_LOGIN and not log.is_login:
+            if self.args.get('provider') != self.provider:
+                self._raise_redirect_error(error='permission_denied',
+                                           msg='Target provider does not match')
+            elif self.profile.user_id:
+                self._raise_redirect_error(error='conflict',
+                                           msg='Profile has linked with another user')
+                self.profile.link_user_by_id(user_id=self.args.get('user_id'))
+        elif intent == AuthLogs.INTENT_LOGIN and not self.log.is_login:
             self._raise_redirect_error(
                 error='invalid_request',
-                msg='Social profile does not exist, should register instead',
-                nonce=args.get('nonce'),
-                fail_callback=log.get_failed_callback())
-        elif intent == AuthLogs.INTENT_REGISTER and log.is_login:
+                msg='Social profile does not exist, should register instead')
+        elif intent == AuthLogs.INTENT_REGISTER and self.log.is_login:
             self._raise_redirect_error(
                 error='invalid_request',
-                msg='Social profile already existed, should login instead',
-                nonce=args.get('nonce'),
-                fail_callback=log.get_failed_callback())
+                msg='Social profile already existed, should login instead')
 
-        token = log.generate_auth_token()
+        auth_token = self.log.generate_auth_token()
         callback_uri = add_params_to_uri(
-            uri=log.callback_uri,
+            uri=self.log.callback_uri,
             provider=self.provider,
-            token=token,
-            nonce=args.get('nonce'),
+            token=auth_token,
+            nonce=self.args.get('nonce'),
             profile_uri=url_for('authorized_profile', _external=True,
-                                app_id=log.app_id, token=token)
+                                app_id=self.log.app_id, token=auth_token)
         )
-        resp = self._make_redirect_response(
-            channel=channel, log=log,
-            profile=profile, callback_uri=callback_uri
-        )
-        return resp
+        return self._make_redirect_response(callback_uri=callback_uri)
 
-    def handle_oauth2_authorize_success(self, log, channel, qs):
+    def handle_oauth2_authorize_success(self, qs):
         """
 
         :param log:
@@ -244,15 +229,15 @@ class OAuthBackend(object):
         :return:
         """
         code = qs['code']
-        tokens = self._get_token(log=log, channel=channel, code=code)
-        user_id, attrs = self._get_profile(log=log, channel=channel, tokens=tokens)
+        tokens = self._get_token(code=code)
+        user_id, attrs = self._get_profile(tokens=tokens)
         try:
             profile, existed = SocialProfiles.add_or_update(
-                app_id=log.app_id,
+                app_id=self.log.app_id,
                 provider=self.provider,
                 scope_id=user_id, attrs=attrs)
-            log.set_authorized(social_id=profile._id, is_login=existed,
-                               nonce=gen_random_token(nbytes=32))
+            self.log.set_authorized(social_id=profile._id, is_login=existed,
+                                    nonce=gen_random_token(nbytes=32))
             token = Tokens(
                 provider=self.provider,
                 access_token=tokens['access_token'],
@@ -263,13 +248,13 @@ class OAuthBackend(object):
                 social_id=profile._id
             )
             db.session.add(token)
-            return profile
+            return profile, token
         except Exception as e:
             logger.error(repr(e))
             db.session.rollback()
             raise
 
-    def handle_oauth1_authorize_success(self, log, channel, qs):
+    def handle_oauth1_authorize_success(self, qs):
         """
 
         :param log:
@@ -278,15 +263,15 @@ class OAuthBackend(object):
         :return:
         """
         verifier = qs['oauth_verifier']
-        tokens = self._get_oauth1_token(log=log, channel=channel, verifier=verifier)
-        user_id, attrs = self._get_oauth1_profile(log=log, channel=channel, tokens=tokens)
+        tokens = self._get_oauth1_token(verifier=verifier)
+        user_id, attrs = self._get_oauth1_profile(tokens=tokens)
         try:
             profile, existed = SocialProfiles.add_or_update(
-                app_id=log.app_id,
+                app_id=self.log.app_id,
                 provider=self.provider,
                 scope_id=user_id, attrs=attrs)
-            log.set_authorized(social_id=profile._id, is_login=existed,
-                               nonce=gen_random_token(nbytes=32))
+            self.log.set_authorized(social_id=profile._id, is_login=existed,
+                                    nonce=gen_random_token(nbytes=32))
             token = Tokens(
                 provider=self.provider,
                 token_type='OAuth',
@@ -296,13 +281,13 @@ class OAuthBackend(object):
                 social_id=profile._id
             )
             db.session.add(token)
-            return profile
+            return profile, token
         except Exception as e:
             logger.error(repr(e))
             db.session.rollback()
             raise
 
-    def _build_authorize_uri(self, channel, state):
+    def _build_authorize_uri(self, state):
         """
 
         :param channel:
@@ -310,14 +295,14 @@ class OAuthBackend(object):
         :return:
         """
         uri = add_params_to_uri(
-            uri=self.__authorize_uri__(version=channel.api_version),
-            client_id=channel.client_id,
+            uri=self.__authorize_uri__(version=self.channel.api_version),
+            client_id=self.channel.client_id,
             redirect_uri=self.redirect_uri,
-            scope=channel.get_perms_as_oauth_scope(),
+            scope=self.channel.get_perms_as_oauth_scope(),
             state=state)
         return uri
 
-    def _get_token(self, log, channel, code):
+    def _get_token(self, code):
         """
 
         :param channel:
@@ -325,12 +310,12 @@ class OAuthBackend(object):
         :param fail_callback:
         :return:
         """
-        res = requests.post(self.__token_uri__(version=channel.api_version), data={
+        res = requests.post(self.__token_uri__(version=self.channel.api_version), data={
             'grant_type': 'authorization_code',
             'code': code,
             'redirect_uri': self.redirect_uri,
-            'client_id': channel.client_id,
-            'client_secret': channel.client_secret
+            'client_id': self.channel.client_id,
+            'client_secret': self.channel.client_secret
         })
         if res.status_code != 200:
             body = res.json()
@@ -339,12 +324,10 @@ class OAuthBackend(object):
                         provider=self.provider.upper(), **body)
             self._raise_redirect_error(
                 error=self.ERROR_GET_TOKEN_FAILED,
-                msg='{}: {}'.format(error, desc),
-                nonce=log.client_nonce,
-                fail_callback=log.get_failed_callback())
+                msg='{}: {}'.format(error, desc))
         return res.json()
 
-    def _get_profile(self, log, channel, tokens):
+    def _get_profile(self, tokens):
         """
 
         :param channel:
@@ -353,7 +336,7 @@ class OAuthBackend(object):
         :return:
         """
         authorization = tokens['token_type'] + ' ' + tokens['access_token']
-        res = requests.get(self.__profile_uri__(version=channel.api_version),
+        res = requests.get(self.__profile_uri__(version=self.channel.api_version),
                            headers={'Authorization': authorization})
         if res.status_code != 200:
             body = res.json()
@@ -362,12 +345,12 @@ class OAuthBackend(object):
             self._raise_redirect_error(
                 error=self.ERROR_GET_PROFILE_FAILED,
                 msg='Getting user attributes from provider failed',
-                nonce=log.client_nonce,
-                fail_callback=log.get_failed_callback())
+                nonce=self.log.client_nonce,
+                fail_callback=self.log.get_failed_callback())
 
-        return self._get_attributes(response=res.json(), channel=channel)
+        return self._get_attributes(response=res.json())
 
-    def _get_attributes(self, channel, response, nofilter=False):
+    def _get_attributes(self, response, nofilter=False):
         """
 
         :param response:
@@ -376,37 +359,37 @@ class OAuthBackend(object):
         :return:
         """
         user_id = response[self.__identify_attrs__()[0]]
-        if nofilter or channel.option_enabled(key='extra_fields'):
+        if nofilter or self.channel.option_enabled(key='extra_fields'):
             for key in self.__identify_attrs__():
                 del response[key]
             return user_id, response
 
         attrs = dict()
-        req_fields = channel.get_required_fields()
+        req_fields = self.channel.get_required_fields()
         for key, value in response.items():
             if key in req_fields:
                 attrs[key] = value
         return user_id, attrs
 
-    def _make_redirect_response(self, **kwargs):
-        return redirect(kwargs['callback_uri'])
+    def _make_redirect_response(self, callback_uri):
+        return redirect(callback_uri)
 
-    def _build_oauth1_authorize_uri(self, log, channel, state):
+    def _build_oauth1_authorize_uri(self, state):
         raise NotImplementedError()
 
-    def _get_oauth1_token(self, log, channel, verifier):
+    def _get_oauth1_token(self, verifier):
         raise NotImplementedError()
 
-    def _get_oauth1_profile(self, log, channel, tokens):
+    def _get_oauth1_profile(self, tokens):
         raise NotImplementedError()
 
     def _get_error(self, response, action='authorize'):
         return response['error'], response['error_description']
 
-    def _raise_redirect_error(self, error, msg, fail_callback, **kwargs):
+    def _raise_redirect_error(self, error, msg, **kwargs):
         raise RedirectLoginError(error=error, msg=msg,
-                                 nonce=kwargs.get('nonce'),
-                                 redirect_uri=fail_callback,
+                                 nonce=self.args.get('nonce'),
+                                 redirect_uri=self.log.get_failed_callback(),
                                  provider=self.provider)
 
     def __identify_attrs__(self):
@@ -465,27 +448,27 @@ class LineBackend(OAuthBackend):
     Authentication handler for LINE accounts
     """
 
-    def _build_authorize_uri(self, channel, state):
+    def _build_authorize_uri(self, state):
         bot_prompt = ''
-        if 'add_friend' in channel.get_options():
+        if 'add_friend' in self.channel.get_options():
             bot_prompt = 'normal'
 
         uri = add_params_to_uri(
-            uri=self.__authorize_uri__(version=channel.api_version),
+            uri=self.__authorize_uri__(version=self.channel.api_version),
             bot_prompt=bot_prompt,
             nonce=gen_random_token(nbytes=16),
-            client_id=channel.client_id,
+            client_id=self.channel.client_id,
             redirect_uri=self.redirect_uri,
-            scope=channel.get_perms_as_oauth_scope(),
+            scope=self.channel.get_perms_as_oauth_scope(),
             state=state)
         return uri
 
-    def _get_profile(self, log, channel, tokens):
-        user_id, attrs = super()._get_profile(log, channel, tokens)
+    def _get_profile(self, tokens):
+        user_id, attrs = super()._get_profile(tokens)
         try:
             payload = jwt.decode(tokens['id_token'],
-                                 key=channel.client_secret,
-                                 audience=channel.client_id,
+                                 key=self.channel.client_secret,
+                                 audience=self.channel.client_id,
                                  issuer='https://access.line.me',
                                  algorithms=['HS256'])
             if payload.get('email'):
@@ -506,27 +489,23 @@ class AmazonBackend(OAuthBackend):
     Authentication handler for AMAZON accounts
     """
 
-    def _build_authorize_uri(self, channel, state):
-        amz_pay_enabled = channel.option_enabled('amazon_pay')
+    def _build_authorize_uri(self, state):
+        amz_pay_enabled = self.channel.option_enabled('amazon_pay')
         uri = add_params_to_uri(
-            uri=self.__authorize_uri__(version=channel.api_version),
-            client_id=channel.client_id,
+            uri=self.__authorize_uri__(version=self.channel.api_version),
+            client_id=self.channel.client_id,
             redirect_uri=self.redirect_uri,
-            scope=channel.get_perms_as_oauth_scope(lpwa=amz_pay_enabled),
+            scope=self.channel.get_perms_as_oauth_scope(lpwa=amz_pay_enabled),
             state=state)
         return uri
 
-    def _make_redirect_response(self, **kwargs):
-        channel = kwargs['channel']
-        profile = kwargs['profile']
-        callback_uri = kwargs['callback_uri']
-        token = Tokens.find_latest_by_social_id(social_id=profile._id)
+    def _make_redirect_response(self, callback_uri):
         cookie_object = {
-            "access_token": token.access_token,
+            "access_token": self.token.access_token,
             "max_age": 3300,
-            "expiration_date": unix_time_millis(token.expires_at),
-            "client_id": channel.client_id,
-            "scope": channel.get_perms_as_oauth_scope(lpwa=True)
+            "expiration_date": unix_time_millis(self.token.expires_at),
+            "client_id": self.channel.client_id,
+            "scope": self.channel.get_perms_as_oauth_scope(lpwa=True)
         }
         resp = make_response(redirect(callback_uri))
         domain = self.extract_domain_for_cookie(callback_uri)
@@ -573,28 +552,25 @@ class FacebookBackend(OAuthBackend):
     Authentication handler for FACEBOOK accounts
     """
 
-    def _get_token(self, log, channel, code):
-        res = requests.get(self.__token_uri__(version=channel.api_version), params={
+    def _get_token(self, code):
+        res = requests.get(self.__token_uri__(version=self.channel.api_version), params={
             'code': code,
             'redirect_uri': self.redirect_uri,
-            'client_id': channel.client_id,
-            'client_secret': channel.client_secret
+            'client_id': self.channel.client_id,
+            'client_secret': self.channel.client_secret
         })
         if res.status_code != 200:
             body = res.json()
             error, desc = self._get_error(body, action='get_token')
             logger.warn('Getting access token failed',
                         provider=self.provider.upper(), **body)
-            self._raise_redirect_error(
-                error=self.ERROR_GET_TOKEN_FAILED,
-                msg='{}: {}'.format(error, desc),
-                nonce=log.client_nonce,
-                fail_callback=log.get_failed_callback())
+            self._raise_redirect_error(error=self.ERROR_GET_TOKEN_FAILED,
+                                       msg='{}: {}'.format(error, desc))
         return res.json()
 
-    def _get_profile(self, log, channel, tokens):
-        fields = channel.get_required_fields()
-        res = requests.get(self.__profile_uri__(version=channel.api_version), params={
+    def _get_profile(self, tokens):
+        fields = self.channel.get_required_fields()
+        res = requests.get(self.__profile_uri__(version=self.channel.api_version), params={
             'fields': ','.join(fields),
             'access_token': tokens['access_token']
         })
@@ -604,11 +580,9 @@ class FacebookBackend(OAuthBackend):
                         provider=self.provider.upper(), **body)
             self._raise_redirect_error(
                 error=self.ERROR_GET_PROFILE_FAILED,
-                msg='Getting user attributes from provider failed',
-                nonce=log.client_nonce,
-                fail_callback=log.get_failed_callback())
+                msg='Getting user attributes from provider failed')
 
-        return self._get_attributes(channel=channel, response=res.json(), nofilter=True)
+        return self._get_attributes(response=res.json(), nofilter=True)
 
     def _get_error(self, response, action='authorize'):
         if action != 'authorize':
@@ -623,14 +597,14 @@ class TwitterBackend(OAuthBackend):
     """
     OAUTH_VERSION = 1
 
-    def _build_oauth1_authorize_uri(self, log, channel, state):
+    def _build_oauth1_authorize_uri(self, state):
         request_token_uri = __PROVIDER_SETTINGS__[self.provider]['request_token_uri']
         callback_uri = add_params_to_uri(self.redirect_uri, state=state)
         auth = self.create_authorization_header(
             method='POST',
             url=request_token_uri,
-            consumer_key=channel.client_id,
-            consumer_secret=channel.client_secret,
+            consumer_key=self.channel.client_id,
+            consumer_secret=self.channel.client_secret,
             oauth_callback=callback_uri)
 
         res = requests.post(request_token_uri, headers={'Authorization': auth})
@@ -639,35 +613,31 @@ class TwitterBackend(OAuthBackend):
             logger.warn('Getting request token failed', code=res.status_code, **body)
             self._raise_redirect_error(
                 error=self.ERROR_GET_TOKEN_FAILED,
-                msg='Getting request token failed',
-                nonce=log.client_nonce,
-                fail_callback=log.get_failed_callback())
+                msg='Getting request token failed')
 
         body = up.parse_qs(res.text)
         if not body['oauth_callback_confirmed'][0]:
             logger.warn('Getting request token failed', oauth_callback_confirmed=0)
             self._raise_redirect_error(
                 error=self.ERROR_GET_TOKEN_FAILED,
-                msg='Getting request token failed: oauth_callback_confirmed=false',
-                nonce=log.client_nonce,
-                fail_callback=log.get_failed_callback())
+                msg='Getting request token failed: oauth_callback_confirmed=false')
 
         token = body['oauth_token'][0]
         secret = body['oauth_token_secret'][0]
         uri = add_params_to_uri(
-            uri=self.__authorize_uri__(version=channel.api_version),
+            uri=self.__authorize_uri__(version=self.channel.api_version),
             oauth_token=token)
         return uri, token, secret
 
-    def _get_oauth1_token(self, log, channel, verifier):
-        token_uri = self.__token_uri__(version=channel.api_version)
+    def _get_oauth1_token(self, verifier):
+        token_uri = self.__token_uri__(version=self.channel.api_version)
         auth = self.create_authorization_header(
             method='POST',
             url=token_uri,
-            consumer_key=channel.client_id,
-            consumer_secret=channel.client_secret,
-            oauth_token_secret=log.oa1_secret,
-            oauth_token=log.oa1_token
+            consumer_key=self.channel.client_id,
+            consumer_secret=self.channel.client_secret,
+            oauth_token_secret=self.log.oa1_secret,
+            oauth_token=self.log.oa1_token
         )
         res = requests.post(token_uri, headers={'Authorization': auth},
                             data={'oauth_verifier': verifier})
@@ -676,20 +646,18 @@ class TwitterBackend(OAuthBackend):
             logger.warn('Getting access token failed', code=res.status_code, **body)
             self._raise_redirect_error(
                 error=self.ERROR_GET_TOKEN_FAILED,
-                msg='Getting access token failed',
-                nonce=log.client_nonce,
-                fail_callback=log.get_failed_callback())
+                msg='Getting access token failed')
 
         body = up.parse_qs(res.text)
         return body['oauth_token'][0], body['oauth_token_secret'][0]
 
-    def _get_oauth1_profile(self, log, channel, tokens):
-        profile_uri = self.__profile_uri__(version=channel.api_version, numeric_format=True)
+    def _get_oauth1_profile(self, tokens):
+        profile_uri = self.__profile_uri__(version=self.channel.api_version, numeric_format=True)
         auth = self.create_authorization_header(
             method='GET',
             url=profile_uri,
-            consumer_key=channel.client_id,
-            consumer_secret=channel.client_secret,
+            consumer_key=self.channel.client_id,
+            consumer_secret=self.channel.client_secret,
             oauth_token_secret=tokens[1],
             oauth_token=tokens[0],
             include_entities='false',
@@ -706,11 +674,9 @@ class TwitterBackend(OAuthBackend):
             logger.warn('Getting profile failed', code=res.status_code, **body)
             self._raise_redirect_error(
                 error=self.ERROR_GET_PROFILE_FAILED,
-                msg='Getting profile failed',
-                nonce=log.client_nonce,
-                fail_callback=log.get_failed_callback())
+                msg='Getting profile failed')
 
-        return self._get_attributes(channel, res.json())
+        return self._get_attributes(response=res.json())
 
     def _get_error(self, response, action='authorize'):
         if action != 'authorize':
