@@ -81,7 +81,11 @@ def authenticate(provider):
         'nonce': secrets.token_hex(16),
         'sandbox': request.args.get('sandbox', '')
     }
-    auth_url = '{}/auth/{}?'.format(api_url, provider) + urlparse.urlencode(qs)
+    auth_url = '{base_url}/auth/{provider}/{intent}?'.format(
+        base_url=api_url,
+        provider=provider,
+        intent=request.args.get('intent')
+    ) + urlparse.urlencode(qs)
     return redirect(auth_url)
 
 

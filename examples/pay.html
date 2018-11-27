@@ -66,12 +66,13 @@
     function onAmazonLoginButtonClicked() {
         console.log('onAmazonLoginButton clicked');
         var cachedToken = getCookie('amazon_Login_state_cache');
+        var authUrl = '/auth/amazon?return_url=/pay.html&sandbox=true&intent=lpwa';
         if (cachedToken != "") {
             if (confirm('You are already logged in. Do you want re-authenticate ?')) {
-                window.location.href = '/auth/amazon?return_url=/pay.html&sandbox=true';
+                window.location.href = authUrl;
             }
         } else {
-            window.location.href = '/auth/amazon?return_url=/pay.html&sandbox=true';
+            window.location.href = authUrl;
         }
     }
 </script>

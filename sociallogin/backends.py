@@ -147,7 +147,6 @@ class OAuthBackend(object):
 
         if self.OAUTH_VERSION == 2:
             url = self._build_authorize_uri(state=self.log.generate_oauth_state(**kwargs))
-            logger.debug('Authorize URL', url)
         else:
             url, oa1_token, oa1_secret = self._build_oauth1_authorize_uri(
                 state=self.log.generate_oauth_state(**kwargs))
@@ -505,12 +504,14 @@ class AmazonBackend(OAuthBackend):
     Authentication handler for AMAZON accounts
     """
     SANDBOX_SUPPORT = True
+    PERMS_FOR_PAY = ' payments:widget payments:shipping_address'
 
     def _build_authorize_uri(self, state):
         amz_pay_enabled = self.channel.option_enabled('amazon_pay')
-        scope = self.channel.get_perms_as_oauth_scope()
         if amz_pay_enabled:
-            scope += ' payments:widget payments:shipping_address'
+            scope = self._perms_for_pay()
+        else:
+            scope = self.channel.get_perms_as_oauth_scope()
         uri = add_params_to_uri(
             uri=self.__authorize_uri__(version=self.channel.api_version),
             client_id=self.channel.client_id,
@@ -520,12 +521,16 @@ class AmazonBackend(OAuthBackend):
         return uri
 
     def _make_redirect_response(self, callback_uri):
+        amz_pay_enabled = self.channel.option_enabled('amazon_pay')
+        if not amz_pay_enabled or self.log.intent != 'lpwa':
+            return super()._make_redirect_response(callback_uri)
+
         cookie_object = {
             "access_token": self.token.access_token,
             "max_age": 3300,
             "expiration_date": unix_time_millis(self.token.expires_at),
             "client_id": self.channel.client_id,
-            "scope": self.channel.get_perms_as_oauth_scope(lpwa=True)
+            "scope": self._perms_for_pay()
         }
         resp = make_response(redirect(callback_uri))
         domain = self.extract_domain_for_cookie(callback_uri)
@@ -535,6 +540,10 @@ class AmazonBackend(OAuthBackend):
                         expires=None, max_age=3300)
         logger.debug('Set cookie for amazon pay', domain=domain)
         return resp
+
+    def _perms_for_pay(self):
+        return self.channel.get_perms_as_oauth_scope() \
+               + ' payments:widget payments:shipping_address'
 
 
 class YahooJpBackend(OAuthBackend):
