@@ -208,7 +208,7 @@ class SocialProfiles(Base):
         d['social_id'] = self.alias
         d['user_id'] = self.user_pk
         if self._allow_get_scope_id():
-            # d['attrs'][self.provider + '_id'] = self.scope_id
+            # d['attrs']['id'] = self.scope_id
             d['scope_id'] = self.scope_id
         return d
 

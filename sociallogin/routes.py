@@ -74,28 +74,31 @@ def link_user(app_id):
 def unlink_user(app_id):
     body = request.json
     user_pk = body['user_id']
+    social_id = int(body['social_id'])
+    if social_id <= 0:
+        abort(404, 'Social ID not found')
 
-    if 'social_id' in body:
-        social_id = int(body['social_id'])
-        if social_id <= 0:
-            abort(404, 'Social ID not found')
+    profiles = SocialProfiles.query.filter_by(alias=social_id).all()
+    if not profiles:
+        abort(404, 'Social ID not found')
+    for p in profiles:
+        if not p.user_id:
+            abort(409, "Social profile are not linked with any user")
+        p.unlink_user_by_pk(user_pk)
+    db.session.commit()
+    return jsonify({'success': True})
 
-        profiles = SocialProfiles.query.filter_by(alias=social_id).all()
-        if not profiles:
-            abort(404, 'Social ID not found')
-        for p in profiles:
-            if not p.user_id:
-                abort(409, "Social profile are not linked with any user")
-            p.unlink_user_by_pk(user_pk)
-    elif 'providers' in body:
-        providers = body['providers'].split(',')
-        for provider in providers:
-            if not is_valid_provider(provider):
-                abort(400, 'Invalid provider')
-        SocialProfiles.unlink_by_provider(app_id=app_id, user_pk=user_pk, providers=providers)
-    else:
-        abort(400, 'At least one valid parameter social_id or providers must be provided')
 
+@flask_app.route('/<int:app_id>/users/disassociate', methods=['PUT'])
+@login_required
+def disassociate(app_id):
+    body = request.json
+    user_pk = body['user_id']
+    providers = body['providers'].split(',')
+    for provider in providers:
+        if not is_valid_provider(provider):
+            abort(400, 'Invalid provider ' + provider)
+    SocialProfiles.unlink_by_provider(app_id=app_id, user_pk=user_pk, providers=providers)
     db.session.commit()
     return jsonify({'success': True})
 
@@ -103,9 +106,8 @@ def unlink_user(app_id):
 @flask_app.route('/<int:app_id>/users')
 @login_required
 def get_user(app_id):
-    args = request.args
-    user_pk = args.get('user_id')
-    social_id = int(args.get('social_id'))
+    user_pk = request.args.get('user_id')
+    social_id = int(request.args.get('social_id'))
 
     if user_pk:
         return jsonify(Users.get_full_as_dict(app_id=app_id, pk=user_pk))
