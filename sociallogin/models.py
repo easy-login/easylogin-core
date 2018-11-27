@@ -467,13 +467,8 @@ class AuthLogs(Base):
         self.status = kwargs.get('status') or self.STATUS_UNKNOWN
         self.nonce = kwargs.get('nonce')
         self.intent = kwargs.get('intent') or self.INTENT_AUTHENTICATE
-        self.ua = self._get_ua_safe(kwargs.get('ua'), max_len=1023)
-        self.ip = kwargs.get('ip')
         self.oa1_token = kwargs.get('oa1_token')
         self.oa1_secret = kwargs.get('oa1_secret')
-
-        # client nonce used to prevent csrf attack
-        self.client_nonce = None
 
     def get_failed_callback(self):
         return self.callback_if_failed or self.callback_uri
@@ -514,10 +509,6 @@ class AuthLogs(Base):
             raise BadRequestError('Invalid auth token')
         return log
 
-    @staticmethod
-    def _get_ua_safe(ua, max_len):
-        return ua[:min(len(ua), max_len)] if ua else None
-
 
 class AssociateLogs(Base):
     __tablename__ = 'associate_logs'
@@ -534,12 +525,12 @@ class AssociateLogs(Base):
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-    def __init__(self, provider, app_id, user_id, nonce, status=STATUS_NEW):
+    def __init__(self, provider, app_id, **kwargs):
         self.provider = provider
         self.app_id = app_id
-        self.user_id = user_id
-        self.nonce = nonce
-        self.status = status
+        self.user_id = kwargs.get('user_id')
+        self.nonce = kwargs.get('nonce')
+        self.status = kwargs.get('status', self.STATUS_NEW)
 
     def generate_associate_token(self):
         return ests.generate(sub=self._id, exp_in_seconds=600,
@@ -569,3 +560,22 @@ class AssociateLogs(Base):
         if log.status != cls.STATUS_NEW:
             raise BadRequestError('Invalid associate token')
         return log
+
+
+class JournalLogs(Base):
+    __tablename__ = 'journal_logs'
+
+    path = db.Column(db.String(4095))
+    ua = db.Column(db.String(1023))
+    ip = db.Column(db.String(15))
+    ref_id = db.Column(db.Integer, nullable=False)
+
+    def __init__(self, ref_id, **kwargs):
+        self.ref_id = ref_id
+        self.ua = self._get_ua_safe(kwargs.get('ua'), max_len=1023)
+        self.ip = kwargs.get('ip')
+        self.path = kwargs.get('path')
+
+    @staticmethod
+    def _get_ua_safe(ua, max_len):
+        return ua[:min(len(ua), max_len)] if ua else None

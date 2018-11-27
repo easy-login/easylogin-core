@@ -10,9 +10,10 @@ from flask import request, url_for, make_response, redirect
 from sociallogin import db, logger, get_remote_ip
 from sociallogin.exc import RedirectLoginError, PermissionDeniedError, \
     UnsupportedProviderError, NotFoundError, BadRequestError, TokenParseError
-from sociallogin.models import Apps, Channels, AuthLogs, Tokens, SocialProfiles
-from sociallogin.utils import gen_random_token, add_params_to_uri, calculate_hmac, \
-    smart_str2bool, unix_time_millis
+from sociallogin.models import Apps, Channels, AuthLogs, Tokens, \
+    SocialProfiles, JournalLogs
+from sociallogin.utils import gen_random_token, add_params_to_uri, \
+    calculate_hmac, smart_str2bool, unix_time_millis
 
 __PROVIDER_SETTINGS__ = {
     'line': {
@@ -135,8 +136,6 @@ class OAuthBackend(object):
         self.log = AuthLogs(
             provider=self.provider,
             app_id=app_id,
-            ua=request.headers['User-Agent'],
-            ip=get_remote_ip(request),
             nonce=gen_random_token(nbytes=32),
             intent=intent,
             callback_uri=succ_callback,
@@ -144,6 +143,12 @@ class OAuthBackend(object):
         )
         db.session.add(self.log)
         db.session.flush()
+        db.session.add(JournalLogs(
+            ua=request.headers.get('User-Agent'),
+            ip=get_remote_ip(request),
+            path=request.full_path,
+            ref_id=self.log._id
+        ))
 
         if self.OAUTH_VERSION == 2:
             url = self._build_authorize_uri(state=self.log.generate_oauth_state(**kwargs))
