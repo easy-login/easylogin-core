@@ -89,7 +89,6 @@ class OAuthBackend(object):
 
     def __init__(self, provider, sandbox):
         self.provider = provider
-        self.redirect_uri = url_for('authorize_callback', _external=True, provider=provider)
         self.sandbox = sandbox
         self.channel = None
         self.log = None
@@ -297,7 +296,7 @@ class OAuthBackend(object):
         uri = add_params_to_uri(
             uri=self.__authorize_uri__(version=self.channel.api_version),
             client_id=self.channel.client_id,
-            redirect_uri=self.redirect_uri,
+            redirect_uri=self.__provider_callback_uri__(),
             scope=self.channel.get_perms_as_oauth_scope(),
             state=state)
         return uri
@@ -313,7 +312,7 @@ class OAuthBackend(object):
         res = requests.post(self.__token_uri__(version=self.channel.api_version), data={
             'grant_type': 'authorization_code',
             'code': code,
-            'redirect_uri': self.redirect_uri,
+            'redirect_uri': self.__provider_callback_uri__(),
             'client_id': self.channel.client_id,
             'client_secret': self.channel.client_secret
         })
@@ -372,6 +371,11 @@ class OAuthBackend(object):
         return user_id, attrs
 
     def _make_redirect_response(self, callback_uri):
+        """
+        Make response redirect to client callback URI
+        :param callback_uri:
+        :return:
+        """
         return redirect(callback_uri)
 
     def _build_oauth1_authorize_uri(self, state):
@@ -409,6 +413,9 @@ class OAuthBackend(object):
         if version and numeric_format:
             version = version.replace('v', '')
         return __PROVIDER_SETTINGS__[self.provider]['profile_uri'].format(version=version)
+
+    def __provider_callback_uri__(self):
+        return url_for('authorize_callback', _external=True, provider=self.provider)
 
     @staticmethod
     def _verify_and_parse_state(state):
@@ -458,7 +465,7 @@ class LineBackend(OAuthBackend):
             bot_prompt=bot_prompt,
             nonce=gen_random_token(nbytes=16),
             client_id=self.channel.client_id,
-            redirect_uri=self.redirect_uri,
+            redirect_uri=self.__provider_callback_uri__(),
             scope=self.channel.get_perms_as_oauth_scope(),
             state=state)
         return uri
@@ -494,7 +501,7 @@ class AmazonBackend(OAuthBackend):
         uri = add_params_to_uri(
             uri=self.__authorize_uri__(version=self.channel.api_version),
             client_id=self.channel.client_id,
-            redirect_uri=self.redirect_uri,
+            redirect_uri=self.__provider_callback_uri__(),
             scope=self.channel.get_perms_as_oauth_scope(lpwa=amz_pay_enabled),
             state=state)
         return uri
@@ -555,7 +562,7 @@ class FacebookBackend(OAuthBackend):
     def _get_token(self, code):
         res = requests.get(self.__token_uri__(version=self.channel.api_version), params={
             'code': code,
-            'redirect_uri': self.redirect_uri,
+            'redirect_uri': self.__provider_callback_uri__(),
             'client_id': self.channel.client_id,
             'client_secret': self.channel.client_secret
         })
@@ -599,7 +606,7 @@ class TwitterBackend(OAuthBackend):
 
     def _build_oauth1_authorize_uri(self, state):
         request_token_uri = __PROVIDER_SETTINGS__[self.provider]['request_token_uri']
-        callback_uri = add_params_to_uri(self.redirect_uri, state=state)
+        callback_uri = add_params_to_uri(self.__provider_callback_uri__(), state=state)
         auth = self.create_authorization_header(
             method='POST',
             url=request_token_uri,
