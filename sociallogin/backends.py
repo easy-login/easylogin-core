@@ -82,6 +82,7 @@ def is_valid_provider(provider):
 class OAuthBackend(object):
     JWT_TOKEN_ATTRIBUTE_NAME = 'id_token'
     OAUTH_VERSION = 2
+    SANDBOX_SUPPORT = False
 
     ERROR_AUTHORIZE_FAILED = 'authorize_failed'
     ERROR_GET_TOKEN_FAILED = 'get_token_failed'
@@ -180,9 +181,7 @@ class OAuthBackend(object):
         """
         self.log, self.args = self._verify_and_parse_state(state)
         if smart_str2bool(self.args.get('sandbox')):
-            self.sandbox = True
-            logger.debug('Handle auth callback in sandbox mode', provider=self.provider)
-
+            self._enable_sandbox()
         self.channel = Channels.query.filter_by(app_id=self.log.app_id,
                                                 provider=self.provider).one_or_none()
         if self.OAUTH_VERSION == 2:
@@ -285,6 +284,14 @@ class OAuthBackend(object):
             logger.error(repr(e))
             db.session.rollback()
             raise
+
+    def _enable_sandbox(self):
+        if self.SANDBOX_SUPPORT:
+            self.sandbox = True
+            logger.info('Handle auth callback in sandbox mode', provider=self.provider)
+        else:
+            logger.warn('Cannot enable sandbox mode, provider is not supported',
+                        provider=self.provider)
 
     def _build_authorize_uri(self, state):
         """
@@ -402,17 +409,20 @@ class OAuthBackend(object):
     def __authorize_uri__(self, version=None, numeric_format=False):
         if version and numeric_format:
             version = version.replace('v', '')
-        return __PROVIDER_SETTINGS__[self.provider]['authorize_uri'].format(version=version)
+        key = self.provider + '_sandbox' if self.sandbox else self.provider
+        return __PROVIDER_SETTINGS__[key]['authorize_uri'].format(version=version)
 
     def __token_uri__(self, version=None, numeric_format=False):
         if version and numeric_format:
             version = version.replace('v', '')
-        return __PROVIDER_SETTINGS__[self.provider]['token_uri'].format(version=version)
+        key = self.provider + '_sandbox' if self.sandbox else self.provider
+        return __PROVIDER_SETTINGS__[key]['token_uri'].format(version=version)
 
     def __profile_uri__(self, version=None, numeric_format=False):
         if version and numeric_format:
             version = version.replace('v', '')
-        return __PROVIDER_SETTINGS__[self.provider]['profile_uri'].format(version=version)
+        key = self.provider + '_sandbox' if self.sandbox else self.provider
+        return __PROVIDER_SETTINGS__[key]['profile_uri'].format(version=version)
 
     def __provider_callback_uri__(self):
         return url_for('authorize_callback', _external=True, provider=self.provider)
@@ -495,6 +505,7 @@ class AmazonBackend(OAuthBackend):
     """
     Authentication handler for AMAZON accounts
     """
+    SANDBOX_SUPPORT = True
 
     def _build_authorize_uri(self, state):
         amz_pay_enabled = self.channel.option_enabled('amazon_pay')
@@ -522,24 +533,6 @@ class AmazonBackend(OAuthBackend):
                         expires=None, max_age=3300)
         logger.debug('Set cookie for amazon pay', domain=domain)
         return resp
-
-    def __authorize_uri__(self, version=None, numeric_format=False):
-        if self.sandbox:
-            return __PROVIDER_SETTINGS__['amazon_sandbox']['authorize_uri']
-        else:
-            return super().__authorize_uri__(version, numeric_format)
-
-    def __token_uri__(self, version=None, numeric_format=False):
-        if self.sandbox:
-            return __PROVIDER_SETTINGS__['amazon_sandbox']['token_uri']
-        else:
-            return super().__token_uri__(version, numeric_format)
-
-    def __profile_uri__(self, version=None, numeric_format=False):
-        if self.sandbox:
-            return __PROVIDER_SETTINGS__['amazon_sandbox']['profile_uri']
-        else:
-            return super().__profile_uri__(version, numeric_format)
 
 
 class YahooJpBackend(OAuthBackend):
