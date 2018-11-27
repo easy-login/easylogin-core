@@ -1,10 +1,11 @@
 import urllib.parse as up
 from datetime import datetime, timedelta
 import time
+import json
 
 import requests
 import jwt
-from flask import request, url_for
+from flask import request, url_for, make_response, redirect
 
 from sociallogin import db, logger, get_remote_ip
 from sociallogin.exc import RedirectLoginError, PermissionDeniedError, \
@@ -182,7 +183,7 @@ class OAuthBackend(object):
         log.client_nonce = args.get('nonce')
         if smart_str2bool(args.get('sandbox')):
             self.sandbox = True
-            logger.info('Handle auth callback in sandbox mode', provider=self.provider)
+            logger.debug('Handle auth callback in sandbox mode', provider=self.provider)
 
         channel = Channels.query.filter_by(app_id=log.app_id,
                                            provider=self.provider).one_or_none()
@@ -190,7 +191,49 @@ class OAuthBackend(object):
             profile = self.handle_oauth2_authorize_success(log, channel, qs)
         else:
             profile = self.handle_oauth1_authorize_success(log, channel, qs)
-        return channel, profile, log, args
+
+        intent = args.get('intent')
+        if intent == AuthLogs.INTENT_ASSOCIATE:
+            if args.get('provider') != self.provider:
+                self._raise_redirect_error(
+                    error='permission_denied',
+                    msg='Target provider does not match',
+                    nonce=args.get('nonce'),
+                    fail_callback=log.get_failed_callback())
+            elif profile.user_id:
+                self._raise_redirect_error(
+                    error='conflict',
+                    msg='Profile has linked with another user',
+                    nonce=args.get('nonce'),
+                    fail_callback=log.get_failed_callback())
+            profile.link_user_by_id(user_id=args.get('user_id'))
+        elif intent == AuthLogs.INTENT_LOGIN and not log.is_login:
+            self._raise_redirect_error(
+                error='invalid_request',
+                msg='Social profile does not exist, should register instead',
+                nonce=args.get('nonce'),
+                fail_callback=log.get_failed_callback())
+        elif intent == AuthLogs.INTENT_REGISTER and log.is_login:
+            self._raise_redirect_error(
+                error='invalid_request',
+                msg='Social profile already existed, should login instead',
+                nonce=args.get('nonce'),
+                fail_callback=log.get_failed_callback())
+
+        token = log.generate_auth_token()
+        callback_uri = add_params_to_uri(
+            uri=log.callback_uri,
+            provider=self.provider,
+            token=token,
+            nonce=args.get('nonce'),
+            profile_uri=url_for('authorized_profile', _external=True,
+                                app_id=log.app_id, token=token)
+        )
+        resp = self._make_redirect_response(
+            channel=channel, log=log,
+            profile=profile, callback_uri=callback_uri
+        )
+        return resp
 
     def handle_oauth2_authorize_success(self, log, channel, qs):
         """
@@ -345,6 +388,9 @@ class OAuthBackend(object):
                 attrs[key] = value
         return user_id, attrs
 
+    def _make_redirect_response(self, **kwargs):
+        return redirect(kwargs['callback_uri'])
+
     def _build_oauth1_authorize_uri(self, log, channel, state):
         raise NotImplementedError()
 
@@ -360,7 +406,8 @@ class OAuthBackend(object):
     def _raise_redirect_error(self, error, msg, fail_callback, **kwargs):
         raise RedirectLoginError(error=error, msg=msg,
                                  nonce=kwargs.get('nonce'),
-                                 redirect_uri=fail_callback, provider=self.provider)
+                                 redirect_uri=fail_callback,
+                                 provider=self.provider)
 
     def __identify_attrs__(self):
         return __PROVIDER_SETTINGS__[self.provider]['identify_attrs']
@@ -399,6 +446,18 @@ class OAuthBackend(object):
             if ok:
                 return True
         return False
+
+    @staticmethod
+    def extract_domain_for_cookie(url, subdomain=True):
+        netloc = up.urlparse(url).netloc
+        if netloc.startswith('localhost'):
+            return None
+        else:
+            parts = netloc.split('.')
+            domain = parts[-2] + '.' + parts[-1]
+            if subdomain:
+                domain = '.' + domain
+            return domain
 
 
 class LineBackend(OAuthBackend):
@@ -456,6 +515,27 @@ class AmazonBackend(OAuthBackend):
             scope=channel.get_perms_as_oauth_scope(lpwa=amz_pay_enabled),
             state=state)
         return uri
+
+    def _make_redirect_response(self, **kwargs):
+        channel = kwargs['channel']
+        profile = kwargs['profile']
+        callback_uri = kwargs['callback_uri']
+        token = Tokens.find_latest_by_social_id(social_id=profile._id)
+        cookie_object = {
+            "access_token": token.access_token,
+            "max_age": 3300,
+            "expiration_date": unix_time_millis(token.expires_at),
+            "client_id": channel.client_id,
+            "scope": channel.get_perms_as_oauth_scope(lpwa=True)
+        }
+        resp = make_response(redirect(callback_uri))
+        domain = self.extract_domain_for_cookie(callback_uri)
+        resp.set_cookie(key='amazon_Login_state_cache',
+                        value=up.quote(json.dumps(cookie_object), safe=''),
+                        domain=domain,
+                        expires=None, max_age=3300)
+        logger.debug('Set cookie for amazon pay', domain=domain)
+        return resp
 
     def __authorize_uri__(self, version=None, numeric_format=False):
         if self.sandbox:

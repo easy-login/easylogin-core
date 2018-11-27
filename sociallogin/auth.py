@@ -1,12 +1,10 @@
-from urllib import parse as up
-import json
-from flask import abort, redirect, request, url_for, jsonify, make_response
+from flask import abort, redirect, request, jsonify
 
 from sociallogin import app as flask_app, db, login_manager, logger, get_remote_ip
-from sociallogin.models import Apps, AuthLogs, AssociateLogs, Tokens
 from sociallogin.backends import get_backend
-from sociallogin.utils import add_params_to_uri, unix_time_millis, smart_str2bool
-from sociallogin.exc import RedirectLoginError, TokenParseError
+from sociallogin.exc import TokenParseError
+from sociallogin.models import Apps, AuthLogs, AssociateLogs
+from sociallogin.utils import smart_str2bool
 
 
 @flask_app.route('/auth/<provider>', defaults={'intent': None})
@@ -72,59 +70,9 @@ def authorize_callback(provider):
     if not backend.verify_callback_success(request.args):
         backend.handle_authorize_error(state, request.args)
 
-    channel, profile, log, args = backend.handle_authorize_success(state, request.args)
-    intent = args.get('intent')
-
-    if intent == AuthLogs.INTENT_ASSOCIATE:
-        if args.get('provider') != provider:
-            raise RedirectLoginError(
-                error='permission_denied',
-                msg='Target provider does not match',
-                nonce=args.get('nonce'),
-                redirect_uri=log.get_failed_callback(),
-                provider=provider)
-        elif profile.user_id:
-            raise RedirectLoginError(
-                error='conflict',
-                msg='Profile has linked with another user',
-                nonce=args.get('nonce'),
-                redirect_uri=log.get_failed_callback(),
-                provider=provider)
-        profile.link_user_by_id(user_id=args.get('user_id'))
-    elif intent == AuthLogs.INTENT_LOGIN and not log.is_login:
-        raise RedirectLoginError(
-            error='invalid_request',
-            msg='Social profile does not exist, should register instead',
-            nonce=args.get('nonce'),
-            redirect_uri=log.get_failed_callback(),
-            provider=provider)
-    elif intent == AuthLogs.INTENT_REGISTER and log.is_login:
-        raise RedirectLoginError(
-            error='invalid_request',
-            msg='Social profile already existed, should login instead',
-            nonce=args.get('nonce'),
-            redirect_uri=log.get_failed_callback(),
-            provider=provider)
-
-    token = log.generate_auth_token()
-    callback_uri = add_params_to_uri(
-        uri=log.callback_uri,
-        provider=provider,
-        token=token,
-        nonce=args.get('nonce'),
-        profile_uri=url_for('authorized_profile', _external=True,
-                            app_id=log.app_id, token=token)
-    )
-
+    resp = backend.handle_authorize_success(state=state, qs=request.args)
     db.session.commit()
-    if provider == 'amazon':
-        return _make_response_for_amazon_pay(
-            channel=channel,
-            profile=profile,
-            redirect_uri=callback_uri
-        )
-    else:
-        return redirect(callback_uri)
+    return resp
 
 
 @flask_app.route('/ip')
@@ -176,37 +124,6 @@ def _extract_api_key(req):
     if authorization:
         api_key = authorization.replace('ApiKey ', '', 1)
         return api_key
-
-
-def _make_response_for_amazon_pay(channel, profile, redirect_uri):
-    token = Tokens.find_latest_by_social_id(social_id=profile._id)
-    cookie_object = {
-        "access_token": token.access_token,
-        "max_age": 3300,
-        "expiration_date": unix_time_millis(token.expires_at),
-        "client_id": channel.client_id,
-        "scope": channel.get_perms_as_oauth_scope(lpwa=True)
-    }
-    resp = make_response(redirect(redirect_uri))
-    domain = extract_domain_for_cookie(redirect_uri)
-    logger.debug('Set cookie', domain=domain)
-    resp.set_cookie(key='amazon_Login_state_cache',
-                    value=up.quote(json.dumps(cookie_object), safe=''),
-                    domain=extract_domain_for_cookie(redirect_uri),
-                    expires=None, max_age=3300)
-    return resp
-
-
-def extract_domain_for_cookie(url, subdomain=True):
-    netloc = up.urlparse(url).netloc
-    if netloc.startswith('localhost'):
-        return None
-    else:
-        parts = netloc.split('.')
-        domain = parts[-2] + '.' + parts[-1]
-        if subdomain:
-            domain = '.' + domain
-        return domain
 
 
 def init_app(app):
