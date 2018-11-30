@@ -81,9 +81,9 @@ def is_valid_provider(provider):
 
 
 class OAuthBackend(object):
-    JWT_TOKEN_ATTRIBUTE_NAME = 'id_token'
     OAUTH_VERSION = 2
     SANDBOX_SUPPORT = False
+    OPENID_CONNECT_SUPPORT = False
 
     ERROR_AUTHORIZE_FAILED = 'authorize_failed'
     ERROR_GET_TOKEN_FAILED = 'get_token_failed'
@@ -248,7 +248,7 @@ class OAuthBackend(object):
                 token_type=tokens['token_type'],
                 expires_at=datetime.utcnow() + timedelta(seconds=tokens['expires_in']),
                 refresh_token=tokens.get('refresh_token'),
-                jwt_token=tokens.get(self.JWT_TOKEN_ATTRIBUTE_NAME),
+                jwt_token=tokens.get('id_token'),
                 social_id=profile._id
             )
             db.session.add(token)
@@ -312,6 +312,8 @@ class OAuthBackend(object):
             redirect_uri=self.__provider_callback_uri__(),
             scope=self.channel.get_perms_as_oauth_scope(),
             state=state)
+        if self.OPENID_CONNECT_SUPPORT:
+            uri += '&nonce=' + gen_random_token(nbytes=16, format='hex')
         return uri
 
     def _get_token(self, code):
@@ -467,20 +469,12 @@ class LineBackend(OAuthBackend):
     """
     Authentication handler for LINE accounts
     """
+    OPENID_CONNECT_SUPPORT = True
 
     def _build_authorize_uri(self, state):
-        bot_prompt = ''
+        uri = super()._build_authorize_uri(state)
         if 'add_friend' in self.channel.get_options():
-            bot_prompt = 'normal'
-
-        uri = add_params_to_uri(
-            uri=self.__authorize_uri__(version=self.channel.api_version),
-            bot_prompt=bot_prompt,
-            nonce=gen_random_token(nbytes=16),
-            client_id=self.channel.client_id,
-            redirect_uri=self.__provider_callback_uri__(),
-            scope=self.channel.get_perms_as_oauth_scope(),
-            state=state)
+            uri += '&bot_prompt=normal'
         return uri
 
     def _get_profile(self, tokens):
@@ -555,6 +549,7 @@ class YahooJpBackend(OAuthBackend):
     """
     Authentication handler for YAHOOJP accounts
     """
+    OPENID_CONNECT_SUPPORT = True
 
     def _get_error(self, response, action='authorize'):
         if action == 'get_profile':
