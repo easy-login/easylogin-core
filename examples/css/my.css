@@ -1,0 +1,77 @@
+body {
+    padding-top: 5.5rem;
+    background: #ebeff2;
+}
+
+header {
+    border-bottom: solid 5px #e45845;
+}
+
+.card-box {
+  padding: 20px;
+  box-shadow: 0 0px 8px 0 rgba(0, 0, 0, 0.06), 0 1px 0px 0 rgba(0, 0, 0, 0.02);
+  border-radius: 5px;
+  margin-bottom: 20px;
+  background-color: #ffffff;
+}
+
+.card-box h4{
+    margin-bottom:30px;
+}
+
+.p-l-30{
+    padding-left:30px;
+}
+
+.p-20{
+    padding:20px;
+}
+
+.line-btn{
+    background-image:url('https://static.tildacdn.com/tild3361-3663-4634-b664-306631636532/option_login.png');
+    background-repeat:no-repeat;
+    background-position:center;
+    background-size: cover;
+    width:200px;
+    height:50px;
+}
+
+.amazon-btn{
+    background-image:url('https://images-na.ssl-images-amazon.com/images/G/01/lwa/btnLWA_gold_195x46._CB487591031_.png');
+    background-repeat:no-repeat;
+    background-position:center;
+    background-size: contain;
+    width:200px;
+    height:50px;
+}
+
+.yahoo-btn{
+    background-image:url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhmemZ_t4AJU4bt3jYQQic5uH0tjuHL4HNyUPk2KsxCHvnFqTe');
+    background-repeat:no-repeat;
+    background-position:center;
+    background-size: cover;
+    width:200px;
+    height:50px;
+}
+
+.facebook-btn{
+    background-image:url('https://comedydefensivedriving.com/images2011/fb-sign-in-button.png');
+    background-repeat:no-repeat;
+    background-position:center;
+    background-size: contain;
+    width:200px;
+    height:50px;
+}
+
+.twitter-btn{
+    background-image:url('https://termsfeed.com/blog/wp-content/uploads/2016/06/sign-in-twitter-button-example.jpg');
+    background-repeat:no-repeat;
+    background-position:center;
+    background-size: cover;
+    width:200px;
+    height:50px;
+}
+
+.code-result pre{
+    border-radius:5px;
+}

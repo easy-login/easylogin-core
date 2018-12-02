@@ -1,18 +1,29 @@
 from flask import Flask, request, render_template, redirect, \
-    session, abort, url_for, make_response
+    session, abort, url_for, make_response, send_from_directory
 import urllib.parse as urlparse
 import requests
 import json
 import random
 import secrets
 from datetime import datetime, timedelta
+import os
 
-app = Flask(__name__, template_folder='.')
+app = Flask(__name__, template_folder='.', static_url_path='')
 app.config['SECRET_KEY'] = b'_5#y2L"F4Q8z\n\xec]/'
-
 APP_ID = 1
 API_KEY = 'xrcyz2AaN1s9OscnpFLup5DVTi3D7WCIGhYnsmjOyCO8HjAH'
 API_URL = 'https://api.easy-login.jp'
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+
+@app.route('/js/<path:path>')
+def send_js(path):
+    return send_from_directory(os.path.join(BASE_DIR, 'js'), path)
+
+
+@app.route('/css/<path:path>')
+def send_css(path):
+    return send_from_directory(os.path.join(BASE_DIR, 'css'), path)
 
 
 @app.route('/')
