@@ -29,7 +29,7 @@ header {
 
 div.loginForm {
   width: 242px;
-  height: 46px;
+  height: 48px;
   border-radius: 6px;
   margin-top: 15px;
   margin-bottom: 15px;
@@ -38,7 +38,7 @@ div.loginForm input {
   color: #ffffff;
   cursor: pointer;
   font-size: 11pt;
-  height: 44px;
+  height: 46px;
   width: 240px;
   margin: 1px;
   border: 0px;
