@@ -27,6 +27,11 @@ def send_css(path):
     return send_from_directory(os.path.join(BASE_DIR, 'css'), path)
 
 
+@app.route('/images/<path:path>')
+def send_images(path):
+    return send_from_directory(os.path.join(BASE_DIR, 'images'), path, mimetype='image/png')
+
+
 @app.route('/')
 def homepage():
     return redirect('/demo.html'), 301

@@ -46,21 +46,21 @@ div.loginForm input {
 }
 
 .line-btn{
-  background: url("https://cdn4.iconfinder.com/data/icons/social-media-2097/94/line-48.png") no-repeat scroll 0 0 transparent;
+  background: url("/images/line-48.png") no-repeat scroll 0 0 transparent;
 }
 .line-form{
   background: #3ACD01;
 }
 
 .amazon-btn{
-  background: url("https://cdn0.iconfinder.com/data/icons/social-flat-rounded-rects/512/amazon-32.png") no-repeat scroll 8px 8px transparent;
+  background: url("/images/amazon-32.png") no-repeat scroll 8px 8px transparent;
 }
 .amazon-form{
   background: #FE9900;
 }
 
 .yahoo-btn{
-  background: url("https://cdn2.iconfinder.com/data/icons/metro-ui-icon-set/512/Yahoo_alt_2.png") no-repeat scroll 0 0 transparent;
+  background: url("/images/Yahoo_alt_2.png") no-repeat scroll 0 0 transparent;
   background-size:48px 48px;
 }
 .yahoo-form{
@@ -68,21 +68,21 @@ div.loginForm input {
 }
 
 .facebook-btn{
- background: url("https://cdn0.iconfinder.com/data/icons/social-flat-rounded-rects/512/facebook-32.png") no-repeat scroll 8px 8px transparent;
+ background: url("/images/facebook-32.png") no-repeat scroll 8px 8px transparent;
 }
 .facebook-form{
   background: #3B5998;
 }
 
 .twitter-btn{
-  background: url("https://cdn2.iconfinder.com/data/icons/social-icon-3/512/social_style_3_twiter-32.png") no-repeat scroll 8px 8px transparent;
+  background: url("/images/social_style_3_twiter-32.png") no-repeat scroll 8px 8px transparent;
 }
 .twitter-form{
   background: #5EAADE;
 }
 
 .google-btn{
-  background: url("https://cdn0.iconfinder.com/data/icons/social-flat-rounded-rects/512/google_plus-32.png") no-repeat scroll 8px 8px transparent;
+  background: url("/images/google_plus-32.png") no-repeat scroll 8px 8px transparent;
 }
 .google-form{
   background: #D0422A;
