@@ -27,51 +27,67 @@ header {
     padding:20px;
 }
 
+div.loginForm {
+  width: 252px;
+  height: 50px;
+  border-radius: 6px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+div.loginForm input {
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 11pt;
+  height: 48px;
+  width: 250px;
+  margin: 1px;
+  border: 0px;
+  padding-left: 25px;
+}
+
 .line-btn{
-    background-image:url('https://static.tildacdn.com/tild3361-3663-4634-b664-306631636532/option_login.png');
-    background-repeat:no-repeat;
-    background-position:center;
-    background-size: cover;
-    width:200px;
-    height:50px;
+  background: url("https://cdn4.iconfinder.com/data/icons/social-media-2097/94/line-48.png") no-repeat scroll 0 0 transparent;
+}
+.line-form{
+  background: #3ACD01;
 }
 
 .amazon-btn{
-    background-image:url('https://images-na.ssl-images-amazon.com/images/G/01/lwa/btnLWA_gold_195x46._CB487591031_.png');
-    background-repeat:no-repeat;
-    background-position:center;
-    background-size: contain;
-    width:200px;
-    height:50px;
+  background: url("https://cdn0.iconfinder.com/data/icons/social-flat-rounded-rects/512/amazon-32.png") no-repeat scroll 8px 8px transparent;
+}
+.amazon-form{
+  background: #FE9900;
 }
 
 .yahoo-btn{
-    background-image:url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhmemZ_t4AJU4bt3jYQQic5uH0tjuHL4HNyUPk2KsxCHvnFqTe');
-    background-repeat:no-repeat;
-    background-position:center;
-    background-size: cover;
-    width:200px;
-    height:50px;
+  background: url("https://cdn2.iconfinder.com/data/icons/metro-ui-icon-set/512/Yahoo_alt_2.png") no-repeat scroll 0 0 transparent;
+  background-size:48px 48px;
+}
+.yahoo-form{
+  background: #E83032;
 }
 
 .facebook-btn{
-    background-image:url('https://comedydefensivedriving.com/images2011/fb-sign-in-button.png');
-    background-repeat:no-repeat;
-    background-position:center;
-    background-size: contain;
-    width:200px;
-    height:50px;
+ background: url("https://cdn0.iconfinder.com/data/icons/social-flat-rounded-rects/512/facebook-32.png") no-repeat scroll 8px 8px transparent;
+}
+.facebook-form{
+  background: #3B5998;
 }
 
 .twitter-btn{
-    background-image:url('https://termsfeed.com/blog/wp-content/uploads/2016/06/sign-in-twitter-button-example.jpg');
-    background-repeat:no-repeat;
-    background-position:center;
-    background-size: cover;
-    width:200px;
-    height:50px;
+  background: url("https://cdn2.iconfinder.com/data/icons/social-icon-3/512/social_style_3_twiter-32.png") no-repeat scroll 8px 8px transparent;
+}
+.twitter-form{
+  background: #5EAADE;
 }
 
-.code-result pre{
-    border-radius:5px;
+.google-btn{
+  background: url("https://cdn0.iconfinder.com/data/icons/social-flat-rounded-rects/512/google_plus-32.png") no-repeat scroll 8px 8px transparent;
 }
+.google-form{
+  background: #D0422A;
+}
+
+
+
+
