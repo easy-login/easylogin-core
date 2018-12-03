@@ -1,23 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>EasyLogin Demo - APIs Explorer</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}" type="text/css"/>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/my.css') }}" type="text/css"/>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/highlight-railscasts.css') }}" type="text/css"/>
-</head>
-<body>
-<header class="navbar navbar-dark bg-dark fixed-top">
-    <a class="navbar-brand" href="/">
-        <img src="/docs/4.1/assets/brand/bootstrap-solid.svg" class="d-inline-block align-top" alt="" width="30"
-             height="30">
-        EasyLogin Demo
-    </a>
-    <a class="nav-link nav-item" style="color: white;" href="/pay.html">Amazon Pay</a>
-    <a class="nav-link nav-item" style="color: white;" href="/api-explorer.html">APIs Explorer</a>
-    <a class="nav-link nav-item" style="color: white;" href="/logout">Logout All</a>
-</header>
+{% include 'header.html' %}
 <div class="container">
     <div class="row">
         <div class="col-md-12">
@@ -130,11 +111,4 @@
         </div>
     </div>
 </div>
-<script src="{{ url_for('static', filename='js/highlight.pack.js') }}"></script>
-<script type="text/javascript">
-    hljs.initHighlightingOnLoad();
-
-
-</script>
-</body>
-</html>
+{% include 'footer.html' %}
