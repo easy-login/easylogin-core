@@ -46,46 +46,51 @@ div.loginForm input {
 }
 
 .line-btn{
-  background: url("/images/line-48.png") no-repeat scroll 0 0 transparent;
+  background: url("/images/line-256.png") no-repeat scroll 2px 2px transparent;
+  background-size:44px 44px;
 }
 .line-form{
   background: #3ACD01;
 }
 
 .amazon-btn{
-  background: url("/images/amazon-32.png") no-repeat scroll 8px 8px transparent;
+  background: url("/images/amazon-256.png") no-repeat scroll 8px 8px transparent;
+  background-size:32px 32px;
 }
 .amazon-form{
   background: #FE9900;
 }
 
 .yahoo-btn{
-  background: url("/images/Yahoo_alt_2.png") no-repeat scroll 0 0 transparent;
-  background-size:48px 48px;
+  background: url("/images/Yahoo_alt_2.png") no-repeat scroll 2px 2px transparent;
+  background-size:44px 44px;
 }
 .yahoo-form{
-  background: #E83032;
+  background: #e83032;
 }
 
 .facebook-btn{
- background: url("/images/facebook-32.png") no-repeat scroll 8px 8px transparent;
+ background: url("/images/facebook-256.png") no-repeat scroll 8px 8px transparent;
+ background-size:32px 32px;
 }
 .facebook-form{
   background: #3B5998;
 }
 
 .twitter-btn{
-  background: url("/images/social_style_3_twiter-32.png") no-repeat scroll 8px 8px transparent;
+  background: url("/images/social_style_3_twiter-256.png") no-repeat scroll 8px 8px transparent;
+  background-size:32px 32px;
 }
 .twitter-form{
   background: #5EAADE;
 }
 
 .google-btn{
-  background: url("/images/google_plus-32.png") no-repeat scroll 8px 8px transparent;
+  background: url("/images/6_-_Google_Plus-256.png") no-repeat scroll 0 0 transparent;
+  background-size:48px 48px;
 }
 .google-form{
-  background: #D0422A;
+  background: #DC4E41;
 }
 
 
