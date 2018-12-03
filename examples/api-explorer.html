@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EasyLogin Demo - APIs Explorer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}" type="text/css"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/my.css') }}" type="text/css"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/highlight-railscasts.css') }}" type="text/css"/>
+</head>
+<body>
+<header class="navbar navbar-dark bg-dark fixed-top">
+    <a class="navbar-brand" href="/">
+        <img src="/docs/4.1/assets/brand/bootstrap-solid.svg" class="d-inline-block align-top" alt="" width="30"
+             height="30">
+        EasyLogin Demo
+    </a>
+    <a class="nav-link nav-item" style="color: white;" href="/api-explorer.html">APIs Explorer</a>
+    <a class="nav-link nav-item" style="color: white;" href="/logout">Logout All</a>
+</header>
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card-box">
+                <h4>Link User with Social Profile</h4>
+                <div class="p-l-30">
+                    <form class="form-horizontal" action="/api/link" method="POST">
+                        <div class="form-group row">
+                            <label for="id_user_id" class="col-md-2 col-form-label">User ID</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_user_id" placeholder="User ID" type="text"
+                                       name="user_id">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="id_social_id" class="col-md-2 col-form-label">Social ID</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_social_id" placeholder="Social ID" type="text"
+                                       name="social_id">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-8"></div>
+                            <div class="col-md-2">
+                                <button class="btn btn-primary btn-block" type="submit" value="Link">Link</button>
+                            </div>
+                        </div>
+                        <div class="form-group row code-result">
+                            <div class="col-md-10">
+                                {% if link_result %}
+                                <pre><code class="json">{{ link_result }}</code></pre>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-12">
+            <div class="card-box">
+                <h4>Unlink User from Social Profile</h4>
+                <div class="p-l-30">
+                    <form class="form-horizontal" action="/api/unlink" method="POST">
+                        <div class="form-group row">
+                            <label for="id_user_id_unlink" class="col-md-2 col-form-label">User ID</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_user_id_unlink" placeholder="User ID" type="text"
+                                       name="user_id">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="id_social_id_unlink" class="col-md-2 col-form-label">Social ID</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_social_id_unlink" placeholder="Social ID" type="text"
+                                       name="social_id">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-8"></div>
+                            <div class="col-md-2">
+                                <button class="btn btn-primary btn-block" type="submit" value="Unlink">Unlink</button>
+                            </div>
+                        </div>
+                        <div class="form-group row code-result">
+                            <div class="col-md-10">
+                                {% if unlink_result %}
+                                <pre><code class="json">{{ unlink_result }}</code></pre>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-12">
+            <div class="card-box">
+                <h4>Disassociate User from Providers</h4>
+                <div class="p-l-30">
+                    <form class="form-horizontal" action="/api/disassociate" method="POST">
+                        <div class="form-group row">
+                            <label for="id_user_id_disassociate" class="col-md-2 col-form-label">User ID</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_user_id_disassociate" placeholder="User ID" type="text"
+                                       name="user_id">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="id_social_id_disassociate" class="col-md-2 col-form-label">Providers</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_social_id_disassociate" placeholder="line,amazon,yahoojp" type="text"
+                                       name="social_id">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-8"></div>
+                            <div class="col-md-2">
+                                <button class="btn btn-primary btn-block" type="submit" value="Disassociate">Disassociate</button>
+                            </div>
+                        </div>
+                        <div class="form-group row code-result">
+                            <div class="col-md-10">
+                                {% if disassociate_result %}
+                                <pre><code class="json">{{ disassociate_result }}</code></pre>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/highlight.pack.js') }}"></script>
+<script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+
+
+</script>
+</body>
+</html>

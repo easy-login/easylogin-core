@@ -47,6 +47,13 @@ def charts():
                                        random.randint(200, 1000)])
 
 
+@app.route('/api-explorer.html')
+def api_explorer():
+    return render_template('api-explorer.html',
+                           link_result=request.args.get('link_result', ''),
+                           unlink_result=request.args.get('unlink_result', ''))
+
+
 @app.route('/pay.html')
 def pay():
     return render_template('pay.html')
@@ -69,10 +76,10 @@ def pay_setting():
     return resp
 
 
-@app.route('/user/<action>', methods=['POST'])
+@app.route('/api/<action>', methods=['POST'])
 def link_user(action):
     if action not in ['link', 'unlink']:
-        abort(400, 'Invalid action')
+        abort(404, 'Invalid action')
 
     user_id = request.form['user_id']
     social_id = request.form['social_id']
@@ -83,8 +90,14 @@ def link_user(action):
     r = requests.put(url=url, verify=False,
                      json={'user_id': user_id, 'social_id': social_id},
                      headers={'X-Api-Key': request.cookies['api_key']})
-    msg = str(r.json())
-    return redirect('/demo.html?{}_result={}'.format(action, msg))
+    try:
+        msg = str(r.json())
+    except ValueError as e:
+        msg = json.dumps({
+            'status_code': r.status_code,
+            'error': str(e)
+        })
+    return redirect('/api-explorer.html?{}_result={}'.format(action, msg))
 
 
 @app.route('/auth/<provider>')
@@ -138,6 +151,11 @@ def auth_callback():
         return _handle_error()
 
 
+@app.route('/auth/failed')
+def auth_failed():
+    return _handle_error()
+
+
 @app.route('/register.html', methods=['GET', 'POST'])
 def register():
     if request.method == 'GET':
@@ -166,11 +184,6 @@ def register():
         return redirect('/demo.html')
 
 
-@app.route('/auth/failed')
-def auth_failed():
-    return _handle_error()
-
-
 @app.route('/demo.html')
 def index():
     api_url = request.cookies.get('api_url', API_URL)
@@ -178,8 +191,6 @@ def index():
     api_key = request.cookies.get('api_key', API_KEY)
 
     view = render_template('demo.html', api_url=api_url, app_id=app_id, api_key=api_key,
-                           link_result=request.args.get('link_result', ''),
-                           unlink_result=request.args.get('unlink_result', ''),
                            line=session.get('line'),
                            amazon=session.get('amazon'),
                            yahoojp=session.get('yahoojp'),
