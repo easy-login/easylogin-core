@@ -93,6 +93,11 @@ div.loginForm input {
   background: #DC4E41;
 }
 
+.code-result pre{
+    border-radius:5px;
+}
 
-
-
+footer{
+    padding: 20px;
+    border-top: solid 1px #d6d6d6;
+}

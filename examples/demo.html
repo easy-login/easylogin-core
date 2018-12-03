@@ -8,15 +8,23 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/highlight-railscasts.css') }}" type="text/css"/>
 </head>
 <body>
-<header class="navbar navbar-dark bg-dark fixed-top">
+<header class="navbar navbar-dark bg-dark fixed-top navbar-expand-lg">
     <a class="navbar-brand" href="/">
         <img src="/docs/4.1/assets/brand/bootstrap-solid.svg" class="d-inline-block align-top" alt="" width="30"
              height="30">
         EasyLogin Demo
     </a>
-    <a class="nav-link nav-item" style="color: white;" href="/pay.html">Amazon Pay</a>
-    <a class="nav-link nav-item" style="color: white;" href="/api-explorer.html">APIs Explorer</a>
-    <a class="nav-link nav-item" style="color: white;" href="/logout">Logout All</a>
+    <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+            <a class="nav-link" style="color: white;" href="/pay.html">Amazon Pay</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" style="color: white;" href="/api-explorer.html">APIs Explorer</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link nav-item" style="color: white;" href="/logout">Logout All</a>
+        </li>
+    </ul>
 </header>
 <div class="container">
     <div class="row">
@@ -62,30 +70,42 @@
         <div class="col-md-12">
             <div class="card-box">
                 <div class="row p-20">
-                    <div class="col-md-6">
-                        <div class="loginForm line-form"><form action="/auth/line" method="get">
-                            <input class="line-btn" type="submit" value="Login with LINE" name="submit"/>
-                        </form></div>
+                    <div class="col-md-6" style="padding-top: 44px; padding-left: 100px;">
+                        <div class="loginForm line-form">
+                            <form action="/auth/line" method="get">
+                                <input class="line-btn" type="submit" value="Login with LINE" name="submit"/>
+                            </form>
+                        </div>
 
-                        <div class="loginForm amazon-form"><form action="/auth/amazon" method="get">
-                            <input class="amazon-btn" type="submit" value="Login with AMAZON" name="submit"/>
-                        </form></div>
+                        <div class="loginForm amazon-form">
+                            <form action="/auth/amazon" method="get">
+                                <input class="amazon-btn" type="submit" value="Login with AMAZON" name="submit"/>
+                            </form>
+                        </div>
 
-                        <div class="loginForm yahoo-form"><form action="/auth/yahoojp" method="get">
-                            <input class="yahoo-btn" type="submit" value="Login with YAHOOJP" name="submit"/>
-                        </form></div>
+                        <div class="loginForm yahoo-form">
+                            <form action="/auth/yahoojp" method="get">
+                                <input class="yahoo-btn" type="submit" value="Login with YAHOOJP" name="submit"/>
+                            </form>
+                        </div>
 
-                        <div class="loginForm facebook-form"><form action="/auth/facebook" method="get">
-                            <input class="facebook-btn" type="submit" value="Login with FACEBOOK" name="submit"/>
-                        </form></div>
-                          
-                        <div class="loginForm twitter-form"><form action="/auth/twitter" method="get">
-                            <input class="twitter-btn" type="submit" value="Login with TWITTER" name="submit"/>
-                        </form></div>
+                        <div class="loginForm facebook-form">
+                            <form action="/auth/facebook" method="get">
+                                <input class="facebook-btn" type="submit" value="Login with FACEBOOK" name="submit"/>
+                            </form>
+                        </div>
 
-                        <div class="loginForm google-form"><form action="/auth/google" method="get">
-                            <input class="google-btn" type="submit" value="Login with GOOGLE" name="submit"/>
-                        </form></div>
+                        <div class="loginForm twitter-form">
+                            <form action="/auth/twitter" method="get">
+                                <input class="twitter-btn" type="submit" value="Login with TWITTER" name="submit"/>
+                            </form>
+                        </div>
+
+                        <div class="loginForm google-form">
+                            <form action="/auth/google" method="get">
+                                <input class="google-btn" type="submit" value="Login with GOOGLE" name="submit"/>
+                            </form>
+                        </div>
                     </div>
                     <div class="col-md-6">
                         <div class="code-result">
@@ -124,11 +144,14 @@
         </div>
     </div>
 </div>
+<footer class="footer">
+      <div class="container">
+        <span class="text-muted">demo.easy-login.jp © 2018</span>
+      </div>
+    </footer>
 <script src="{{ url_for('static', filename='js/highlight.pack.js') }}"></script>
 <script type="text/javascript">
     hljs.initHighlightingOnLoad();
-
-
 </script>
 </body>
 </html>
