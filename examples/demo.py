@@ -49,9 +49,11 @@ def charts():
 
 @app.route('/api-explorer.html')
 def api_explorer():
-    return render_template('api-explorer.html',
-                           link_result=request.args.get('link_result', ''),
-                           unlink_result=request.args.get('unlink_result', ''))
+    return render_template(
+        'api-explorer.html',
+        link_result=urlparse.unquote_plus(request.args.get('link_result', '')),
+        unlink_result=urlparse.unquote_plus(request.args.get('unlink_result', ''))
+    )
 
 
 @app.route('/pay.html')
@@ -91,13 +93,16 @@ def link_user(action):
                      json={'user_id': user_id, 'social_id': social_id},
                      headers={'X-Api-Key': request.cookies['api_key']})
     try:
-        msg = str(r.json())
+        msg = json.dumps(r.json(), indent=2)
     except ValueError as e:
         msg = json.dumps({
             'status_code': r.status_code,
             'error': str(e)
-        })
-    return redirect('/api-explorer.html?{}_result={}'.format(action, msg))
+        }, indent=2)
+    return redirect('/api-explorer.html?{}_result={}'.format(
+        action,
+        urlparse.quote_plus(msg)
+    ))
 
 
 @app.route('/auth/<provider>')
@@ -135,13 +140,13 @@ def auth_callback():
             return redirect(return_url)
 
         profile = r.json()
-        session[provider] = json.dumps(profile, sort_keys=True, indent=2)
+        session[provider] = json.dumps(profile, sort_keys=True, indent=2, ensure_ascii=False)
         if profile['verified']:
             return render_template('success.html',
                                    provider=provider.upper(),
                                    profile=session[provider])
         else:
-            attrs = urlparse.quote_plus(json.dumps(profile['attrs'], indent=2))
+            attrs = urlparse.quote_plus(json.dumps(profile['attrs'], indent=2, ensure_ascii=False))
             resp = make_response(redirect(url_for('register', attrs=attrs)))
             session['token'] = token
             session['provider'] = provider
@@ -220,10 +225,12 @@ def _set_cookie(resp, key, val):
 
 
 def _handle_error():
-    error = urlparse.unquote(request.args['error'])
-    desc = urlparse.unquote(request.args['error_description'])
     provider = request.args['provider']
-    return render_template('error.html', error=error, desc=desc, provider=provider)
+    error = json.dumps({
+        'error': urlparse.unquote(request.args['error']),
+        'error_description': urlparse.unquote(request.args['error_description'])
+    }, indent=2)
+    return render_template('error.html', error=error, provider=provider.upper())
 
 
 if __name__ == '__main__':
