@@ -46,16 +46,16 @@ div.loginForm input {
 }
 
 .line-btn{
-  background: url("/images/line-256.png") no-repeat scroll 2px 2px transparent;
-  background-size:44px 44px;
+  background: url("/images/line-256.png") no-repeat scroll 4px 4px transparent;
+  background-size:40px 40px;
 }
 .line-form{
   background: #3ACD01;
 }
 
 .amazon-btn{
-  background: url("/images/amazon-256.png") no-repeat scroll 8px 8px transparent;
-  background-size:32px 32px;
+  background: url("/images/amazon-256.png") no-repeat scroll 6px 6px transparent;
+  background-size:36px 36px;
 }
 .amazon-form{
   background: #FE9900;
