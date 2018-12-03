@@ -137,7 +137,7 @@ def auth_callback():
         profile = r.json()
         session[provider] = json.dumps(profile, sort_keys=True, indent=2)
         if profile['verified']:
-            return render_template('result.html',
+            return render_template('success.html',
                                    provider=provider.upper(),
                                    profile=session[provider])
         else:
@@ -176,7 +176,7 @@ def register():
                 profile = json.loads(session[provider], encoding='utf8')
                 profile['verified'] = 1
                 session[provider] = json.dumps(profile, sort_keys=True, indent=2)
-                return render_template('result.html',
+                return render_template('success.html',
                                        provider=provider.upper(),
                                        token=session['token'],
                                        profile=session[provider])
