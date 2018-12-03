@@ -84,7 +84,7 @@ def authenticate(provider):
     auth_url = '{base_url}/auth/{provider}/{intent}?'.format(
         base_url=api_url,
         provider=provider,
-        intent=request.args.get('intent')
+        intent=request.args.get('intent', 'auth')
     ) + urlparse.urlencode(qs)
     return redirect(auth_url)
 
