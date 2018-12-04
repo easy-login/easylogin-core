@@ -109,6 +109,35 @@
                 </div>
             </div>
         </div>
+        <div class="col-md-12">
+            <div class="card-box">
+                <h4>Get User Profile</h4>
+                <div class="p-l-30">
+                    <form class="form-horizontal" action="/api/profile" method="POST">
+                        <div class="form-group row">
+                            <label for="id_user_id_profile" class="col-md-2 col-form-label">User ID</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_user_id_profile" placeholder="User ID/Social ID" type="text"
+                                       name="user_id">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-8"></div>
+                            <div class="col-md-2">
+                                <button class="btn btn-primary btn-block" type="submit" value="Get Profile">Get Profile</button>
+                            </div>
+                        </div>
+                        <div class="form-group row code-result">
+                            <div class="col-md-10">
+                                {% if profile_result %}
+                                <pre><code class="json">{{ profile_result }}</code></pre>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% include 'footer.html' %}

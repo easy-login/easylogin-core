@@ -7,6 +7,7 @@ import random
 import secrets
 from datetime import datetime, timedelta
 import os
+import base64
 
 app = Flask(__name__, template_folder='templates', static_url_path='')
 app.config['SECRET_KEY'] = b'_5#y2L"F4Q8z\n\xec]/'
@@ -51,9 +52,10 @@ def charts():
 def api_explorer():
     return render_template(
         'api-explorer.html',
-        link_result=urlparse.unquote_plus(request.args.get('link_result', '')),
-        unlink_result=urlparse.unquote_plus(request.args.get('unlink_result', '')),
-        disassociate_result=urlparse.unquote_plus(request.args.get('disassociate_result', ''))
+        profile_result=b64decode_string(request.args.get('profile_result', ''), urlsafe=True),
+        link_result=b64decode_string(request.args.get('link_result', ''), urlsafe=True),
+        unlink_result=b64decode_string(request.args.get('unlink_result', ''), urlsafe=True),
+        disassociate_result=b64decode_string(request.args.get('disassociate_result', ''), urlsafe=True)
     )
 
 
@@ -81,7 +83,7 @@ def pay_setting():
 
 @app.route('/api/<action>', methods=['POST'])
 def link_user(action):
-    if action not in ['link', 'unlink', 'disassociate']:
+    if action not in ['link', 'unlink', 'disassociate', 'profile']:
         abort(404, 'Invalid action')
 
     user_id = request.form['user_id']
@@ -94,6 +96,17 @@ def link_user(action):
         r = requests.put(url=url, verify=False,
                          json={'user_id': user_id, 'providers': providers},
                          headers={'X-Api-Key': request.cookies['api_key']})
+    elif action == 'profile':
+        url = '{}/{}/users'.format(api_url, app_id)
+        r = requests.get(url=url, verify=False, params={
+            'user_id': user_id,
+            'api_key': request.cookies['api_key']
+        })
+        if r.status_code == 404:
+            r = requests.get(url=url, verify=False, params={
+                'social_id': user_id,
+                'api_key': request.cookies['api_key']
+            })
     else:
         social_id = request.form['social_id']
         r = requests.put(url=url, verify=False,
@@ -105,12 +118,11 @@ def link_user(action):
     except ValueError as e:
         msg = {
             'status_code': r.status_code,
-            'error': str(e),
-            'response': r.text
+            'error': str(e)
         }
     return redirect('/api-explorer.html?{}_result={}'.format(
         action,
-        urlparse.quote_plus(json.dumps(msg, indent=2))
+        b64encode_string(json.dumps(msg, indent=2), urlsafe=True)
     ))
 
 
@@ -251,6 +263,32 @@ def _handle_error(provider=None, error=None):
         'error_description': urlparse.unquote(request.args['error_description'])
     }, indent=2)
     return render_template('error.html', error=error, provider=provider.upper())
+
+
+def base64encode(b, urlsafe=False, padding=True):
+    ob = base64.urlsafe_b64encode(b) if urlsafe else base64.standard_b64encode(b)
+    encoded = ob.decode('ascii')
+    if not padding:
+        encoded = encoded.rstrip('=')
+    return encoded
+
+
+def base64decode(s, urlsafe=False):
+    padding = 4 - (len(s) % 4)
+    s += ('=' * padding)
+    b = s.encode('ascii')
+    ob = base64.urlsafe_b64decode(b) if urlsafe else base64.standard_b64decode(b)
+    return ob
+
+
+def b64encode_string(s, urlsafe=False, padding=True, charset='utf8'):
+    b = s.encode(charset)
+    return base64encode(b, urlsafe, padding)
+
+
+def b64decode_string(s, urlsafe=False, charset='utf8'):
+    ob = base64decode(s, urlsafe)
+    return ob.decode(charset)
 
 
 if __name__ == '__main__':
