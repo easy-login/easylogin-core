@@ -189,6 +189,11 @@ def register():
                                        provider=provider.upper(),
                                        token=session['token'],
                                        profile=session[provider])
+            else:
+                return _handle_error(error=json.dumps({
+                    'status_code': r.status_code,
+                    'data': r.json()
+                }, indent=2), provider=provider)
         session[provider] = None
         return redirect('/demo.html')
 
@@ -220,6 +225,7 @@ def logout():
     session['yahoojp'] = None
     session['facebook'] = None
     session['twitter'] = None
+    session['google'] = None
     return redirect('/demo.html')
 
 
@@ -229,9 +235,9 @@ def _set_cookie(resp, key, val):
                     expires=datetime.now() + timedelta(days=30))
 
 
-def _handle_error():
-    provider = request.args['provider']
-    error = json.dumps({
+def _handle_error(provider=None, error=None):
+    provider = provider or request.args['provider']
+    error = error or json.dumps({
         'error': urlparse.unquote(request.args['error']),
         'error_description': urlparse.unquote(request.args['error_description'])
     }, indent=2)
