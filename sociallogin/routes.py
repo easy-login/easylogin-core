@@ -107,7 +107,7 @@ def disassociate(app_id):
 @login_required
 def get_user(app_id):
     user_pk = request.args.get('user_id')
-    social_id = int(request.args.get('social_id'))
+    social_id = int(request.args.get('social_id', '0'))
 
     if user_pk:
         return jsonify(Users.get_full_as_dict(app_id=app_id, pk=user_pk))
@@ -131,7 +131,7 @@ def get_user(app_id):
 def delete_user(app_id):
     body = request.json
     user_pk = body.get('user_id')
-    social_id = int(body.get('social_id'))
+    social_id = int(body.get('social_id', '0'))
 
     if user_pk:
         SocialProfiles.delete_by_user_pk(app_id=app_id, user_pk=user_pk)
