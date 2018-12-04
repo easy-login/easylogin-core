@@ -8,7 +8,7 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import expression
 from sqlalchemy.types import DateTime
 
-from sociallogin import db
+from sociallogin import db, logger
 from sociallogin.atomic import generate_64bit_id
 from sociallogin.exc import ConflictError, NotFoundError, BadRequestError
 from sociallogin.sec import jwt_token_service as jwts, easy_token_service as ests
@@ -90,6 +90,8 @@ class SystemSettings(Base):
         now = datetime.now()
         # keep cache in 10 minutes
         if not cls._cache_ or cls._last_update_ + timedelta(minutes=10) < now:
+            logger.info('Refresh System settings cache',
+                        current_size=len(cls._cache_), last_update=cls._last_update_)
             rows = cls.query.all()
             cls._cache_ = {e.name: e.value for e in rows}
             cls._last_update_ = now
