@@ -181,7 +181,7 @@ class OAuthBackend(object):
         self.log, self.args = self.verify_and_parse_state(state)
         self.log.status = AuthLogs.STATUS_FAILED
 
-        error, desc = self._get_error(qs)
+        error, desc = self._get_error(qs, action='authorize')
         logger.info('Authorize failed', provider=self.provider.upper(),
                     error=error, message=desc)
         self._raise_redirect_error(error=self.ERROR_AUTHORIZE_FAILED,
@@ -410,8 +410,8 @@ class OAuthBackend(object):
     def _get_oauth1_profile(self, tokens):
         raise NotImplementedError()
 
-    def _get_error(self, response, action='authorize'):
-        return response['error'], response['error_description']
+    def _get_error(self, response, action):
+        return response['error'], response.get('error_description', '')
 
     def _raise_redirect_error(self, error, msg):
         raise RedirectLoginError(error=error, msg=msg,
@@ -502,7 +502,7 @@ class LineBackend(OAuthBackend):
             logger.error(repr(e))
         return user_id, attrs
 
-    def _get_error(self, response, action='authorize'):
+    def _get_error(self, response, action):
         if action == 'get_profile':
             return 'api_error', response['message']
         else:
@@ -561,7 +561,7 @@ class YahooJpBackend(OAuthBackend):
     """
     OPENID_CONNECT_SUPPORT = True
 
-    def _get_error(self, response, action='authorize'):
+    def _get_error(self, response, action):
         if action == 'get_profile':
             return 'api_error', response['Error']['Message']
         else:
@@ -605,7 +605,7 @@ class FacebookBackend(OAuthBackend):
 
         return self._get_attributes(response=res.json(), nofilter=True)
 
-    def _get_error(self, response, action='authorize'):
+    def _get_error(self, response, action):
         if action != 'authorize':
             return response['error']['type'], response['error']['message']
         else:
@@ -699,7 +699,7 @@ class TwitterBackend(OAuthBackend):
 
         return self._get_attributes(response=res.json())
 
-    def _get_error(self, response, action='authorize'):
+    def _get_error(self, response, action):
         if action != 'authorize':
             return response['code'][0], response['message'][0]
         else:
