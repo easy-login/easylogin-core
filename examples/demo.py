@@ -204,7 +204,8 @@ def index():
                            amazon=session.get('amazon'),
                            yahoojp=session.get('yahoojp'),
                            facebook=session.get('facebook'),
-                           twitter=session.get('twitter'))
+                           twitter=session.get('twitter'),
+                           google=session.get('google'))
     resp = make_response(view)
     _set_cookie(resp, 'api_url', api_url)
     _set_cookie(resp, 'app_id', app_id)
