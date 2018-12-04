@@ -72,6 +72,12 @@
              src="https://termsfeed.com/blog/wp-content/uploads/2016/06/sign-in-twitter-button-example.jpg"/>
     </a>
 </div>
+<div>
+    <a href="/auth/google">
+        <img width="206" height="49" style=""
+            src="https://coderwall-assets-0.s3.amazonaws.com/uploads/picture/file/4314/download.png"/>
+    </a>
+</div>
 
 <div>
     {% if line %}
@@ -101,6 +107,12 @@
     {% if yahoojp %}
     <h4>Logged in YAHOO JAPAN as</h4>
     <pre>{{ yahoojp }}</pre>
+    {% endif %}
+</div>
+<div>
+    {% if google %}
+    <h4>Logged in GOOGLE as</h4>
+    <pre>{{ google }}</pre>
     {% endif %}
 </div>
 <br/><br/>

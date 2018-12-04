@@ -57,6 +57,15 @@ __PROVIDER_SETTINGS__ = {
         'token_uri': 'https://api.twitter.com/oauth/access_token',
         'profile_uri': 'https://api.twitter.com/{version}/account/verify_credentials.json',
         'identify_attrs': ['id_str', 'id']
+    },
+    'google': {
+        'authorize_uri': '''
+            https://accounts.google.com/o/oauth2/v2/auth?response_type=code
+            &prompt=select_account&login_hint=sub&include_granted_scopes=true&access_type=offline
+            '''.strip().replace('\n', '').replace(' ', ''),
+        'token_uri': 'https://www.googleapis.com/oauth2/v4/token',
+        'profile_uri': 'https://people.googleapis.com/{version}/people/me',
+        'identify_attrs': 'sub'
     }
 }
 
@@ -72,6 +81,8 @@ def get_backend(provider, sandbox=False):
         return FacebookBackend(provider, sandbox)
     elif provider == 'twitter':
         return TwitterBackend(provider, sandbox)
+    elif provider == 'google':
+        return GoogleBackend(provider, sandbox)
     else:
         raise UnsupportedProviderError()
 
@@ -218,7 +229,7 @@ class OAuthBackend(object):
             uri=self.log.callback_uri,
             provider=self.provider,
             token=auth_token,
-            nonce=self.args.get('nonce'),
+            nonce=self.args.get('nonce', ''),
             profile_uri=url_for('authorized_profile', _external=True,
                                 app_id=self.log.app_id, token=auth_token)
         )
@@ -310,7 +321,7 @@ class OAuthBackend(object):
             uri=self.__authorize_uri__(version=self.channel.api_version),
             client_id=self.channel.client_id,
             redirect_uri=self.__provider_callback_uri__(),
-            scope=self.channel.get_perms_as_oauth_scope(),
+            scope=up.unquote_plus(self.channel.get_perms_as_oauth_scope()),
             state=state)
         if self.OPENID_CONNECT_SUPPORT:
             uri += '&nonce=' + gen_random_token(nbytes=16, format='hex')
@@ -334,7 +345,7 @@ class OAuthBackend(object):
         if res.status_code != 200:
             body = res.json()
             error, desc = self._get_error(body, action='get_token')
-            logger.warn('Getting access token failed',
+            logger.warn('Getting access token failed', style='hybrid',
                         provider=self.provider.upper(), **body)
             self._raise_redirect_error(error=self.ERROR_GET_TOKEN_FAILED,
                                        msg='{}: {}'.format(error, desc))
@@ -353,7 +364,7 @@ class OAuthBackend(object):
                            headers={'Authorization': authorization})
         if res.status_code != 200:
             body = res.json()
-            logger.warn('Getting profile failed',
+            logger.warn('Getting profile failed', style='hybrid',
                         provider=self.provider.upper(), **body)
             self._raise_redirect_error(
                 error=self.ERROR_GET_PROFILE_FAILED,
@@ -376,9 +387,9 @@ class OAuthBackend(object):
             return user_id, response
 
         attrs = dict()
-        req_fields = self.channel.get_required_fields()
+        fields = self.channel.get_required_fields()
         for key, value in response.items():
-            if key in req_fields:
+            if key in fields:
                 attrs[key] = value
         return user_id, attrs
 
@@ -404,7 +415,7 @@ class OAuthBackend(object):
 
     def _raise_redirect_error(self, error, msg):
         raise RedirectLoginError(error=error, msg=msg,
-                                 nonce=self.args.get('nonce'),
+                                 nonce=self.args.get('nonce', ''),
                                  redirect_uri=self.log.get_failed_callback(),
                                  provider=self.provider)
 
@@ -473,7 +484,7 @@ class LineBackend(OAuthBackend):
 
     def _build_authorize_uri(self, state):
         uri = super()._build_authorize_uri(state)
-        if 'add_friend' in self.channel.get_options():
+        if self.channel.option_enabled('add_friend'):
             uri += '&bot_prompt=normal'
         return uri
 
@@ -503,7 +514,6 @@ class AmazonBackend(OAuthBackend):
     Authentication handler for AMAZON accounts
     """
     SANDBOX_SUPPORT = True
-    PERMS_FOR_PAY = ' payments:widget payments:shipping_address'
 
     def _build_authorize_uri(self, state):
         amz_pay_enabled = self.channel.option_enabled('amazon_pay')
@@ -587,7 +597,7 @@ class FacebookBackend(OAuthBackend):
         })
         if res.status_code != 200:
             body = res.json()
-            logger.warn('Getting profile failed',
+            logger.warn('Getting profile failed', style='hybrid',
                         provider=self.provider.upper(), **body)
             self._raise_redirect_error(
                 error=self.ERROR_GET_PROFILE_FAILED,
@@ -726,5 +736,59 @@ class TwitterBackend(OAuthBackend):
             base_url=up.quote(url, safe=''),
             param=up.quote(param, safe=''))
         sign_key = up.quote(consumer_secret) + '&' + up.quote(oauth_token_secret)
-
         return calculate_hmac(key=sign_key, raw=sign_base)
+
+
+class GoogleBackend(OAuthBackend):
+    """
+    Authentication handler for GOOGLE accounts
+    """
+    OPENID_CONNECT_SUPPORT = True
+
+    def _get_profile(self, tokens):
+        perms = self.channel.get_permissions()
+        fields = self.channel.get_required_fields()
+        if 'email' in perms and 'emailAddresses' not in fields:
+            fields.append('emailAddresses')
+        fields.remove('#')
+        res = requests.get(self.__profile_uri__(version=self.channel.api_version), params={
+            'personFields': ','.join(fields),
+            'access_token': tokens['access_token']
+        })
+        if res.status_code != 200:
+            body = res.json()
+            logger.warn('Getting profile failed', style='hybrid',
+                        provider=self.provider.upper(), **body)
+            self._raise_redirect_error(
+                error=self.ERROR_GET_PROFILE_FAILED,
+                msg='Getting user attributes from provider failed')
+
+        return self._get_attributes(response=res.json(), nofilter=True)
+
+    def _get_attributes(self, response, nofilter=False):
+        rs_name = response['resourceName']
+        user_id = rs_name.split('/')[1]
+        attrs = dict()
+        for key, values in response.items():
+            if type(values) != list:
+                continue
+            norm_values = [self._normalize_google_attribute(key, v) for v in values]
+            attrs[key] = norm_values
+        return user_id, attrs
+
+    @staticmethod
+    def _normalize_google_attribute(key, value):
+        meta = value['metadata']
+        value['source_type'] = meta['source']['type']
+        if 'primary' in meta:
+            value['primary'] = meta['primary']
+        if 'verified' in meta:
+            value['verified'] = meta['verified']
+        if key == 'birthdays':
+            date = value['date']
+            if 'year' in date:
+                value['date'] = '{}/{}/{}'.format(date['year'], date['month'], date['day'])
+            else:
+                value['date'] = '{}/{}'.format(date['month'], date['day'])
+        del value['metadata']
+        return value
