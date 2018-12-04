@@ -8,7 +8,7 @@ import secrets
 from datetime import datetime, timedelta
 import os
 
-app = Flask(__name__, template_folder='.', static_url_path='')
+app = Flask(__name__, template_folder='templates', static_url_path='')
 app.config['SECRET_KEY'] = b'_5#y2L"F4Q8z\n\xec]/'
 
 APP_ID = 1
