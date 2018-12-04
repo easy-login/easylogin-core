@@ -83,7 +83,7 @@ def unlink_user(app_id):
         abort(404, 'Social ID not found')
     for p in profiles:
         if not p.user_id:
-            abort(409, "Social profile are not linked with any user")
+            abort(409, "Social profile are not linked with any users")
         p.unlink_user_by_pk(user_pk)
     db.session.commit()
     return jsonify({'success': True})
@@ -98,7 +98,10 @@ def disassociate(app_id):
     for provider in providers:
         if not is_valid_provider(provider):
             abort(400, 'Invalid provider ' + provider)
-    SocialProfiles.unlink_by_provider(app_id=app_id, user_pk=user_pk, providers=providers)
+    profiles = SocialProfiles.unlink_by_provider(app_id=app_id, user_pk=user_pk,
+                                                 providers=providers)
+    if not profiles:
+        abort(404, 'User ID not found')
     db.session.commit()
     return jsonify({'success': True})
 

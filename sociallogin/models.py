@@ -306,6 +306,7 @@ class SocialProfiles(Base):
             if p.provider not in providers:
                 continue
             p._unlink_unsafe()
+        return len(profiles)
 
     @classmethod
     def add_or_update(cls, app_id, scope_id, provider, attrs):
@@ -349,9 +350,7 @@ class Users(Base):
 
     def as_dict(self):
         d = super().as_dict()
-        d['user_id'] = d['pk']
-        del d['app_id']
-        del d['pk']
+        d['user_id'] = self.pk
         return d
 
     @classmethod
