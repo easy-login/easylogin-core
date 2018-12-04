@@ -52,7 +52,8 @@ def api_explorer():
     return render_template(
         'api-explorer.html',
         link_result=urlparse.unquote_plus(request.args.get('link_result', '')),
-        unlink_result=urlparse.unquote_plus(request.args.get('unlink_result', ''))
+        unlink_result=urlparse.unquote_plus(request.args.get('unlink_result', '')),
+        disassociate_result=urlparse.unquote_plus(request.args.get('disassociate_result', ''))
     )
 
 
@@ -80,28 +81,36 @@ def pay_setting():
 
 @app.route('/api/<action>', methods=['POST'])
 def link_user(action):
-    if action not in ['link', 'unlink']:
+    if action not in ['link', 'unlink', 'disassociate']:
         abort(404, 'Invalid action')
 
     user_id = request.form['user_id']
-    social_id = request.form['social_id']
     api_url = request.cookies['api_url']
     app_id = request.cookies['app_id']
 
     url = '{}/{}/users/{}'.format(api_url, app_id, action)
-    r = requests.put(url=url, verify=False,
-                     json={'user_id': user_id, 'social_id': social_id},
-                     headers={'X-Api-Key': request.cookies['api_key']})
+    if action == 'disassociate':
+        providers = request.form['providers']
+        r = requests.put(url=url, verify=False,
+                         json={'user_id': user_id, 'providers': providers},
+                         headers={'X-Api-Key': request.cookies['api_key']})
+    else:
+        social_id = request.form['social_id']
+        r = requests.put(url=url, verify=False,
+                         json={'user_id': user_id, 'social_id': social_id},
+                         headers={'X-Api-Key': request.cookies['api_key']})
     try:
-        msg = json.dumps(r.json(), indent=2)
+        msg = r.json()
+        msg['status_code'] = r.status_code
     except ValueError as e:
-        msg = json.dumps({
+        msg = {
             'status_code': r.status_code,
-            'error': str(e)
-        }, indent=2)
+            'error': str(e),
+            'response': r.text
+        }
     return redirect('/api-explorer.html?{}_result={}'.format(
         action,
-        urlparse.quote_plus(msg)
+        urlparse.quote_plus(json.dumps(msg, indent=2))
     ))
 
 
