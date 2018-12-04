@@ -8,7 +8,7 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import expression
 from sqlalchemy.types import DateTime
 
-from sociallogin import db, logger
+from sociallogin import db, logger, app
 from sociallogin.atomic import generate_64bit_id
 from sociallogin.exc import ConflictError, NotFoundError, BadRequestError
 from sociallogin.sec import jwt_token_service as jwts, easy_token_service as ests
@@ -87,15 +87,19 @@ class SystemSettings(Base):
 
     @classmethod
     def all_as_dict(cls):
-        now = datetime.now()
-        # keep cache in 10 minutes
-        if not cls._cache_ or cls._last_update_ + timedelta(minutes=10) < now:
-            logger.info('Refresh System settings cache',
-                        current_size=len(cls._cache_), last_update=cls._last_update_)
+        # keep cache in 10 minutes, only in production mode
+        if app.config['DEBUG']:
             rows = cls.query.all()
-            cls._cache_ = {e.name: e.value for e in rows}
-            cls._last_update_ = now
-        return cls._cache_
+            return {e.name: e.value for e in rows}
+        else:
+            now = datetime.now()
+            if not cls._cache_ or cls._last_update_ + timedelta(minutes=10) < now:
+                logger.info('Refresh System settings cache',
+                            current_size=len(cls._cache_), last_update=cls._last_update_)
+                rows = cls.query.all()
+                cls._cache_ = {e.name: e.value for e in rows}
+                cls._last_update_ = now
+            return cls._cache_
 
 
 class Admins(Base):
@@ -260,13 +264,15 @@ class SocialProfiles(Base):
     def _allow_get_scope_id(self):
         ss = SystemSettings.all_as_dict()
         return_scoped_id = ss.get('return_scoped_id', 'never')
+        logger.debug('System variables', return_scoped_id=return_scoped_id)
+
         if return_scoped_id == 'always':
             return True
         elif return_scoped_id == 'never':
             return False
-
-        level = (db.session.query(Admins.level).join(
-            Admins, and_(Admins._id == Apps.owner_id, Apps._id == self.app_id))).first()
+        levels = (db.session.query(Admins.level).join(
+            Apps, and_(Admins._id == Apps.owner_id, Apps._id == self.app_id))).first()
+        level = levels[0]
         return (level == Admins.LEVEL_PREMIUM
                 or (level == Admins.LEVEL_AMAZON_PLUS and self.provider == 'amazon')
                 or (level == Admins.LEVEL_LINE_PLUS and self.provider == 'line'))
