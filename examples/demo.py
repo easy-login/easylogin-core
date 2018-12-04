@@ -1,18 +1,35 @@
 from flask import Flask, request, render_template, redirect, \
-    session, abort, url_for, make_response
+    session, abort, url_for, make_response, send_from_directory
 import urllib.parse as urlparse
 import requests
 import json
 import random
 import secrets
 from datetime import datetime, timedelta
+import os
 
-app = Flask(__name__, template_folder='.')
+app = Flask(__name__, template_folder='.', static_url_path='')
 app.config['SECRET_KEY'] = b'_5#y2L"F4Q8z\n\xec]/'
 
 APP_ID = 1
 API_KEY = 'xrcyz2AaN1s9OscnpFLup5DVTi3D7WCIGhYnsmjOyCO8HjAH'
 API_URL = 'https://api.easy-login.jp'
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+
+@app.route('/js/<path:path>')
+def send_js(path):
+    return send_from_directory(os.path.join(BASE_DIR, 'js'), path)
+
+
+@app.route('/css/<path:path>')
+def send_css(path):
+    return send_from_directory(os.path.join(BASE_DIR, 'css'), path)
+
+
+@app.route('/images/<path:path>')
+def send_images(path):
+    return send_from_directory(os.path.join(BASE_DIR, 'images'), path, mimetype='image/png')
 
 
 @app.route('/')
@@ -28,6 +45,15 @@ def charts():
                                           random.randint(200, 1000)],
                            login_data=[random.randint(1000, 2000),
                                        random.randint(200, 1000)])
+
+
+@app.route('/api-explorer.html')
+def api_explorer():
+    return render_template(
+        'api-explorer.html',
+        link_result=urlparse.unquote_plus(request.args.get('link_result', '')),
+        unlink_result=urlparse.unquote_plus(request.args.get('unlink_result', ''))
+    )
 
 
 @app.route('/pay.html')
@@ -52,10 +78,10 @@ def pay_setting():
     return resp
 
 
-@app.route('/user/<action>', methods=['POST'])
+@app.route('/api/<action>', methods=['POST'])
 def link_user(action):
     if action not in ['link', 'unlink']:
-        abort(400, 'Invalid action')
+        abort(404, 'Invalid action')
 
     user_id = request.form['user_id']
     social_id = request.form['social_id']
@@ -66,8 +92,17 @@ def link_user(action):
     r = requests.put(url=url, verify=False,
                      json={'user_id': user_id, 'social_id': social_id},
                      headers={'X-Api-Key': request.cookies['api_key']})
-    msg = str(r.json())
-    return redirect('/demo.html?{}_result={}'.format(action, msg))
+    try:
+        msg = json.dumps(r.json(), indent=2)
+    except ValueError as e:
+        msg = json.dumps({
+            'status_code': r.status_code,
+            'error': str(e)
+        }, indent=2)
+    return redirect('/api-explorer.html?{}_result={}'.format(
+        action,
+        urlparse.quote_plus(msg)
+    ))
 
 
 @app.route('/auth/<provider>')
@@ -109,13 +144,13 @@ def auth_callback():
             return redirect(return_url)
 
         profile = r.json()
-        session[provider] = json.dumps(profile, sort_keys=True, indent=2)
+        session[provider] = json.dumps(profile, sort_keys=True, indent=2, ensure_ascii=False)
         if profile['verified']:
-            return render_template('result.html',
+            return render_template('success.html',
                                    provider=provider.upper(),
                                    profile=session[provider])
         else:
-            attrs = urlparse.quote_plus(json.dumps(profile['attrs'], indent=2))
+            attrs = urlparse.quote_plus(json.dumps(profile['attrs'], indent=2, ensure_ascii=False))
             resp = make_response(redirect(url_for('register', attrs=attrs)))
             session['token'] = token
             session['provider'] = provider
@@ -123,6 +158,11 @@ def auth_callback():
     except KeyError as e:
         print(e)
         return _handle_error()
+
+
+@app.route('/auth/failed')
+def auth_failed():
+    return _handle_error()
 
 
 @app.route('/register.html', methods=['GET', 'POST'])
@@ -145,17 +185,12 @@ def register():
                 profile = json.loads(session[provider], encoding='utf8')
                 profile['verified'] = 1
                 session[provider] = json.dumps(profile, sort_keys=True, indent=2)
-                return render_template('result.html',
+                return render_template('success.html',
                                        provider=provider.upper(),
                                        token=session['token'],
                                        profile=session[provider])
         session[provider] = None
         return redirect('/demo.html')
-
-
-@app.route('/auth/failed')
-def auth_failed():
-    return _handle_error()
 
 
 @app.route('/demo.html')
@@ -165,8 +200,6 @@ def index():
     api_key = request.cookies.get('api_key', API_KEY)
 
     view = render_template('demo.html', api_url=api_url, app_id=app_id, api_key=api_key,
-                           link_result=request.args.get('link_result', ''),
-                           unlink_result=request.args.get('unlink_result', ''),
                            line=session.get('line'),
                            amazon=session.get('amazon'),
                            yahoojp=session.get('yahoojp'),
@@ -196,10 +229,12 @@ def _set_cookie(resp, key, val):
 
 
 def _handle_error():
-    error = urlparse.unquote(request.args['error'])
-    desc = urlparse.unquote(request.args['error_description'])
     provider = request.args['provider']
-    return render_template('error.html', error=error, desc=desc, provider=provider)
+    error = json.dumps({
+        'error': urlparse.unquote(request.args['error']),
+        'error_description': urlparse.unquote(request.args['error_description'])
+    }, indent=2)
+    return render_template('error.html', error=error, provider=provider.upper())
 
 
 if __name__ == '__main__':

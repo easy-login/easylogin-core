@@ -1,0 +1,103 @@
+body {
+    padding-top: 5.5rem;
+    background: #ebeff2;
+}
+
+header {
+    border-bottom: solid 5px #e45845;
+}
+
+.card-box {
+  padding: 20px;
+  box-shadow: 0 0px 8px 0 rgba(0, 0, 0, 0.06), 0 1px 0px 0 rgba(0, 0, 0, 0.02);
+  border-radius: 5px;
+  margin-bottom: 20px;
+  background-color: #ffffff;
+}
+
+.card-box h4{
+    margin-bottom:30px;
+}
+
+.p-l-30{
+    padding-left:30px;
+}
+
+.p-20{
+    padding:20px;
+}
+
+div.loginForm {
+  width: 242px;
+  height: 48px;
+  border-radius: 6px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+div.loginForm input {
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 11pt;
+  height: 46px;
+  width: 240px;
+  margin: 1px;
+  border: 0px;
+  padding-left: 25px;
+}
+
+.line-btn{
+  background: url("/images/line-256.png") no-repeat scroll 4px 4px transparent;
+  background-size:40px 40px;
+}
+.line-form{
+  background: #3ACD01;
+}
+
+.amazon-btn{
+  background: url("/images/amazon-256.png") no-repeat scroll 6px 6px transparent;
+  background-size:36px 36px;
+}
+.amazon-form{
+  background: #FE9900;
+}
+
+.yahoo-btn{
+  background: url("/images/Yahoo_alt_2.png") no-repeat scroll 2px 2px transparent;
+  background-size:44px 44px;
+}
+.yahoo-form{
+  background: #e83032;
+}
+
+.facebook-btn{
+ background: url("/images/facebook-256.png") no-repeat scroll 8px 8px transparent;
+ background-size:32px 32px;
+}
+.facebook-form{
+  background: #3B5998;
+}
+
+.twitter-btn{
+  background: url("/images/social_style_3_twiter-256.png") no-repeat scroll 8px 8px transparent;
+  background-size:32px 32px;
+}
+.twitter-form{
+  background: #5EAADE;
+}
+
+.google-btn{
+  background: url("/images/6_-_Google_Plus-256.png") no-repeat scroll 0 0 transparent;
+  background-size:48px 48px;
+}
+.google-form{
+  background: #DC4E41;
+}
+
+.code-result pre{
+    border-radius:5px;
+}
+
+footer{
+    padding: 20px;
+    border-top: solid 1px #d6d6d6;
+}
