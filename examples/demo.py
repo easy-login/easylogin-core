@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, \
+from flask import Flask, request, render_template, redirect, jsonify, \
     session, abort, url_for, make_response, send_from_directory
 import urllib.parse as urlparse
 import requests
@@ -50,13 +50,7 @@ def charts():
 
 @app.route('/api-explorer.html')
 def api_explorer():
-    return render_template(
-        'api-explorer.html',
-        profile_result=b64decode_string(request.args.get('profile_result', ''), urlsafe=True),
-        link_result=b64decode_string(request.args.get('link_result', ''), urlsafe=True),
-        unlink_result=b64decode_string(request.args.get('unlink_result', ''), urlsafe=True),
-        disassociate_result=b64decode_string(request.args.get('disassociate_result', ''), urlsafe=True)
-    )
+    return render_template('api-explorer.html')
 
 
 @app.route('/pay.html')
@@ -81,22 +75,22 @@ def pay_setting():
     return resp
 
 
-@app.route('/api/<action>', methods=['POST'])
-def link_user(action):
-    if action not in ['link', 'unlink', 'disassociate', 'profile']:
+@app.route('/api/<api_name>', methods=['POST'])
+def call_api(api_name):
+    if api_name not in ['link', 'unlink', 'disassociate', 'profile']:
         abort(404, 'Invalid action')
 
     user_id = request.form['user_id']
     api_url = request.cookies['api_url']
     app_id = request.cookies['app_id']
 
-    url = '{}/{}/users/{}'.format(api_url, app_id, action)
-    if action == 'disassociate':
+    url = '{}/{}/users/{}'.format(api_url, app_id, api_name)
+    if api_name == 'disassociate':
         providers = request.form['providers']
         r = requests.put(url=url, verify=False,
                          json={'user_id': user_id, 'providers': providers},
                          headers={'X-Api-Key': request.cookies['api_key']})
-    elif action == 'profile':
+    elif api_name == 'profile':
         url = '{}/{}/users'.format(api_url, app_id)
         r = requests.get(url=url, verify=False, params={
             'user_id': user_id,
@@ -120,10 +114,7 @@ def link_user(action):
             'status_code': r.status_code,
             'error': str(e)
         }
-    return redirect('/api-explorer.html?{}_result={}'.format(
-        action,
-        b64encode_string(json.dumps(msg, indent=2), urlsafe=True)
-    ))
+    return jsonify(msg)
 
 
 @app.route('/auth/<provider>')
