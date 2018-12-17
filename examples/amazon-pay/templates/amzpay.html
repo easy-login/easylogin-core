@@ -39,17 +39,32 @@
         </style>
 
         <script type='text/javascript'>
-        $(document).ready(function() {
-            $('.start-over').on('click', function() {
-                amazon.Login.logout();
-                document.cookie = "amazon_Login_accessToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-                window.location = '/amazon-pay/';
+            $(document).ready(function() {
+                $('.start-over').on('click', function() {
+                    amazon.Login.logout();
+                    document.cookie = "amazon_Login_accessToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                    window.location = '/amazon-pay/';
+                });
+                $('#place-order').on('click', function() {
+                    $(this).hide();
+                    $('#ajax-loader').show();
+                });
+                
+                function getCookie(cname) {
+                    var name = cname + "=";
+                    var ca = document.cookie.split(';');
+                    for(var i = 0; i < ca.length; i++) {
+                        var c = ca[i];
+                        while (c.charAt(0) == ' ') {
+                            c = c.substring(1);
+                        }
+                        if (c.indexOf(name) == 0) {
+                            return c.substring(name.length, c.length);
+                        }
+                    }
+                    return "";
+                }
             });
-            $('#place-order').on('click', function() {
-                $(this).hide();
-                $('#ajax-loader').show();
-            });
-        });
         </script>
     {% endblock head %}
     </head>
@@ -74,29 +89,29 @@
                     <h2>Getting Started</h2>
                     <p style="padding-top:20px;">To get started, please fill in the required fields below. This information can be found in Seller Central.</p>
                     
-                    <form class="form-horizontal" role="form" method="post" action="cart">
+                    <form class="form-horizontal" role="form" method="post" action="settings">
                         <div class="form-group">
                             <label class="control-label col-sm-3" for="merchant-id">Merchant Id</label>
                             <div class="col-sm-8">
-                                <input type="test" class="form-control" name="merchant-id" placeholder="" value="">
+                                <input type="test" class="form-control" name="merchant-id" placeholder="" value="{{ session['merchant_id'] }}">
                             </div>
                         </div>
                         <div class="form-group">
                             <label class="control-label col-sm-3" for="mws-access-key">MWS Access Key</label>
                             <div class="col-sm-8">
-                                <input type="text" class="form-control" name="mws-access-key" placeholder="" value="">
+                                <input type="text" class="form-control" name="mws-access-key" placeholder="" value="{{ session['mws_access_key'] }}">
                             </div>
                         </div>
                         <div class="form-group">
                             <label class="control-label col-sm-3" for="mws-secret-key">MWS Secret Key</label>
                             <div class="col-sm-8">
-                                <input type="password" class="form-control" name="mws-secret-key" placeholder="" value="">
+                                <input type="password" class="form-control" name="mws-secret-key" placeholder="" value="{{ session['mws_secret_key'] }}">
                             </div>
                         </div>
                         <div class="form-group">
                             <label class="control-label col-sm-3" for="client-id">Client Id</label>
                             <div class="col-sm-8">
-                                <input type="text" class="form-control" name="client-id" placeholder="amzn1.application-oa2-client.xxxxxxxxxxxxxxxxxxx" value="">
+                                <input type="text" class="form-control" name="client-id" placeholder="amzn1.application-oa2-client.xxxxxxxxxxxxxxxxxxx" value="{{ session['client_id'] }}">
                             </div>
                         </div>
                         <div class="text-center" style="margin-top:40px">

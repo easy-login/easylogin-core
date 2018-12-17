@@ -19,12 +19,12 @@
         <input type="submit" value="Save">
     </form>
 </div>
-<div id="AmazonLoginButton">
+<!-- <div id="AmazonLoginButton">
     <img class=" amazonpay-button-inner-image" style="cursor: pointer; max-height: 48px;"
         alt="AmazonPay" id="AmazonLoginButtonImg" onclick="onAmazonLoginButtonClicked()"
         src="https://d2ldlvi1yef00y.cloudfront.net/default/us/sandbox/lwa/gold/large/LwA.png">
     <a href="#" id="Logout">Logout</a>
-</div>
+</div> -->
 <br/>
 <div id="AmazonPayButton">
 </div>
@@ -88,6 +88,7 @@
 
     window.onAmazonLoginReady = function() {
         amazon.Login.setClientId(clientId);
+        document.cookie = "amazon_Login_accessToken=Atza|IwEBILg9CI3WpZNNpbIvbzPjwiIjnzY6HdbSlNisRssgMlGcIGXwaMZk5GGrh-kkO1XmGrfnOZgvtpMkfn7pqgc7gk-g7YSdECLdpRMM_ncck67Kv0RAi4HfEHEmYS4dTB_A4pASvFozmTneSM2_bnGFBnwr2fnH2fmEgDFKub_m_204tp_5VzgMk-xvQD5fn625t_Ly-WI7rFbcWLZvq7Lx4J6jdSmfEQXB0-cC2V_pBdCKGYA4Eq9prdNYrOTGekLBz-eB1Qo5EE3l1ISyK-hqogTUSX6pwZA4QmEGjwReN9RprQxt8OiqN4x8tKQUd84Mo71CZiN4LqhqDnoDrtbO0yav0Vl46lycGkCWPFYjpugMqIJFD8aLiKkDSUMKyiWzvAzbM1zxj7-xff7QhDmvqM7iYnrPzdnVjD85Qp5_S_1Sjmf1XVQSRmMa6TIyTdLiVOnwgy2k27Mxdum_ZQJ3d-Xu4BGGC1i9bgjXltnprQwBkkRu3v74QyrWFaez5Li_5FoMoXWfw1fOBHsuDAKJFhvAiurML3j-UxOeGzRUeW6Pqqr7-9Yi39-PDT1UPHjKGphKDptI_jtx5hX_MZGMK1SblY6jrQR_JRjwcPDoWfVTDQ; expires=Sat, 02 Feb 2019 00:44:43 GMT";
         console.log('onAmazonLoginReady');
     };
     window.onAmazonPaymentsReady = function() {
@@ -102,7 +103,7 @@
         OffAmazonPayments.Button("AmazonPayButton", sellerId, { 
             type:  "PwA", 
             color: "Gold", 
-            size:  "large", 
+            size:  "normal", 
 
             authorization: function() { 
                 loginOptions = {
@@ -114,28 +115,29 @@
                     function(response) {
                         addressConsentToken = response.access_token;
                         console.log('Constent token: ' + addressConsentToken);
-                        // if (!addressConsentToken) {
-                        //     alert('You must log in before can pay')
-                        // } else {                            
-                        //     console.log("logIn success, render address and wallet widgets");
-                        //     showAddressBookWidget();
-                        //     showWalletWidget();                        
-                        // }                    
+                        if (!addressConsentToken) {
+                            // alert('You must log in before can pay');
+                            onAmazonLoginButtonClicked();
+                        } else {                            
+                            console.log("logIn success, render address and wallet widgets");
+                            showAddressBookWidget();
+                            // showWalletWidget();                        
+                        }                    
                     }
                 ); 
             }, 
-            onSignIn: function(orderReference) {
-                amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
-                console.log("amazonOrderReferenceId: " + amazonOrderReferenceId);
+            // onSignIn: function(orderReference) {
+            //     amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
+            //     console.log("amazonOrderReferenceId: " + amazonOrderReferenceId);
 
-                if (!amazonOrderReferenceId) {
-                    alert('amazonOrderReferenceId null');
-                } else {
-                    showAddressBookWidget();
-                    showWalletWidget();
-                    console.log("logIn success, render address and wallet widgets");
-                }
-            },
+            //     if (!amazonOrderReferenceId) {
+            //         alert('amazonOrderReferenceId null');
+            //     } else {
+            //         showAddressBookWidget();
+            //         showWalletWidget();
+            //         console.log("logIn success, render address and wallet widgets");
+            //     }
+            // },
             onError: function(error) { 
                 // your error handling code.
                 alert("The following error occurred: " 
@@ -152,6 +154,7 @@
                 // Here is where you can grab the Order Reference ID.
                 amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
                 console.log("onOrderReferenceCreate: " + amazonOrderReferenceId)
+                showWalletWidget(); 
             },
             onAddressSelect: function(orderReference) {
                 console.log("onAddressSelect " + JSON.stringify(orderReference))

@@ -26,13 +26,18 @@ def index():
     return render_template('amzpay.html')
 
 
-@amazon_pay.route('/cart', methods=['POST'])
-def cart():
+@amazon_pay.route('/settings', methods=['POST'])
+def settings():
     session['merchant_id'] = request.form['merchant-id']
     session['mws_access_key'] = request.form['mws-access-key']
     session['mws_secret_key'] = request.form['mws-secret-key']
     session['client_id'] = request.form['client-id']
     session['order_reference_id'] = 'S01-9969307-1083016'
+    return redirect('/amazon-pay/cart')
+
+
+@amazon_pay.route('/cart')
+def cart():
     return render_template('cart.html')
 
 
