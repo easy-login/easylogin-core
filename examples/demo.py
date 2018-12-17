@@ -220,13 +220,7 @@ def index():
     app_id = request.cookies.get('app_id', APP_ID)
     api_key = request.cookies.get('api_key', API_KEY)
 
-    view = render_template('demo.html', api_url=api_url, app_id=app_id, api_key=api_key,
-                           line=session.get('line'),
-                           amazon=session.get('amazon'),
-                           yahoojp=session.get('yahoojp'),
-                           facebook=session.get('facebook'),
-                           twitter=session.get('twitter'),
-                           google=session.get('google'))
+    view = render_template('demo.html', api_url=api_url, app_id=app_id, api_key=api_key)
     resp = make_response(view)
     _set_cookie(resp, 'api_url', api_url)
     _set_cookie(resp, 'app_id', app_id)
