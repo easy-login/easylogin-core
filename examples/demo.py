@@ -9,8 +9,12 @@ from datetime import datetime, timedelta
 import os
 import base64
 
+from amzpay import amazon_pay
+
+
 app = Flask(__name__, template_folder='templates', static_url_path='')
 app.config['SECRET_KEY'] = b'_5#y2L"F4Q8z\n\xec]/'
+app.register_blueprint(amazon_pay, url_prefix='/amazon-pay')
 
 APP_ID = 1
 API_KEY = 'xrcyz2AaN1s9OscnpFLup5DVTi3D7WCIGhYnsmjOyCO8HjAH'
