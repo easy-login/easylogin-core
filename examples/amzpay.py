@@ -23,7 +23,7 @@ def show_pay():
 
 @amazon_pay.route('/')
 def index():
-    return render_template('base.html')
+    return render_template('amzpay.html')
 
 
 @amazon_pay.route('/cart', methods=['POST'])
