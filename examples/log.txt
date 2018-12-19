@@ -3976,3 +3976,581 @@ Response: <?xml version="1.0"?>
   <RequestID>c63d5ab5-ff76-4955-b4cc-4f3f1df317c6</RequestID>
 </ErrorResponse>
 
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-17T19%3A40%3A37Z&Version=2013-01-01
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+signature: hLoZzRaWsM6zA0Xv7s2TR3p4bIKYukosozOv41GMQmI=
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>ec32797e-9326-4f56-beab-f6c2138a4f3f</RequestID>
+</ErrorResponse>
+
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-19T18%3A29%3A23Z&Version=2013-01-01
+signature: ezCQbwJxiG+Zc9StgqXKDbxA9DL9e9ymfoej+4lYrgE=
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>InvalidParameterValue</Code>
+    <Message>Parameter AWSAccessKeyId cannot be empty.</Message>
+  </Error>
+  <RequestID>b6d39c2a-489b-4c51-882e-39b105923485</RequestID>
+</ErrorResponse>
+
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-19T18%3A34%3A02Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-19T18%3A34%3A02Z&Version=2013-01-01
+signature: 64QHyitDp+LqGBed2Te6lASrEVo9Np1ZUjrkyVsXIMM=
+signature: 64QHyitDp+LqGBed2Te6lASrEVo9Np1ZUjrkyVsXIMM=
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>01ebe164-6faf-4fc9-8693-6da7cb95d68b</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>01ebe164-6faf-4fc9-8693-6da7cb95d68b</RequestID>
+</ErrorResponse>
+
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-19T18%3A41%3A50Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-19T18%3A41%3A50Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-19T18%3A41%3A50Z&Version=2013-01-01
+signature: MOTjK7JcFB4VPkk1Av3YQZjsSnaoLg+1Y6LrblCIjAA=
+signature: MOTjK7JcFB4VPkk1Av3YQZjsSnaoLg+1Y6LrblCIjAA=
+signature: MOTjK7JcFB4VPkk1Av3YQZjsSnaoLg+1Y6LrblCIjAA=
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>49e6efd2-a306-48d5-b690-f91fa3263cc7</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>49e6efd2-a306-48d5-b690-f91fa3263cc7</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>49e6efd2-a306-48d5-b690-f91fa3263cc7</RequestID>
+</ErrorResponse>
+
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-19T18%3A51%3A30Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-19T18%3A51%3A30Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-19T18%3A51%3A30Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-19T18%3A51%3A30Z&Version=2013-01-01
+signature: uE9l7+tB/XFcM6tr2qWUfyhsbGWrYSnSGOkgWNoZQiQ=
+signature: uE9l7+tB/XFcM6tr2qWUfyhsbGWrYSnSGOkgWNoZQiQ=
+signature: uE9l7+tB/XFcM6tr2qWUfyhsbGWrYSnSGOkgWNoZQiQ=
+signature: uE9l7+tB/XFcM6tr2qWUfyhsbGWrYSnSGOkgWNoZQiQ=
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>bfa0cdbc-4fe1-4ee3-bfa3-95e0fc01ed7c</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>bfa0cdbc-4fe1-4ee3-bfa3-95e0fc01ed7c</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>bfa0cdbc-4fe1-4ee3-bfa3-95e0fc01ed7c</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>bfa0cdbc-4fe1-4ee3-bfa3-95e0fc01ed7c</RequestID>
+</ErrorResponse>
+
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-7907116-0924008&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-19T19%3A00%3A00Z&Version=2013-01-01
+signature: gIRPJYKYmIsqVs/hzKiDfBPMPR5PbLD1HPK6srqjLdI=
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>0796966b-2278-45b5-8630-c4b9e9e3efaf</RequestID>
+</ErrorResponse>
+
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-7907116-0924008&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-19T19%3A02%3A24Z&Version=2013-01-01
+signature: GGyJkH9V+bfCcNSXeR81Mjx/OVEmSYjq4zVW9oSfC9U=
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.7.0; Darwin/17.7.0)'}
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>8bd8be9d-0a30-4db7-b358-bfad38994d76</RequestID>
+</ErrorResponse>
+

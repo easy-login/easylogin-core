@@ -19,13 +19,21 @@
         <button id="repurchase" class="btn btn-lg btn-success">Re-Purchase</button>
     </div>
     <script type='text/javascript'>
-        window.onAmazonLoginReady = function () {
-            amazon.Login.setClientId("{{ session['client_id'] }}");
-            amazon.Login.setUseCookie(true);
-        };
         $('#repurchase').click(function() {
             console.log('repurchase button clicked');
             window.location.href = '/amazon-pay/cart';
         });
     </script>
 {% endblock content %}
+
+{% block api %}
+<h3>Code</h3>
+<p>The <em>Confirm</em> API call does not return any special values. If it were 
+unsuccessful you would see an error response.</p>
+<pre><code class="json">{{ confirm }}</code></pre>
+
+<p>The <em>Authorize</em> API call will authorize the order reference. Instead 
+of making a separate <em>Capture</em> API call we can set the <strong>CaptureNow</strong> 
+parameter to <strong>True</strong> and the funds will be captured in the same call.</p>
+<pre><code class="json">{{ authorize }}</code></pre>
+{% endblock api %}

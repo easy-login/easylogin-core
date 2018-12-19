@@ -40,12 +40,6 @@
     </div>
     <div class="text-center" style="margin-top:40px;" id="AmazonPayButton"></div>
     <script type='text/javascript'>
-        window.onAmazonLoginReady = function () {
-            amazon.Login.setClientId('{{ session['client_id'] }}');
-            amazon.Login.setUseCookie(true);
-            console.log('onAmazonLoginReady');
-        };
-
         window.onAmazonPaymentsReady = function() {
             showAmazonPayButton();
             console.log('onAmazonPaymentsReady');
@@ -85,18 +79,4 @@
             });
         }; 
     </script>
-    <script type='text/javascript' src='https://static-na.payments-amazon.com/OffAmazonPayments/us/sandbox/js/Widgets.js'></script>
-    <!-- <script type='text/javascript'>
-        var authRequest;
-        OffAmazonPayments.Button("AmazonPayButton", "{{ session['merchant_id'] }}", {
-            type: "PwA",
-            authorization: function () {
-                loginOptions = {scope: "profile postal_code payments:widget payments:shipping_address", popup: true};
-                authRequest = amazon.Login.authorize(loginOptions, "set");
-            },
-            onError: function (error) {
-                // something bad happened
-            }
-        });
-    </script> -->
 {% endblock content %}
