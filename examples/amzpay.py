@@ -4,6 +4,7 @@ import json
 import time
 import random
 import logging
+import secrets
 
 from flask import Flask, Blueprint, render_template, abort, url_for, redirect, \
     request, flash, session, current_app as app
@@ -42,7 +43,11 @@ def cart():
 
 @amazon_pay.route('/set', methods=['GET'])
 def set():
-    session['access_token'] = request.args.get('access_token')
+    if 'access_token' in request.args:
+        session['amazon_Login_access_token'] = request.args['access_token']
+    else:
+        session['amazon_Login_access_token'] = request.cookies.get('amazon_Login_access_token')
+    print('access_token', session['amazon_Login_access_token'])
     return render_template('set.html')
 
 
@@ -62,7 +67,7 @@ def confirm():
         log_file_name="log.txt",
         log_level="DEBUG")
 
-    print(session)
+    print('session', session)
     response = client.confirm_order_reference(
         amazon_order_reference_id=session['order_reference_id'])
 
@@ -102,14 +107,18 @@ def get_details():
 
     response = client.set_order_reference_details(
         amazon_order_reference_id=order_reference_id,
-        order_total='19.95')
+        order_total='19.95',
+        seller_note='My seller note.',
+        seller_order_id=secrets.token_hex(16),
+        store_name='My store name.',
+        custom_information='My custom information.')
 
     if response.success:
         response = client.get_order_reference_details(
             amazon_order_reference_id=order_reference_id,
-            address_consent_token=session['access_token'])
+            address_consent_token=session['amazon_Login_access_token'])
 
-    pretty = json.dumps(json.loads(response.to_json()),indent=4)
+    pretty = json.dumps(json.loads(response.to_json()), indent=4)
 
     return pretty
 

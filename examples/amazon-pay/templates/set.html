@@ -8,7 +8,7 @@
     <h2>Select Shipping and Payment Method</h2>
     <p style="margin-top:20px;">Select your billing address and payment method
     from the widgets below. Your address consent token:</p>
-    <p><pre><code>{{ session['access_token'] }}</code></pre></p>
+    <p><pre><code>{{ session['amazon_Login_access_token'] }}</code></pre></p>
     <p>If you see a error message in the widgets you will need to
     start over. This usually indicates that your session has expired. If the problem
     persists please contact developer support.</p>
@@ -34,8 +34,7 @@
                 onOrderReferenceCreate: function(orderReference) {
                     // Here is where you can grab the Order Reference ID.
                     amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
-                    console.log("onOrderReferenceCreate: " + amazonOrderReferenceId)
-                    showWalletWidget(); 
+                    console.log("onOrderReferenceCreate: " + amazonOrderReferenceId);
 
                     // make a call to the back-end that will set order reference details
                     // and get order reference details. This will set the order total
@@ -48,7 +47,8 @@
                     });
                 },
                 onAddressSelect: function(orderReference) {
-                    console.log("onAddressSelect " + JSON.stringify(orderReference))
+                    console.log("onAddressSelect " + JSON.stringify(orderReference));
+                    // console.log(getMethods(orderReference).join("\n"));
                 },
                 design: {
                     designMode: 'responsive'
@@ -56,7 +56,8 @@
                 onReady: function(orderReference) {
                     // Enter code here that you want to be executed 
                     // when the address widget has been rendered. 
-                    console.log("AddressBook onReady: " + JSON.stringify(orderReference))
+                    console.log("AddressBook onReady: " + JSON.stringify(orderReference));
+                    showWalletWidget(); 
                 },
                 onError: function(error) {
                     console.log(error.getErrorCode() + ': ' + error.getErrorMessage());
