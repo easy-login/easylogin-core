@@ -64,10 +64,10 @@
                         if (!addressConsentToken) {
                             var authUrl = '/auth/amazon?return_url=/amazon-pay/set&sandbox=true&intent=lpwa';
                             window.location.href = authUrl;
-                        } else {                            
+                        } else {
                             console.log("logIn success, render address and wallet widgets");
-                            window.location.href = '/amazon-pay/set?access_token=' + addressConsentToken;                        
-                        }                    
+                            window.location.href = '/amazon-pay/set?access_token=' + addressConsentToken;
+                        }
                     }); 
                 }, 
                 onError: function(error) { 

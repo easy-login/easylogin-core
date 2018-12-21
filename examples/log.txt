@@ -5268,3 +5268,428 @@ Response: <?xml version="1.0"?>
   <RequestID>42069e2a-9a2a-473e-9f06-fa2c43f3a05f</RequestID>
 </ErrorResponse>
 
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T04%3A36%3A59Z&Version=2013-01-01
+signature: 3+2Xk1SzGv+2dwDG8k9GLlEHckR+duaD1hSFlT3qznE=
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>755a3258-605a-4119-835c-16469b5e74b3</RequestID>
+</ErrorResponse>
+
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=30d12875e7983eb8ad9e218b9ec8fe00&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T06%3A45%3A10Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=30d12875e7983eb8ad9e218b9ec8fe00&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T06%3A45%3A10Z&Version=2013-01-01
+signature: P3xFJ5UORce96OxQ8tKjvpZAntLy7AigMY7SlozuDuk=
+signature: P3xFJ5UORce96OxQ8tKjvpZAntLy7AigMY7SlozuDuk=
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>0244c439-6646-4231-8d29-55fe556b6512</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>0244c439-6646-4231-8d29-55fe556b6512</RequestID>
+</ErrorResponse>
+
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=8ae7e6edfd560f4d96f9e7d89f244312&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T06%3A45%3A55Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=8ae7e6edfd560f4d96f9e7d89f244312&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T06%3A45%3A55Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=8ae7e6edfd560f4d96f9e7d89f244312&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T06%3A45%3A55Z&Version=2013-01-01
+signature: qv6Iy4vKDAMUr+Tw2voqj3wXMCJNhNkyS2DnMWtgLoE=
+signature: qv6Iy4vKDAMUr+Tw2voqj3wXMCJNhNkyS2DnMWtgLoE=
+signature: qv6Iy4vKDAMUr+Tw2voqj3wXMCJNhNkyS2DnMWtgLoE=
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>4b9a690f-646b-459d-a9ef-8897b7fa104d</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>4b9a690f-646b-459d-a9ef-8897b7fa104d</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>4b9a690f-646b-459d-a9ef-8897b7fa104d</RequestID>
+</ErrorResponse>
+
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=30128cb69dbcc6e9009f749df3d57c57&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T06%3A55%3A02Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=30128cb69dbcc6e9009f749df3d57c57&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T06%3A55%3A02Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=30128cb69dbcc6e9009f749df3d57c57&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T06%3A55%3A02Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=30128cb69dbcc6e9009f749df3d57c57&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T06%3A55%3A02Z&Version=2013-01-01
+signature: CEbUTwLQSZFfSARoTlXPSEfKBKy1qg+6XeHe1WVN+1A=
+signature: CEbUTwLQSZFfSARoTlXPSEfKBKy1qg+6XeHe1WVN+1A=
+signature: CEbUTwLQSZFfSARoTlXPSEfKBKy1qg+6XeHe1WVN+1A=
+signature: CEbUTwLQSZFfSARoTlXPSEfKBKy1qg+6XeHe1WVN+1A=
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>72804a41-8b8d-4e27-9600-1d5bcd9848fc</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>72804a41-8b8d-4e27-9600-1d5bcd9848fc</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>72804a41-8b8d-4e27-9600-1d5bcd9848fc</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>72804a41-8b8d-4e27-9600-1d5bcd9848fc</RequestID>
+</ErrorResponse>
+
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=78d54000ef4dfdd3b102bcd6bf2cfdcf&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T06%3A55%3A58Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=78d54000ef4dfdd3b102bcd6bf2cfdcf&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T06%3A55%3A58Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=78d54000ef4dfdd3b102bcd6bf2cfdcf&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T06%3A55%3A58Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=78d54000ef4dfdd3b102bcd6bf2cfdcf&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T06%3A55%3A58Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=78d54000ef4dfdd3b102bcd6bf2cfdcf&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T06%3A55%3A58Z&Version=2013-01-01
+signature: TTKGLasmTTnpy/DX2YV/ZLBclSKXD6S0IlU0Wi8qtgc=
+signature: TTKGLasmTTnpy/DX2YV/ZLBclSKXD6S0IlU0Wi8qtgc=
+signature: TTKGLasmTTnpy/DX2YV/ZLBclSKXD6S0IlU0Wi8qtgc=
+signature: TTKGLasmTTnpy/DX2YV/ZLBclSKXD6S0IlU0Wi8qtgc=
+signature: TTKGLasmTTnpy/DX2YV/ZLBclSKXD6S0IlU0Wi8qtgc=
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>7c5186fa-4bf6-4888-a217-9b6b3f531cc4</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>7c5186fa-4bf6-4888-a217-9b6b3f531cc4</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>7c5186fa-4bf6-4888-a217-9b6b3f531cc4</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>7c5186fa-4bf6-4888-a217-9b6b3f531cc4</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>7c5186fa-4bf6-4888-a217-9b6b3f531cc4</RequestID>
+</ErrorResponse>
+
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-9969307-1083016&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T07%3A01%3A49Z&Version=2013-01-01
+signature: XMUf+6mwBV90D9X9DN9qIo6ziGCZ9NBdrIXQYetHmvg=
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>8f497e47-3680-4cc5-a844-1e31413fe0b4</RequestID>
+</ErrorResponse>
+
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=92101613bf3e2fdb4f3398202ba5e03e&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T07%3A13%3A55Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=92101613bf3e2fdb4f3398202ba5e03e&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T07%3A13%3A55Z&Version=2013-01-01
+signature: Km10DQrBRARzudAiHb5Cr65QdhxD9V2/77SZR2RCNmI=
+signature: Km10DQrBRARzudAiHb5Cr65QdhxD9V2/77SZR2RCNmI=
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>7d231ca8-2a36-4a64-99c2-fc783b95a61f</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>7d231ca8-2a36-4a64-99c2-fc783b95a61f</RequestID>
+</ErrorResponse>
+
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-4501542-3545690&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T07%3A14%3A07Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-4501542-3545690&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T07%3A14%3A07Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=ConfirmOrderReference&AmazonOrderReferenceId=S01-4501542-3545690&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T07%3A14%3A07Z&Version=2013-01-01
+signature: XeYMrXvRt7UWlHAfX0B6AhddkhyZL2K6PFMeM6NDBdc=
+signature: XeYMrXvRt7UWlHAfX0B6AhddkhyZL2K6PFMeM6NDBdc=
+signature: XeYMrXvRt7UWlHAfX0B6AhddkhyZL2K6PFMeM6NDBdc=
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>5c3de949-d11c-4e19-890b-2f364b13e5c9</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>5c3de949-d11c-4e19-890b-2f364b13e5c9</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>5c3de949-d11c-4e19-890b-2f364b13e5c9</RequestID>
+</ErrorResponse>
+
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+user agent: amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=12270ba39629d6c8cc4b779e84fb6f1d&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T07%3A14%3A35Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=12270ba39629d6c8cc4b779e84fb6f1d&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T07%3A14%3A35Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=12270ba39629d6c8cc4b779e84fb6f1d&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T07%3A14%3A35Z&Version=2013-01-01
+string to generate signature: POST
+mws.amazonservices.com
+/OffAmazonPayments_Sandbox/2013-01-01
+AWSAccessKeyId=AKIAJQCADG3WKGT46RLA&Action=SetOrderReferenceDetails&AmazonOrderReferenceId=S01-4501542-3545690&OrderReferenceAttributes.OrderTotal.Amount=19.95&OrderReferenceAttributes.OrderTotal.CurrencyCode=USD&OrderReferenceAttributes.SellerNote=My%20seller%20note.&OrderReferenceAttributes.SellerOrderAttributes.CustomInformation=My%20custom%20information.&OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId=12270ba39629d6c8cc4b779e84fb6f1d&OrderReferenceAttributes.SellerOrderAttributes.StoreName=My%20store%20name.&SellerId=AXRHKH1P12JT4&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=2018-12-21T07%3A14%3A35Z&Version=2013-01-01
+signature: Ieh5xTbkmRrPfYpuFhospqO5IWehaKI3dNuYoNwfBeg=
+signature: Ieh5xTbkmRrPfYpuFhospqO5IWehaKI3dNuYoNwfBeg=
+signature: Ieh5xTbkmRrPfYpuFhospqO5IWehaKI3dNuYoNwfBeg=
+signature: Ieh5xTbkmRrPfYpuFhospqO5IWehaKI3dNuYoNwfBeg=
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Request Header: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'amazon-pay-sdk-python/2.5.2 (Python/3.6.6; Linux/4.15.0-42-generic)'}
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>3ada3295-1b9c-4862-b56f-b49961a5e4e8</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>3ada3295-1b9c-4862-b56f-b49961a5e4e8</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>3ada3295-1b9c-4862-b56f-b49961a5e4e8</RequestID>
+</ErrorResponse>
+
+Response: <?xml version="1.0"?>
+<ErrorResponse xmlns="http://mws.amazonservices.com/schema/OffAmazonPayments/2013-01-01">
+  <Error>
+    <Type>Sender</Type>
+    <Code>AccessDenied</Code>
+    <Message>Access denied</Message>
+  </Error>
+  <RequestID>3ada3295-1b9c-4862-b56f-b49961a5e4e8</RequestID>
+</ErrorResponse>
+

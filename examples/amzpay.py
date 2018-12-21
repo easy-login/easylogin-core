@@ -44,10 +44,9 @@ def cart():
 @amazon_pay.route('/set', methods=['GET'])
 def set():
     if 'access_token' in request.args:
-        session['amazon_Login_access_token'] = request.args['access_token']
+        session['amazon_Login_accessToken'] = request.args['access_token']
     else:
-        session['amazon_Login_access_token'] = request.cookies.get('amazon_Login_access_token')
-    print('access_token', session['amazon_Login_access_token'])
+        session['amazon_Login_accessToken'] = request.cookies.get('amazon_Login_accessToken')
     return render_template('set.html')
 
 
@@ -64,7 +63,7 @@ def confirm():
         region='na',
         currency_code='USD',
         log_enabled=True,
-        log_file_name="log.txt",
+        log_file_name="/tmp/amzpay.log",
         log_level="DEBUG")
 
     print('session', session)
@@ -97,7 +96,7 @@ def get_details():
         region='na',
         currency_code='USD',
         log_enabled=True,
-        log_file_name="log.txt",
+        log_file_name="/tmp/amzpay.log",
         log_level="DEBUG")
 
     order_reference_id = request.form['orderReferenceId']
@@ -116,7 +115,7 @@ def get_details():
     if response.success:
         response = client.get_order_reference_details(
             amazon_order_reference_id=order_reference_id,
-            address_consent_token=session['amazon_Login_access_token'])
+            address_consent_token=session['amazon_Login_accessToken'])
 
     pretty = json.dumps(json.loads(response.to_json()), indent=4)
 
