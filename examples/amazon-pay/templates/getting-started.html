@@ -41,19 +41,6 @@
 
         <script type='text/javascript'>
             $(document).ready(function() {
-                $('.start-over').on('click', function() {
-                    amazon.Login.logout();
-                    document.cookie = "amazon_Login_accessToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-                    window.location = '/amazon-pay/';
-                });
-                $('.btn-loading').on('click', function() {
-                    $(this).hide();
-                    $('#ajax-loader').show();
-                });
-                 $('.back-to-cart').click(function() {
-                    window.location.href = '/amazon-pay/cart';
-                });
-                
                 function getCookie(cname) {
                     var name = cname + "=";
                     var ca = document.cookie.split(';');
@@ -68,6 +55,16 @@
                     }
                     return "";
                 }
+
+                $('.start-over').on('click', function() {
+                    document.cookie = "amazon_Login_accessToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                    amazon.Login.logout();
+                    window.location = '/amazon-pay/';
+                });
+                $('.btn-loading').on('click', function() {
+                    $(this).hide();
+                    $('#ajax-loader').show();
+                });
             });
         </script>
     {% endblock head %}
@@ -82,7 +79,7 @@
                     </div>
                     <div id="navbar" class="navbar-collapse collapse">
                         <ul class="nav navbar-nav navbar-right">
-                            <li><a class="back-to-cart" href="#">Back to Cart</a></li>
+                            <li><a class="back-to-cart" href="/amazon-pay/cart">Back to Cart</a></li>
                             <li><a class="start-over" href="#">Start Over</a></li>
                         </ul>
                     </div>
@@ -111,6 +108,12 @@
                             <label class="control-label col-sm-3" for="mws-secret-key">MWS Secret Key</label>
                             <div class="col-sm-8">
                                 <input type="password" class="form-control" name="mws-secret-key" placeholder="" value="{{ session['mws_secret_key'] }}">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-sm-3" for="client-id">Client Id</label>
+                            <div class="col-sm-8">
+                                <input type="text" class="form-control" name="client-id" placeholder="amzn1.application-oa2-client.xxxxxxxxxxxxxxxxxxx" value="">
                             </div>
                         </div>
                         <div class="text-center" style="margin-top:40px">

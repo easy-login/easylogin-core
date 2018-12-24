@@ -26,7 +26,7 @@ def show_pay():
 @amazon_pay.route('/')
 @amazon_pay.route('/getting-started')
 def index():
-    return render_template('amzpay.html')
+    return render_template('getting-started.html')
 
 
 @amazon_pay.route('/settings', methods=['POST'])
@@ -34,6 +34,7 @@ def settings():
     session['merchant_id'] = request.form['merchant-id']
     session['mws_access_key'] = request.form['mws-access-key']
     session['mws_secret_key'] = request.form['mws-secret-key']
+    session['client_id'] = request.form['client-id']
     session['order_reference_id'] = 'S01-9969307-1083016'
     return redirect('/amazon-pay/cart')
 
@@ -146,7 +147,7 @@ def confirm():
             authorization_reference_id=rand(),
             authorization_amount=session['order_amount'],
             transaction_timeout=0,
-            capture_now=False)
+            capture_now=bool(random.randint(0, 1)))
 
     pretty_authorize = json.dumps(json.loads(response.to_json()), indent=4)
 
