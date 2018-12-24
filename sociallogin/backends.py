@@ -99,7 +99,7 @@ class OAuthBackend(object):
 
     def __init__(self, provider, sandbox):
         self.provider = provider
-        self.sandbox = sandbox
+        self.sandbox = sandbox and self.SANDBOX_SUPPORT
         self.channel = None
         self.log = None
         self.token = None
@@ -192,6 +192,7 @@ class OAuthBackend(object):
         :return:
         """
         self.log, self.args = self.verify_and_parse_state(state)
+        logger.debug('Parse OAuth state result', sub=self.log._id, **self.args)
         if smart_str2bool(self.args.get('sandbox')):
             self._enable_sandbox()
         self.channel = Channels.query.filter_by(app_id=self.log.app_id,
@@ -300,7 +301,7 @@ class OAuthBackend(object):
     def _enable_sandbox(self):
         if self.SANDBOX_SUPPORT:
             self.sandbox = True
-            logger.info('Handle auth callback in sandbox mode', provider=self.provider)
+            logger.info('Enable sandbox mode', provider=self.provider)
         else:
             logger.warn('Cannot enable sandbox mode, provider is not supported',
                         provider=self.provider)
@@ -526,7 +527,7 @@ class AmazonBackend(OAuthBackend):
 
     def _make_redirect_response(self, callback_uri):
         amz_pay_enabled = self.channel.option_enabled('amazon_pay')
-        if not amz_pay_enabled or self.log.intent != 'lpwa':
+        if not amz_pay_enabled or self.log.intent != AuthLogs.INTENT_PAY_WITH_AMAZON:
             return super()._make_redirect_response(callback_uri)
 
         cookie_object = {
@@ -537,13 +538,13 @@ class AmazonBackend(OAuthBackend):
             "scope": self._perms_for_pay()
         }
         resp = make_response(redirect(callback_uri))
-        domain = self.extract_domain_for_cookie(callback_uri)
-        resp.set_cookie(key='amazon_Login_state_cache',
-                        value=up.quote(json.dumps(cookie_object), safe=''),
-                        domain=domain, expires=None, max_age=None)
-        resp.set_cookie(key='amazon_Login_accessToken',
-                        value=self.token.access_token,
-                        domain=domain, expires=None, max_age=3300)
+        domain = self.args.get('lpwa_domain') or self.extract_domain_for_cookie(callback_uri)
+        # resp.set_cookie(key='amazon_Login_state_cache',
+        #                 value=up.quote(json.dumps(cookie_object), safe=''),
+        #                 domain=domain, expires=None, max_age=None)
+        # resp.set_cookie(key='amazon_Login_accessToken',
+        #                 value=self.token.access_token,
+        #                 domain=domain, expires=None, max_age=3300)
         logger.debug('Set cookie for amazon pay', domain=domain or 'localhost')
         return resp
 

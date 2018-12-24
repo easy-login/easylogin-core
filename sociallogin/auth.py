@@ -4,7 +4,7 @@ from sociallogin import app as flask_app, db, login_manager, logger, get_remote_
 from sociallogin.backends import get_backend
 from sociallogin.exc import TokenParseError
 from sociallogin.models import Apps, AuthLogs, AssociateLogs
-from sociallogin.utils import smart_str2bool
+from sociallogin.utils import smart_str2bool, update_dict
 
 
 @flask_app.route('/auth/<provider>', defaults={'intent': None})
@@ -35,27 +35,21 @@ def authorize(provider, intent):
                 abort(400, 'Invalid target provider, must be {}'.format(alog.provider))
 
             alog.status = AssociateLogs.STATUS_AUTHORIZING
-            authorize_uri = backend.build_authorize_uri(
-                app_id=app_id,
-                intent=intent,
-                succ_callback=callback_uri,
-                fail_callback=callback_if_failed,
-                sandbox=sandbox,
-                user_id=alog.user_id,
-                provider=provider,
-                assoc_id=alog._id, **extra)
+            update_dict(extra, user_id=alog.user_id, assoc_id=alog._id, provider=provider)
         except TokenParseError as e:
             logger.warning('Parse associate token failed',
                            error=e.description, token=assoc_token)
             abort(400, 'Invalid associate token. ' + e.description)
-    else:
-        authorize_uri = backend.build_authorize_uri(
-            app_id=app_id,
-            intent=intent,
-            succ_callback=callback_uri,
-            fail_callback=callback_if_failed,
-            sandbox=sandbox, **extra)
+    elif intent == AuthLogs.INTENT_PAY_WITH_AMAZON:
+        update_dict(extra, lpwa_domain=request.args.get('site_domain'))
 
+    authorize_uri = backend.build_authorize_uri(
+        app_id=app_id,
+        intent=intent,
+        succ_callback=callback_uri,
+        fail_callback=callback_if_failed,
+        nonce=nonce,
+        sandbox=sandbox, **extra)
     db.session.commit()
     return redirect(authorize_uri)
 
