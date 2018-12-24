@@ -26,7 +26,7 @@ def show_pay():
 @amazon_pay.route('/')
 @amazon_pay.route('/getting-started')
 def index():
-    return render_template('amzpay.html')
+    return render_template('getting-started.html')
 
 
 @amazon_pay.route('/settings', methods=['POST'])
