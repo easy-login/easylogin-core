@@ -9,8 +9,12 @@ from datetime import datetime, timedelta
 import os
 import base64
 
+from amzpay import amazon_pay
+
+
 app = Flask(__name__, template_folder='templates', static_url_path='')
 app.config['SECRET_KEY'] = b'_5#y2L"F4Q8z\n\xec]/'
+app.register_blueprint(amazon_pay, url_prefix='/amazon-pay')
 
 APP_ID = 1
 API_KEY = 'xrcyz2AaN1s9OscnpFLup5DVTi3D7WCIGhYnsmjOyCO8HjAH'
@@ -30,7 +34,7 @@ def send_css(path):
 
 @app.route('/images/<path:path>')
 def send_images(path):
-    return send_from_directory(os.path.join(BASE_DIR, 'images'), path, mimetype='image/png')
+    return send_from_directory(os.path.join(BASE_DIR, 'images'), path)
 
 
 @app.route('/')
@@ -216,13 +220,7 @@ def index():
     app_id = request.cookies.get('app_id', APP_ID)
     api_key = request.cookies.get('api_key', API_KEY)
 
-    view = render_template('demo.html', api_url=api_url, app_id=app_id, api_key=api_key,
-                           line=session.get('line'),
-                           amazon=session.get('amazon'),
-                           yahoojp=session.get('yahoojp'),
-                           facebook=session.get('facebook'),
-                           twitter=session.get('twitter'),
-                           google=session.get('google'))
+    view = render_template('demo.html', api_url=api_url, app_id=app_id, api_key=api_key)
     resp = make_response(view)
     _set_cookie(resp, 'api_url', api_url)
     _set_cookie(resp, 'app_id', app_id)

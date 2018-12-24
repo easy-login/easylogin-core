@@ -1,4 +1,5 @@
-{% include 'header.html' %}
+{% extends "base.html" %}
+{% block content %}
 <div class="container">
     <div class="row">
         <div class="col-md-12">
@@ -82,39 +83,39 @@
                     </div>
                     <div class="col-md-6">
                         <div class="code-result">
-                            {% if line %}
+                            {% if session.get('line') %}
                             <h4>Logged in LINE as</h4>
-                            <pre><code class="json">{{ line }}</code></pre>
+                            <pre><code class="json">{{ session['line'] }}</code></pre>
                             {% endif %}
                         </div>
                         <div class="code-result">
-                            {% if amazon %}
+                            {% if session.get('amazon')  %}
                             <h4>Logged in AMAZON as</h4>
                             <pre><code class="json">{{ amazon }}</code></pre>
                             {% endif %}
                         </div>
                         <div class="code-result">
-                            {% if yahoojp %}
+                            {% if session.get('yahoojp') %}
                             <h4>Logged in YAHOO JAPAN as</h4>
-                            <pre><code class="json">{{ yahoojp }}</code></pre>
+                            <pre><code class="json">{{ session['yahoojp'] }}</code></pre>
                             {% endif %}
                         </div>
                         <div class="code-result">
-                            {% if facebook %}
+                            {% if session.get('facebook') %}
                             <h4>Logged in FACEBOOK as</h4>
-                            <pre><code class="json">{{ facebook }}</code></pre>
+                            <pre><code class="json">{{ session['facebook'] }}</code></pre>
                             {% endif %}
                         </div>
                         <div class="code-result">
-                            {% if twitter %}
+                            {% if session.get('twitter') %}
                             <h4>Logged in TWITTER as</h4>
-                            <pre><code class="json">{{ twitter }}</code></pre>
+                            <pre><code class="json">{{ session['twitter'] }}</code></pre>
                             {% endif %}
                         </div>
                         <div class="code-result">
-                            {% if google %}
+                            {% if session.get('google') %}
                             <h4>Logged in GOOGLE as</h4>
-                            <pre><code class="json">{{ google }}</code></pre>
+                            <pre><code class="json">{{ session['google'] }}</code></pre>
                             {% endif %}
                         </div>
                     </div>
@@ -123,4 +124,4 @@
         </div>
     </div>
 </div>
-{% include 'footer.html' %}
+{% endblock %}
