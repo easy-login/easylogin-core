@@ -15,6 +15,9 @@ amazon_pay = Blueprint('amazon_pay', __name__,
                        static_url_path='/amazon_pay',
                        template_folder='amazon-pay/templates')
 
+REGION_CODE = 'jp'
+CURRENCY_CODE = 'JPY'
+
 
 @amazon_pay.route('/pay.html')
 def show_pay():
@@ -60,8 +63,8 @@ def confirm():
         mws_secret_key=session['mws_secret_key'],
         merchant_id=session['merchant_id'],
         sandbox=True,
-        region='na',
-        currency_code='USD',
+        region=REGION_CODE,
+        currency_code=CURRENCY_CODE,
         log_enabled=True,
         log_file_name="/tmp/amzpay.log",
         log_level="DEBUG")
@@ -93,8 +96,8 @@ def get_details():
         mws_secret_key=session['mws_secret_key'],
         merchant_id=session['merchant_id'],
         sandbox=True,
-        region='na',
-        currency_code='USD',
+        region=REGION_CODE,
+        currency_code=CURRENCY_CODE,
         log_enabled=True,
         log_file_name="/tmp/amzpay.log",
         log_level="DEBUG")
