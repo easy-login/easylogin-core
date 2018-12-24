@@ -17,9 +17,10 @@
         <div id="addressBookWidgetDiv" style="width:400px; height:240px; display:inline-block;"></div>
         <div id="walletWidgetDiv" style="width:400px; height:240px; display:inline-block;"></div>
         <div style="clear:both;"></div>
-        <form class="form-horizontal" style="margin-top:40px;" role="form" method="post" action="confirm">
-            <button id="place-order" class="btn btn-lg btn-success">Place Order</button>
-            <div id="ajax-loader" style="display:none;"><img src="{{ url_for('static', filename='img/ajax-loader.gif') }}" /></div>
+        <form class="form-horizontal" style="margin-top:40px;" role="form" method="post" action="review">
+            <input type="hidden" id="order-reference-id" name="orderReferenceId" value="">
+            <button id="continue" class="btn btn-lg btn-success btn-loading">Continue</button>
+            <div id="ajax-loader" style="display:none;"><img src="{{ url_for('static', filename='img/ajax-loader.gif') }}"/></div>
         </form>
     </div>
     <script type="text/javascript">
@@ -35,16 +36,7 @@
                     // Here is where you can grab the Order Reference ID.
                     amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
                     console.log("onOrderReferenceCreate: " + amazonOrderReferenceId);
-
-                    // make a call to the back-end that will set order reference details
-                    // and get order reference details. This will set the order total
-                    // to 19.95 and return order reference details.
-                    $.post("/amazon-pay/get_details", {
-                        orderReferenceId: amazonOrderReferenceId
-                    }).done(function (data) {
-                        $("#get_details_response").html(data);
-                        console.log("getDetailsDone: " + amazonOrderReferenceId);
-                    });
+                    $('#order-reference-id').val(amazonOrderReferenceId);
                 },
                 onAddressSelect: function(orderReference) {
                     console.log("onAddressSelect " + JSON.stringify(orderReference));
@@ -84,7 +76,4 @@
 {% endblock content%}
 
 {% block api %}
-<h3>Code</h3>
-<p>This is the live response from the previous API call.</p>
-<pre id="get_details_response"><div class="text-center"><img src="{{ url_for('static', filename='img/ajax-loader.gif') }}" /></div></pre>
 {% endblock api %}
