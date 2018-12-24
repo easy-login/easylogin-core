@@ -32,16 +32,13 @@ __PROVIDER_SETTINGS__ = {
         'identify_attrs': ['sub']
     },
     'amazon': {
-        'authorize_uri': '''
-            https://apac.account.amazon.com/ap/oa?response_type=code
-            &language=ja&ui_locales=&region=
-            '''.strip().replace('\n', '').replace(' ', ''),
+        'authorize_uri': 'https://apac.account.amazon.com/ap/oa?response_type=code',
         'token_uri': 'https://api.amazon.com/auth/o2/token',
         'profile_uri': 'https://api.amazon.com/user/profile',
         'identify_attrs': ['user_id']
     },
     'amazon_sandbox': {
-        'authorize_uri': 'https://www.amazon.com/ap/oa?response_type=code&sandbox=true',
+        'authorize_uri': 'https://apac.account.amazon.com/ap/oa?response_type=code&sandbox=true',
         'token_uri': 'https://api.sandbox.amazon.com/auth/o2/token',
         'profile_uri': 'https://api.sandbox.amazon.com/user/profile'
     },
@@ -229,9 +226,7 @@ class OAuthBackend(object):
             uri=self.log.callback_uri,
             provider=self.provider,
             token=auth_token,
-            nonce=self.args.get('nonce', ''),
-            profile_uri=url_for('authorized_profile', _external=True,
-                                app_id=self.log.app_id, token=auth_token)
+            nonce=self.args.get('nonce', '')
         )
         return self._make_redirect_response(callback_uri=callback_uri)
 
@@ -545,9 +540,11 @@ class AmazonBackend(OAuthBackend):
         domain = self.extract_domain_for_cookie(callback_uri)
         resp.set_cookie(key='amazon_Login_state_cache',
                         value=up.quote(json.dumps(cookie_object), safe=''),
-                        domain=domain,
-                        expires=None, max_age=3300)
-        logger.debug('Set cookie for amazon pay', domain=domain)
+                        domain=domain, expires=None, max_age=None)
+        resp.set_cookie(key='amazon_Login_accessToken',
+                        value=self.token.access_token,
+                        domain=domain, expires=None, max_age=3300)
+        logger.debug('Set cookie for amazon pay', domain=domain or 'localhost')
         return resp
 
     def _perms_for_pay(self):

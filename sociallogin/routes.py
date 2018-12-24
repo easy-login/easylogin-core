@@ -173,8 +173,5 @@ def get_associate_token(app_id):
     db.session.commit()
     return jsonify({
         'token': associate_token,
-        'associate_uri': url_for('authorize', _external=True,
-                                 provider=provider, app_id=app_id,
-                                 token=associate_token,
-                                 intent=AuthLogs.INTENT_ASSOCIATE)
+        'expire': 600
     })
