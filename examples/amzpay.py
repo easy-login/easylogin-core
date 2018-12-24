@@ -147,7 +147,7 @@ def confirm():
             authorization_reference_id=rand(),
             authorization_amount=session['order_amount'],
             transaction_timeout=0,
-            capture_now=False)
+            capture_now=bool(random.randint(0, 1)))
 
     pretty_authorize = json.dumps(json.loads(response.to_json()), indent=4)
 
