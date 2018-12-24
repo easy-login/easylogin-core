@@ -539,12 +539,12 @@ class AmazonBackend(OAuthBackend):
         }
         resp = make_response(redirect(callback_uri))
         domain = self.args.get('lpwa_domain') or self.extract_domain_for_cookie(callback_uri)
-        # resp.set_cookie(key='amazon_Login_state_cache',
-        #                 value=up.quote(json.dumps(cookie_object), safe=''),
-        #                 domain=domain, expires=None, max_age=None)
-        # resp.set_cookie(key='amazon_Login_accessToken',
-        #                 value=self.token.access_token,
-        #                 domain=domain, expires=None, max_age=3300)
+        resp.set_cookie(key='amazon_Login_state_cache',
+                        value=up.quote(json.dumps(cookie_object), safe=''),
+                        domain=domain, expires=None, max_age=None)
+        resp.set_cookie(key='amazon_Login_accessToken',
+                        value=self.token.access_token,
+                        domain=domain, expires=None, max_age=3300)
         logger.debug('Set cookie for amazon pay', domain=domain or 'localhost')
         return resp
 
