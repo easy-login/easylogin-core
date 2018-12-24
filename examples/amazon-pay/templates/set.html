@@ -1,4 +1,4 @@
-{% extends "amzpay.html" %}
+{% extends "getting-started.html" %}
 
 {% block head %}
     {{ super() }}
@@ -20,7 +20,7 @@
         <form class="form-horizontal" style="margin-top:40px;" role="form" method="post" action="review">
             <input type="hidden" id="order-reference-id" name="orderReferenceId" value="">
             <button id="continue" class="btn btn-lg btn-success btn-loading">Continue</button>
-            <div id="ajax-loader" style="display:none;"><img src="{{ url_for('static', filename='img/ajax-loader.gif') }}"/></div>
+            <div id="ajax-loader" style="display:none;"><img src="{{ url_for('static', filename='images/ajax-loader.gif') }}"/></div>
         </form>
     </div>
     <script type="text/javascript">

@@ -1,4 +1,4 @@
-{% extends "amzpay.html" %}
+{% extends "getting-started.html" %}
 
 {% block head %}
     {{ super() }}
@@ -12,17 +12,6 @@
     If you used a test account associated with your email address you should receive 
     an email.</p>
     <p>This concludes the Python simple checkout example.</p>
-
-    <div class="text-center" style="margin-top:40px;">
-        <div style="clear:both;"></div>
-        <button id="repurchase" class="btn btn-lg btn-success">Re-Purchase</button>
-    </div>
-    <script type='text/javascript'>
-        $('#repurchase').click(function() {
-            console.log('repurchase button clicked');
-            window.location.href = '/amazon-pay/cart';
-        });
-    </script>
 {% endblock content %}
 
 {% block api %}

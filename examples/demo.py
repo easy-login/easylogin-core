@@ -34,7 +34,7 @@ def send_css(path):
 
 @app.route('/images/<path:path>')
 def send_images(path):
-    return send_from_directory(os.path.join(BASE_DIR, 'images'), path, mimetype='image/png')
+    return send_from_directory(os.path.join(BASE_DIR, 'images'), path)
 
 
 @app.route('/')
