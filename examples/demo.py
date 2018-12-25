@@ -84,31 +84,16 @@ def call_api(api_name):
     if api_name not in ['link', 'unlink', 'disassociate', 'profile']:
         abort(404, 'Invalid action')
 
-    user_id = request.form['user_id']
     api_url = request.cookies['api_url']
     app_id = request.cookies['app_id']
-
     url = '{}/{}/users/{}'.format(api_url, app_id, api_name)
-    if api_name == 'disassociate':
-        providers = request.form['providers']
-        r = requests.put(url=url, verify=False,
-                         json={'user_id': user_id, 'providers': providers},
-                         headers={'X-Api-Key': request.cookies['api_key']})
-    elif api_name == 'profile':
+
+    if api_name == 'profile':
         url = '{}/{}/users'.format(api_url, app_id)
-        r = requests.get(url=url, verify=False, params={
-            'user_id': user_id,
-            'api_key': request.cookies['api_key']
-        })
-        if r.status_code == 404:
-            r = requests.get(url=url, verify=False, params={
-                'social_id': user_id,
-                'api_key': request.cookies['api_key']
-            })
+        r = requests.get(url=url, verify=False, params=request.form,
+                         headers={'X-Api-Key': request.cookies['api_key']})
     else:
-        social_id = request.form['social_id']
-        r = requests.put(url=url, verify=False,
-                         json={'user_id': user_id, 'social_id': social_id},
+        r = requests.put(url=url, verify=False, json=request.form,
                          headers={'X-Api-Key': request.cookies['api_key']})
     try:
         msg = r.json()

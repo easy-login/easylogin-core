@@ -106,7 +106,7 @@ def merge_user(app_id):
 @login_required
 def disassociate(app_id):
     body = request.json
-    user_pk = body['user_id']
+    user_pk = body.get('user_id')
     social_id = int(body.get('social_id', '0'))
     providers = body['providers'].split(',')
     for provider in providers:
