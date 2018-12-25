@@ -6,7 +6,7 @@ from sociallogin import app as flask_app, db, logger
 from sociallogin.models import SocialProfiles, Users, AuthLogs, AssociateLogs
 from sociallogin.utils import gen_random_token
 from sociallogin.backends import is_valid_provider
-from sociallogin.exc import TokenParseError
+from sociallogin.exc import TokenParseError, ConflictError
 
 
 @flask_app.route('/<int:app_id>/profiles/authorized', methods=['POST'])
@@ -58,8 +58,11 @@ def link_user(app_id):
     if social_id <= 0:
         abort(404, 'Social ID not found')
 
-    SocialProfiles.link_user_by_pk(app_id=app_id, social_id=social_id, user_pk=user_pk,
-                                   create_if_not_exist=body.get('create_user', True))
+    SocialProfiles.link_user_by_pk(
+        app_id=app_id, 
+        social_id=social_id, user_pk=user_pk,
+        create_if_not_exist=body.get('create_user', True)
+    )
     db.session.commit()
     return jsonify({'success': True})
 
@@ -73,21 +76,30 @@ def unlink_user(app_id):
     if social_id <= 0:
         abort(404, 'Social ID not found')
 
-    # profiles = SocialProfiles.query.filter_by(alias=social_id).all()
-    # if not profiles:
-    #     abort(404, 'Social ID not found')
-    # for p in profiles:
-    #     if not p.user_id:
-    #         abort(409, "Social profile are not linked with any users")
-    #     p._unlink_user_by_pk(user_pk)
     num_affected = SocialProfiles.unlink_user_by_pk(
         app_id=app_id, 
-        social_id=social_id, 
-        user_pk=user_pk)
+        social_id=social_id, user_pk=user_pk
+    )
     if not num_affected:
         abort(404, 'Social ID not found or not linked with any users')
     db.session.commit()
     return jsonify({'success': True})
+
+
+@flask_app.route('/<int:app_id>/users/merge', methods=['PUT', 'GET'])
+# @login_required
+def merge_user(app_id):
+    # body = request.json
+    # src_social_id = int(body['src_social_id'])
+    # dst_user_pk = body.get('dst_user_id')
+    # dst_social_id = int(body.get('dst_social_id', '0'))
+    # if src_social_id <= 0:
+    #     abort(404, 'Source Social ID not found')
+
+    raise ConflictError('Test error', data={
+        'source_providers': ['line', 'yahoojp'],
+        'destination_providers': ['line', 'amazon']
+    })
 
 
 @flask_app.route('/<int:app_id>/users/disassociate', methods=['PUT'])
@@ -95,14 +107,29 @@ def unlink_user(app_id):
 def disassociate(app_id):
     body = request.json
     user_pk = body['user_id']
+    social_id = int(body.get('social_id', '0'))
     providers = body['providers'].split(',')
     for provider in providers:
         if not is_valid_provider(provider):
             abort(400, 'Invalid provider ' + provider)
-    profiles = SocialProfiles.unlink_by_provider(app_id=app_id, user_pk=user_pk,
-                                                 providers=providers)
-    if not profiles:
-        abort(404, 'User ID not found')
+            
+    if user_pk:
+        num_affected = SocialProfiles.disassociate_by_pk(
+            app_id=app_id, user_pk=user_pk, 
+            providers=providers
+        )
+        if not num_affected:
+            abort(404, 'User ID not found')
+    elif social_id > 0:
+        num_affected = SocialProfiles.disassociate_by_id(
+            app_id=app_id, social_id=social_id, 
+            providers=providers
+        )
+        if not num_affected:
+            abort(404, 'Social ID not found')
+    else:
+        abort(400, 'At least one valid parameter social_id or user_id must be provided')
+
     db.session.commit()
     return jsonify({'success': True})
 
