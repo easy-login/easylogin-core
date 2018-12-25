@@ -1,6 +1,30 @@
 $(document).ready(function() {
-    $('#btn_submit_link').click(function() {
-        console.log('btn_submit_link click');
+    selectedForm = $('#id_form_link');
+    $('#id_api_name').change(function() {
+        var apiName = $('#id_api_name').val();
+        console.log(apiName);
+        selectedForm.hide();
+        if (apiName === 'link_user') {
+            selectedForm = $('#id_form_link');
+        } else if (apiName === 'unlink_user') {
+            selectedForm = $('#id_form_unlink');
+        } else if (apiName === 'diassociate') {
+            selectedForm = $('#id_form_disassociate');
+        } else if (apiName == 'profile') {
+            selectedForm = $('#id_form_profile');
+        }
+        selectedForm.show();
+    });
+
+    function updateResult(response) {
+        var json = JSON.stringify(response, null, 2);
+        $('#result').html(json);
+        $('#result').each(function(i, element) {
+            hljs.highlightBlock(element);
+        });
+    }
+
+    function linkUser() {
         $.ajax({
             url: '/api/link',
             type: 'POST',
@@ -10,17 +34,10 @@ $(document).ready(function() {
                 'social_id': $('#id_social_id_link').val(),
                 'response_type': 'json'
             }
-        }).done(function(response) {
-            var json = JSON.stringify(response, null, 2);
-            $('#result_link').html(json);
-            $('#result_link').each(function(i, element) {
-                hljs.highlightBlock(element);
-            });
-        });
-    });
+        }).done(updateResult);
+    }
 
-    $('#btn_submit_unlink').click(function() {
-        console.log('btn_submit_unlink click');
+    function unlinkUser() {
         $.ajax({
             url: '/api/unlink',
             type: 'POST',
@@ -30,17 +47,10 @@ $(document).ready(function() {
                 'social_id': $('#id_social_id_unlink').val(),
                 'response_type': 'json'
             }
-        }).done(function(response) {
-            var json = JSON.stringify(response, null, 2);
-            $('#result_unlink').html(json);
-            $('#result_unlink').each(function(i, element) {
-                hljs.highlightBlock(element);
-            });
-        });
-    });
+        }).done(updateResult);
+    }
 
-    $('#btn_submit_disassociate').click(function() {
-        console.log('btn_submit_disassociate click');
+    function diassociate() {
         var body = {
             'providers': $('#id_providers_disassociate').val(),
             'response_type': 'json'
@@ -55,18 +65,10 @@ $(document).ready(function() {
             type: 'POST',
             dataType: 'json',
             data: body
-        }).done(function(response) {
-            console.log('response ' + response.status_code);
-            var json = JSON.stringify(response, null, 2);
-            $('#result_disassociate').html(json);
-            $('#result_disassociate').each(function(i, element) {
-                hljs.highlightBlock(element);
-            });
-        });
-    });
+        }).done(updateResult);
+    }
 
-    $('#btn_submit_profile').click(function() {
-        console.log('btn_submit_profile click');
+    function getProfile() {
         var body = {};
         if ($('#id_user_id_profile').val().length > 0) {
             body.user_id = $('#id_user_id_profile').val();
@@ -78,12 +80,20 @@ $(document).ready(function() {
             type: 'POST',
             dataType: 'json',
             data: body
-        }).done(function(response) {
-            var json = JSON.stringify(response, null, 2);
-            $('#result_profile').html(json);
-            $('#result_profile').each(function(i, element) {
-                hljs.highlightBlock(element);
-            });
-        });
+        }).done(updateResult);
+    }
+
+    $('#btn_submit').click(function() {
+        var apiName = $('#id_api_name').val();
+        console.log('Call API: ' + apiName);
+        if (apiName === 'link_user') {
+            linkUser();
+        } else if (apiName === 'unlink_user') {
+            unlinkUser();
+        } else if (apiName === 'diassociate') {
+            diassociate();
+        } else if (apiName == 'profile') {
+            getProfile();
+        }
     });
 });

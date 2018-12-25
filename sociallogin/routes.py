@@ -116,15 +116,13 @@ def disassociate(app_id):
     if user_pk:
         num_affected = SocialProfiles.disassociate_by_pk(
             app_id=app_id, user_pk=user_pk, 
-            providers=providers
-        )
+            providers=providers)
         if not num_affected:
             abort(404, 'User ID not found')
     elif social_id > 0:
         num_affected = SocialProfiles.disassociate_by_id(
             app_id=app_id, social_id=social_id, 
-            providers=providers
-        )
+            providers=providers)
         if not num_affected:
             abort(404, 'Social ID not found')
     else:

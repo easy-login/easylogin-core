@@ -2,80 +2,55 @@
 {% block content %}
 <div class="container">
     <div class="row">
+    <div class="col-md-12">
         <div class="col-md-12">
             <div class="card-box">
-                <h4>Link User with Social Profile</h4>
+                <h4>Easy Login API Explorer</h4>
                 <div class="p-l-30">
-                    <form class="form-horizontal" action="#" method="get">
+                    <div class="form-group row">
+                        <label for="id_api_name" class="col-md-2 col-form-label">API Name</label>
+                        <div class="col-md-8">
+                            <select class="form-control" id="id_api_name">
+                                <option value="link_user">Link User with Social Profile</option>
+                                <option value="unlink_user">Unlink User from Social Profile</option>
+                                <option value="diassociate">Disassociate User from Providers</option>
+                                <option value="profile">Get User Profile</option>
+                            </select>
+                        </div>
+                    </div>
+                    <form class="form-horizontal" action="#" method="get" id="id_form_link">
                         <div class="form-group row">
                             <label for="id_user_id_link" class="col-md-2 col-form-label">User ID</label>
                             <div class="col-md-8">
                                 <input class="form-control" id="id_user_id_link" placeholder="User ID" type="text"
-                                       name="user_id">
+                                        name="user_id">
                             </div>
                         </div>
                         <div class="form-group row">
                             <label for="id_social_id_link" class="col-md-2 col-form-label">Social ID</label>
                             <div class="col-md-8">
                                 <input class="form-control" id="id_social_id_link" placeholder="Social ID" type="text"
-                                       name="social_id">
+                                        name="social_id">
                             </div>
                         </div>
                     </form>
-                    <div class="form-group row">
-                        <div class="col-md-8"></div>
-                        <div class="col-md-2">
-                            <button class="btn btn-primary btn-block" type="submit" id="btn_submit_link">Link</button>
-                        </div>
-                    </div>
-                    <div class="form-group row code-result">
-                        <div class="col-md-10">
-                            <pre><code class="json" id="result_link">{}</code></pre>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-12">
-            <div class="card-box">
-                <h4>Unlink User from Social Profile</h4>
-                <div class="p-l-30">
-                    <form class="form-horizontal" action="#" method="get">
+                    <form class="form-horizontal" action="#" method="get" id="id_form_unlink" style="display:none;">
                         <div class="form-group row">
-                            <label for="id_user_id_unlink" class="col-md-2 col-form-label">User ID</label>
+                            <label for="id_user_id_link" class="col-md-2 col-form-label">User ID</label>
                             <div class="col-md-8">
-                                <input class="form-control" id="id_user_id_unlink" placeholder="User ID" type="text"
-                                       name="user_id">
+                                <input class="form-control" id="id_user_id_link" placeholder="User ID" type="text"
+                                        name="user_id">
                             </div>
                         </div>
                         <div class="form-group row">
-                            <label for="id_social_id_unlink" class="col-md-2 col-form-label">Social ID</label>
+                            <label for="id_social_id_link" class="col-md-2 col-form-label">Social ID</label>
                             <div class="col-md-8">
-                                <input class="form-control" id="id_social_id_unlink" placeholder="Social ID" type="text"
-                                       name="social_id">
+                                <input class="form-control" id="id_social_id_link" placeholder="Social ID" type="text"
+                                        name="social_id">
                             </div>
                         </div>
                     </form>
-                    <div class="form-group row">
-                        <div class="col-md-8"></div>
-                        <div class="col-md-2">
-                            <button class="btn btn-primary btn-block" type="submit" id="btn_submit_unlink">Unlink
-                            </button>
-                        </div>
-                    </div>
-                    <div class="form-group row code-result">
-                        <div class="col-md-10">
-                            <pre><code class="json" id="result_unlink">{}</code></pre>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-12">
-            <div class="card-box">
-                <h4>Disassociate User from Providers</h4>
-                <div class="p-l-30">
-                    <form class="form-horizontal" action="#" method="get">
+                    <form class="form-horizontal" action="#" method="get" id="id_form_disassociate" style="display:none;">
                         <div class="form-group row">
                             <label for="id_user_id_disassociate" class="col-md-2 col-form-label">User ID</label>
                             <div class="col-md-8">
@@ -101,27 +76,7 @@
                             </div>
                         </div>
                     </form>
-                    <div class="form-group row">
-                        <div class="col-md-8"></div>
-                        <div class="col-md-2">
-                            <button class="btn btn-primary btn-block" type="submit" id="btn_submit_disassociate">
-                                Disassociate
-                            </button>
-                        </div>
-                    </div>
-                    <div class="form-group row code-result">
-                        <div class="col-md-10">
-                            <pre><code class="json" id="result_disassociate">{}</code></pre>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-12">
-            <div class="card-box">
-                <h4>Get User Profile</h4>
-                <div class="p-l-30">
-                    <form class="form-horizontal" action="#" method="GET">
+                    <form class="form-horizontal" action="#" method="GET" id="id_form_profile" style="display:none;">
                         <div class="form-group row">
                             <label for="id_user_id_profile" class="col-md-2 col-form-label">User ID</label>
                             <div class="col-md-8">
@@ -142,14 +97,12 @@
                     <div class="form-group row">
                         <div class="col-md-8"></div>
                         <div class="col-md-2">
-                            <button class="btn btn-primary btn-block" type="submit" id="btn_submit_profile">
-                                Get Profile
-                            </button>
+                            <button class="btn btn-primary btn-block" type="submit" id="btn_submit">Submit</button>
                         </div>
                     </div>
                     <div class="form-group row code-result">
                         <div class="col-md-10">
-                            <pre><code class="json" id="result_profile">{}</code></pre>
+                            <pre><code class="json" id="result">{}</code></pre>
                         </div>
                     </div>
                 </div>
