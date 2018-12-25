@@ -178,7 +178,7 @@ class SocialProfiles(Base):
     __tablename__ = 'social_profiles'
 
     HIDDEN_FIELDS = {
-        'pk', 'scope_id', 'alias', 'mask', 'user_id', 'user_pk', 'app_id'
+        'pk', 'scope_id', 'alias', 'user_id', 'user_pk', 'app_id'
     }
 
     provider = db.Column(db.String(15), nullable=False)
@@ -189,10 +189,8 @@ class SocialProfiles(Base):
     login_count = db.Column(db.Integer, default=0, nullable=False)
     verified = db.Column(db.SmallInteger, default=0, nullable=False)
     _deleted = db.Column("deleted", db.SmallInteger, default=0)
-
     linked_at = db.Column(db.DateTime)
     alias = db.Column(db.BigInteger, nullable=False)
-    mask = db.Column(db.BigInteger, nullable=False)
 
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     user_pk = db.Column(db.String(128))
@@ -203,8 +201,7 @@ class SocialProfiles(Base):
         self.provider = kwargs['provider']
         self.attrs = json.dumps(kwargs['attrs'])
         self.last_authorized_at = datetime.utcnow()
-        self.mask = generate_64bit_id(shard=self.app_id)
-        self.alias = self.mask
+        self.alias = generate_64bit_id(shard=self.app_id)
         self.scope_id = kwargs['scope_id']
         self.pk = kwargs['pk']
 
@@ -267,25 +264,33 @@ class SocialProfiles(Base):
                 if p.provider == self.provider:
                     raise ConflictError('User has linked with a social profile in the same provider')
             profile = profiles[0]
-            self._link_unsafe(profile.user_id, user_pk, alias=profile.alias)
+            self._link_unsafe(profile.user_id, user_pk)
 
-    def unlink_user_by_pk(self, user_pk):
+    @classmethod
+    def unlink_user_by_pk(cls, app_id, social_id, user_pk):
+        user = Users.query.filter_by(pk=user_pk, app_id=app_id).one_or_none()
+        if not user:
+            raise NotFoundError('User ID not found')
+        return cls.query.filter_by(alias=social_id, user_id=user._id).update({
+            'linked_at': None,
+            'user_id': None
+        }, synchronize_session=False)
+
+    def _unlink_user_by_pk(self, user_pk):
         if self.user_pk != user_pk:
             raise ConflictError("Social profile and user are not linked with each other")
 
         self._unlink_unsafe()
 
-    def _link_unsafe(self, user_id, user_pk, alias=None):
+    def _link_unsafe(self, user_id, user_pk):
         self.user_id = user_id
         self.user_pk = user_pk
         self.linked_at = datetime.utcnow()
-        self.alias = alias or self.alias
 
     def _unlink_unsafe(self):
         self.linked_at = None
         self.user_id = None
         self.user_pk = None
-        self.alias = self.mask
 
     def _allow_get_scope_id(self):
         ss = SystemSettings.all_as_dict()

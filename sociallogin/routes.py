@@ -73,13 +73,19 @@ def unlink_user(app_id):
     if social_id <= 0:
         abort(404, 'Social ID not found')
 
-    profiles = SocialProfiles.query.filter_by(alias=social_id).all()
-    if not profiles:
-        abort(404, 'Social ID not found')
-    for p in profiles:
-        if not p.user_id:
-            abort(409, "Social profile are not linked with any users")
-        p.unlink_user_by_pk(user_pk)
+    # profiles = SocialProfiles.query.filter_by(alias=social_id).all()
+    # if not profiles:
+    #     abort(404, 'Social ID not found')
+    # for p in profiles:
+    #     if not p.user_id:
+    #         abort(409, "Social profile are not linked with any users")
+    #     p._unlink_user_by_pk(user_pk)
+    num_affected = SocialProfiles.unlink_user_by_pk(
+        app_id=app_id, 
+        social_id=social_id, 
+        user_pk=user_pk)
+    if not num_affected:
+        abort(404, 'Social ID not found or not linked with any users')
     db.session.commit()
     return jsonify({'success': True})
 
