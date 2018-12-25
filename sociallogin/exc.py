@@ -23,9 +23,17 @@ class SocialLoginError(Exception):
     def __init__(self, *args, **kwargs):
         self.error = kwargs.get('error')
         self.description = args[0] if args else kwargs.get('msg')
+        self.data = kwargs.get('data')
 
     def __repr__(self):
         return self.error + ': ' + self.description
+
+    def as_dict(self):
+        return {
+            'error': self.error,
+            'error_description': self.description,
+            'data': self.data
+        }
 
 
 class RedirectLoginError(SocialLoginError):
@@ -88,41 +96,41 @@ def common_error(error):
         raise error
     else:
         msg = '{}: {}'.format(type(error).__name__, repr(error))
-        return get_error_payloads(400, description=msg)
+        return get_error_response(400, description=msg)
 
 
 @app.errorhandler(400)
 @app.errorhandler(BadRequestError)
 def bad_request(error):
-    return get_error_payloads(400, description=error.description)
+    return get_error_response(400, error=error)
 
 
 @app.errorhandler(401)
 def unauthorized(error):
-    return get_error_payloads(401, description=error.description)
+    return get_error_response(401, error=error)
 
 
 @app.errorhandler(403)
 @app.errorhandler(PermissionDeniedError)
 def forbidden(error):
-    return get_error_payloads(403, description=error.description)
+    return get_error_response(403, error=error)
 
 
 @app.errorhandler(404)
 @app.errorhandler(NotFoundError)
 def not_found(error):
-    return get_error_payloads(404, description=error.description)
+    return get_error_response(404, error=error)
 
 
 @app.errorhandler(405)
 def method_not_allowed(error):
-    return get_error_payloads(405, description=error.description)
+    return get_error_response(405, error=error)
 
 
 @app.errorhandler(409)
 @app.errorhandler(ConflictError)
 def conflict(error):
-    return get_error_payloads(409, description=error.description)
+    return get_error_response(409, error=error)
 
 
 @app.errorhandler(500)
@@ -135,11 +143,11 @@ def server_internal_error(error):
         # Hide error detail in production mode
         logger.error('{}: {}'.format(type(error).__name__, repr(error)))
         traceback.print_exc(file=sys.stderr)
-        return get_error_payloads(500)
+        return get_error_response(500)
 
 
-def get_error_payloads(code, error=None, description=''):
-    return jsonify({
-        'error': error or ERROR_CODES.get(code, 'unknown'),
-        'error_description': description
-    }), code
+def get_error_response(code, error):
+    payload = error.as_dict() if isinstance(error, SocialLoginError) \
+        else { 'error_description': error.description }
+    payload['error'] = ERROR_CODES.get(code, 'unknown')
+    return jsonify(payload), code
