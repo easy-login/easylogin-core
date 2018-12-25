@@ -211,12 +211,38 @@ class SocialProfiles(Base):
     def as_dict(self):
         d = super().as_dict()
         d['attrs'] = json.loads(self.attrs, encoding='utf8')
-        d['social_id'] = self.alias
+        d['social_id'] = str(self.alias)
         d['user_id'] = self.user_pk
+        d['verified'] = bool(self.verified)
         if self._allow_get_scope_id():
             # d['attrs']['id'] = self.scope_id
             d['scope_id'] = self.scope_id
         return d
+
+    @classmethod
+    def link_user_by_pk(cls, app_id, social_id, user_pk, create_if_not_exist=True):
+        profiles = SocialProfiles.query.filter_by(alias=social_id).all()
+        if not profiles:
+            raise NotFoundError('Social ID not found')
+        if profiles[0].user_id:
+            raise ConflictError('Unacceptable operation. '
+                                'Social profile has linked with an exists user')
+        num_user_same_pk = (db.session.query(func.count(SocialProfiles._id))
+            .join(Users, and_(Users._id == SocialProfiles.user_id,
+                              Users.pk == user_pk, Users.app_id == app_id))
+            .scalar())
+        if num_user_same_pk > 0:
+            raise ConflictError('User has linked with another social profile')
+            
+        user = Users.query.filter_by(pk=user_pk, app_id=app_id).one_or_none()
+        if not user:
+            if not create_if_not_exist:
+                raise NotFoundError('User not found')
+            user = Users(pk=user_pk, app_id=app_id)
+            db.session.add(user)
+            db.session.flush()
+        for p in profiles:
+            p._link_unsafe(user._id, user_pk)
 
     def link_user_by_id(self, user_id):
         try:
@@ -225,7 +251,7 @@ class SocialProfiles(Base):
         except TypeError:
             raise NotFoundError('User not found')
 
-    def link_user_by_pk(self, user_pk, create_if_not_exist=True):
+    def _link_user_by_pk(self, user_pk, create_if_not_exist=True):
         profiles = SocialProfiles.query.filter_by(user_pk=user_pk, app_id=self.app_id).all()
         if not profiles:
             user = Users.query.filter_by(pk=user_pk, app_id=self.app_id).one_or_none()

@@ -58,13 +58,8 @@ def link_user(app_id):
     if social_id <= 0:
         abort(404, 'Social ID not found')
 
-    profile = SocialProfiles.query.filter_by(alias=social_id).first()
-    if not profile:
-        abort(404, 'Social ID not found')
-    if profile.user_id:
-        abort(409, 'Social profile has linked with an exists user')
-
-    profile.link_user_by_pk(user_pk, create_if_not_exist=body.get('create_user', True))
+    SocialProfiles.link_user_by_pk(app_id=app_id, social_id=social_id, user_pk=user_pk,
+                                   create_if_not_exist=body.get('create_user', True))
     db.session.commit()
     return jsonify({'success': True})
 
@@ -173,5 +168,5 @@ def get_associate_token(app_id):
     db.session.commit()
     return jsonify({
         'token': associate_token,
-        'expire': 600
+        'target_provider': provider
     })
