@@ -101,6 +101,8 @@ def call_api(api_name):
                          headers={'X-Api-Key': request.cookies['api_key']})
     try:
         msg = r.json()
+        if r.status_code != 200:
+            msg['status_code'] = r.status_code
     except ValueError as e:
         msg = {'status_code': r.status_code, 'error': str(e)}
     return jsonify(msg)

@@ -4,7 +4,7 @@ from sqlalchemy import func, and_
 
 from sociallogin import app as flask_app, db, logger
 from sociallogin.models import SocialProfiles, Users, AuthLogs, AssociateLogs
-from sociallogin.utils import gen_random_token
+from sociallogin.utils import gen_random_token, smart_str2int
 from sociallogin.backends import is_valid_provider
 from sociallogin.exc import TokenParseError, ConflictError
 
@@ -86,20 +86,27 @@ def unlink_user(app_id):
     return jsonify({'success': True})
 
 
-@flask_app.route('/<int:app_id>/users/merge', methods=['PUT', 'GET'])
-# @login_required
+@flask_app.route('/<int:app_id>/users/merge', methods=['PUT'])
+@login_required
 def merge_user(app_id):
-    # body = request.json
-    # src_social_id = int(body['src_social_id'])
-    # dst_user_pk = body.get('dst_user_id')
-    # dst_social_id = int(body.get('dst_social_id', '0'))
-    # if src_social_id <= 0:
-    #     abort(404, 'Source Social ID not found')
+    body = request.json
+    src_user_pk = body.get('src_user_id')
+    src_alias = smart_str2int(body.get('src_social_id', '0'))
+    dst_user_pk = body.get('dst_user_id')
+    dst_alias = smart_str2int(body.get('dst_social_id', '0'))
 
-    raise ConflictError('Test error', data={
-        'source_providers': ['line', 'yahoojp'],
-        'destination_providers': ['line', 'amazon']
-    })
+    if not src_user_pk and src_alias <= 0:
+        abort(400, 'At least one parameter src_user_id or src_social_id must be provided')
+    if not dst_user_pk and dst_alias <= 0:
+        abort(400, 'At least one parameter dst_user_id or dst_social_id must be provided')
+
+    SocialProfiles.merge_profiles(
+        app_id=app_id,
+        src_user_pk=src_user_pk, src_alias=src_alias,
+        dst_user_pk=dst_user_pk, dst_alias=dst_alias
+    )
+    db.session.commit()
+    return jsonify({'success': True})
 
 
 @flask_app.route('/<int:app_id>/users/disassociate', methods=['PUT'])
@@ -195,7 +202,7 @@ def get_associate_token(app_id):
 
 def _parse_and_validate_identifiers(params):
     user_pk = params.get('user_id')
-    alias = int(params.get('social_id', '0'))
+    alias = smart_str2int(params.get('social_id', '0'))
     if not user_pk and alias <= 0:
-        abort(400, 'At least one valid parameter social_id or user_id must be provided')
+        abort(400, 'At least one parameter social_id or user_id must be provided')
     return user_pk, alias

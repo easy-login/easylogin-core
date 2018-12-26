@@ -214,8 +214,22 @@ class SocialProfiles(Base):
             d['scope_id'] = self.scope_id
         return d
 
-    def merge(self, user_pk=None, social_id=None):
-        raise NotImplementedError()
+    def merge_with(self, user_pk=None, alias=None):
+        if not user_pk and alias <= 0:
+            raise BadRequestError('At least one parameter dst_user_id or '
+                                  'dst_social_id must be provided')
+        profiles = SocialProfiles.find_by_pk(app_id=self.app_id, user_pk=user_pk)\
+            if user_pk else SocialProfiles.query.filter_by(alias=alias)
+        if not profiles:
+            raise NotFoundError('Destination User ID or Social ID not found')
+
+        dst_profile = profiles[0]
+        self._merge_unsafe(dst_profile)
+
+    def _merge_unsafe(self, dst_profile):
+        self.user_id = dst_profile.user_id
+        self.alias = dst_profile.alias
+        self.linked_at = datetime.utcnow()
 
     def _link_unsafe(self, user_id):
         self.user_id = user_id
@@ -288,6 +302,35 @@ class SocialProfiles(Base):
         }, synchronize_session=False)
 
     @classmethod
+    def merge_profiles(cls, app_id, src_user_pk=None, src_alias=None,
+                       dst_user_pk=None, dst_alias=None):
+        src_profiles = cls.find_by_pk(app_id=app_id, user_pk=src_user_pk) \
+            if src_user_pk else cls.query.filter_by(alias=src_alias).all()
+        if not src_profiles:
+            raise NotFoundError('Source User ID or Social ID not found')
+
+        dst_profiles = cls.find_by_pk(app_id=app_id, user_pk=dst_user_pk) \
+            if dst_user_pk else cls.query.filter_by(alias=dst_alias).all()
+        if not dst_profiles:
+            raise NotFoundError('Destination User ID or Social ID not found')
+
+        associated_providers = []
+        for p in dst_profiles:
+            associated_providers.append(p.provider)
+        for p in src_profiles:
+            if p.provider in associated_providers:
+                raise ConflictError(
+                    msg='Unacceptable operation. '
+                        'Source profile has associated with a provider same in destination profile',
+                    data={
+                        'conflict_provider': p.provider,
+                        'associated_providers': ', '.join(associated_providers)
+                    })
+        dst_profile = dst_profiles[0]
+        for p in src_profiles:
+            p._merge_unsafe(dst_profile)
+
+    @classmethod
     def delete_profile(cls, app_id, user_pk=None, alias=None):
         profiles = []
         if user_pk:
@@ -344,7 +387,7 @@ class SocialProfiles(Base):
                     'pk': func.concat(int(time.time()), '.', cls._id),
                     'user_id': None,
                     'alias': 0
-                }, synchronize_session=False))
+            }, synchronize_session=False))
 
     @classmethod
     def add_or_update(cls, app_id, scope_id, provider, attrs):
@@ -374,7 +417,7 @@ class SocialProfiles(Base):
 
     @classmethod
     def get_full_profile(cls, app_id, user_pk=None, alias=None):
-        profiles = cls.find_by_pk(app_id=app_id, user_pk=user_pk)\
+        profiles = cls.find_by_pk(app_id=app_id, user_pk=user_pk) \
             if user_pk else SocialProfiles.query.filter_by(alias=alias).all()
         if not profiles:
             raise NotFoundError('User ID or Social ID not found')

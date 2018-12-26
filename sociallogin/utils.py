@@ -98,3 +98,10 @@ def smart_str2bool(s):
         return i != 0
     except (TypeError, ValueError):
         return s == 'true'
+
+
+def smart_str2int(s, def_val=0):
+    try:
+        return int(s)
+    except (TypeError, ValueError):
+        return def_val
