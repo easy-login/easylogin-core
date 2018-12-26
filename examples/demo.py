@@ -81,8 +81,8 @@ def pay_setting():
 
 @app.route('/api/<api_name>', methods=['POST'])
 def call_api(api_name):
-    if api_name not in ['link', 'unlink', 'disassociate', 'profile']:
-        abort(404, 'Invalid action')
+    if api_name not in ['link', 'unlink', 'disassociate', 'profile', 'associate_token']:
+        abort(404, 'Invalid API name')
 
     api_url = request.cookies['api_url']
     app_id = request.cookies['app_id']
@@ -90,6 +90,9 @@ def call_api(api_name):
 
     if api_name == 'profile':
         url = '{}/{}/users'.format(api_url, app_id)
+        r = requests.get(url=url, verify=False, params=request.form,
+                         headers={'X-Api-Key': request.cookies['api_key']})
+    elif api_name == 'associate_token':
         r = requests.get(url=url, verify=False, params=request.form,
                          headers={'X-Api-Key': request.cookies['api_key']})
     else:

@@ -2,7 +2,6 @@
 {% block content %}
 <div class="container">
     <div class="row">
-    <div class="col-md-12">
         <div class="col-md-12">
             <div class="card-box">
                 <h4>Easy Login API Explorer</h4>
@@ -15,6 +14,7 @@
                                 <option value="unlink_user">Unlink User from Social Profile</option>
                                 <option value="diassociate">Disassociate User from Providers</option>
                                 <option value="profile">Get User Profile</option>
+                                <option value="associate_token">Get Associate Token</option>
                             </select>
                         </div>
                     </div>
@@ -23,14 +23,14 @@
                             <label for="id_user_id_link" class="col-md-2 col-form-label">User ID</label>
                             <div class="col-md-8">
                                 <input class="form-control" id="id_user_id_link" placeholder="User ID" type="text"
-                                        name="user_id">
+                                       name="user_id">
                             </div>
                         </div>
                         <div class="form-group row">
                             <label for="id_social_id_link" class="col-md-2 col-form-label">Social ID</label>
                             <div class="col-md-8">
                                 <input class="form-control" id="id_social_id_link" placeholder="Social ID" type="text"
-                                        name="social_id">
+                                       name="social_id">
                             </div>
                         </div>
                     </form>
@@ -39,18 +39,19 @@
                             <label for="id_user_id_unlink" class="col-md-2 col-form-label">User ID</label>
                             <div class="col-md-8">
                                 <input class="form-control" id="id_user_id_unlink" placeholder="User ID" type="text"
-                                        name="user_id">
+                                       name="user_id">
                             </div>
                         </div>
                         <div class="form-group row">
                             <label for="id_social_id_unlink" class="col-md-2 col-form-label">Social ID</label>
                             <div class="col-md-8">
                                 <input class="form-control" id="id_social_id_unlink" placeholder="Social ID" type="text"
-                                        name="social_id">
+                                       name="social_id">
                             </div>
                         </div>
                     </form>
-                    <form class="form-horizontal" action="#" method="get" id="id_form_disassociate" style="display:none;">
+                    <form class="form-horizontal" action="#" method="get" id="id_form_disassociate"
+                          style="display:none;">
                         <div class="form-group row">
                             <label for="id_user_id_disassociate" class="col-md-2 col-form-label">User ID</label>
                             <div class="col-md-8">
@@ -89,6 +90,38 @@
                             <label for="id_social_id_profile" class="col-md-2 col-form-label">Social ID</label>
                             <div class="col-md-8">
                                 <input class="form-control" id="id_social_id_profile" placeholder="Social ID"
+                                       type="text"
+                                       name="social_id">
+                            </div>
+                        </div>
+                    </form>
+                    <form class="form-horizontal" action="#" method="GET" id="id_form_associate" style="display:none;">
+                        <div class="form-group row">
+                            <label for="id_api_name" class="col-md-2 col-form-label">API Name</label>
+                            <div class="col-md-8">
+                                <select class="form-control" id="id_target_provider_associate"
+                                        name="target_provider">
+                                    <option value="line">Line</option>
+                                    <option value="amazon">Amazon</option>
+                                    <option value="yahoojp">Yahoo Japan</option>
+                                    <option value="facebook">Facebook</option>
+                                    <option value="twitter">Twitter</option>
+                                    <option value="google">Google</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="id_user_id_associate" class="col-md-2 col-form-label">User ID</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_user_id_associate" placeholder="User ID"
+                                       type="text"
+                                       name="user_id">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="id_social_id_associate" class="col-md-2 col-form-label">Social ID</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_social_id_associate" placeholder="Social ID"
                                        type="text"
                                        name="social_id">
                             </div>

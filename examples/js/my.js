@@ -10,8 +10,10 @@ $(document).ready(function() {
             selectedForm = $('#id_form_unlink');
         } else if (apiName === 'diassociate') {
             selectedForm = $('#id_form_disassociate');
-        } else if (apiName == 'profile') {
+        } else if (apiName === 'profile') {
             selectedForm = $('#id_form_profile');
+        } else if (apiName === 'associate_token') {
+            selectedForm = $('#id_form_associate');
         }
         selectedForm.show();
     });
@@ -83,6 +85,24 @@ $(document).ready(function() {
         }).done(updateResult);
     }
 
+    function getAssociateToken() {
+        var body = {
+            provider: $('#id_target_provider_associate').val()
+        };
+        if ($('#id_user_id_associate').val().length > 0) {
+            body.user_id = $('#id_user_id_associate').val();
+        } else {
+            body.social_id = $('#id_social_id_associate').val();
+        }
+        console.log(body);
+        $.ajax({
+            url: '/api/associate_token',
+            type: 'POST',
+            dataType: 'json',
+            data: body
+        }).done(updateResult);
+    }
+
     $('#btn_submit').click(function() {
         var apiName = $('#id_api_name').val();
         console.log('Call API: ' + apiName);
@@ -92,8 +112,10 @@ $(document).ready(function() {
             unlinkUser();
         } else if (apiName === 'diassociate') {
             diassociate();
-        } else if (apiName == 'profile') {
+        } else if (apiName === 'profile') {
             getProfile();
+        } else if (apiName === 'associate_token') {
+            getAssociateToken();
         }
     });
 });
