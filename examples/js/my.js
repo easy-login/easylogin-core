@@ -8,6 +8,8 @@ $(document).ready(function() {
             selectedForm = $('#id_form_link');
         } else if (apiName === 'unlink_user') {
             selectedForm = $('#id_form_unlink');
+        } else if (apiName === 'merge') {
+            selectedForm = $('#id_form_merge');
         } else if (apiName === 'diassociate') {
             selectedForm = $('#id_form_disassociate');
         } else if (apiName === 'profile') {
@@ -52,54 +54,56 @@ $(document).ready(function() {
         }).done(updateResult);
     }
 
+    function mergeProfiles() {
+        $.ajax({
+            url: '/api/merge',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                'src_user_id': $('#id_src_user_id_merge').val(),
+                'src_social_id': $('#id_src_social_id_merge').val(),
+                'dst_user_id': $('#id_dst_user_id_merge').val(),
+                'dst_social_id': $('#id_dst_social_id_merge').val(),
+                'response_type': 'json'
+            }
+        }).done(updateResult);
+    }
+
     function diassociate() {
-        var body = {
-            'providers': $('#id_providers_disassociate').val(),
-            'response_type': 'json'
-        };
-        if ($('#id_user_id_disassociate').val().length > 0) {
-            body.user_id = $('#id_user_id_disassociate').val();
-        } else {
-            body.social_id = $('#id_social_id_disassociate').val();
-        }
         $.ajax({
             url: '/api/disassociate',
             type: 'POST',
             dataType: 'json',
-            data: body
+            data: {
+                user_id: $('#id_user_id_disassociate').val(),
+                social_id: $('#id_social_id_disassociate').val(),
+                providers: $('#id_providers_disassociate').val()
+            }
         }).done(updateResult);
     }
 
     function getProfile() {
-        var body = {};
-        if ($('#id_user_id_profile').val().length > 0) {
-            body.user_id = $('#id_user_id_profile').val();
-        } else {
-            body.social_id = $('#id_social_id_profile').val();
-        }
         $.ajax({
             url: '/api/profile',
             type: 'POST',
             dataType: 'json',
-            data: body
+            data: {
+                user_id: $('#id_user_id_profile').val(),
+                social_id: $('#id_social_id_profile').val()
+            }
         }).done(updateResult);
     }
 
     function getAssociateToken() {
-        var body = {
-            provider: $('#id_target_provider_associate').val()
-        };
-        if ($('#id_user_id_associate').val().length > 0) {
-            body.user_id = $('#id_user_id_associate').val();
-        } else {
-            body.social_id = $('#id_social_id_associate').val();
-        }
-        console.log(body);
         $.ajax({
             url: '/api/associate_token',
             type: 'POST',
             dataType: 'json',
-            data: body
+            data: {
+                user_id: $('#id_user_id_associate').val(),
+                social_id: $('#id_social_id_associate').val(),
+                provider: $('#id_target_provider_associate').val()
+            }
         }).done(updateResult);
     }
 
@@ -110,6 +114,8 @@ $(document).ready(function() {
             linkUser();
         } else if (apiName === 'unlink_user') {
             unlinkUser();
+        } else if (apiName === 'merge') {
+            mergeProfiles();
         } else if (apiName === 'diassociate') {
             diassociate();
         } else if (apiName === 'profile') {

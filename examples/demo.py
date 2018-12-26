@@ -81,7 +81,8 @@ def pay_setting():
 
 @app.route('/api/<api_name>', methods=['POST'])
 def call_api(api_name):
-    if api_name not in ['link', 'unlink', 'disassociate', 'profile', 'associate_token']:
+    if api_name not in ['link', 'unlink', 'disassociate', 'profile',
+                        'merge', 'associate_token']:
         abort(404, 'Invalid API name')
 
     api_url = request.cookies['api_url']
@@ -100,12 +101,8 @@ def call_api(api_name):
                          headers={'X-Api-Key': request.cookies['api_key']})
     try:
         msg = r.json()
-        msg['status_code'] = r.status_code
     except ValueError as e:
-        msg = {
-            'status_code': r.status_code,
-            'error': str(e)
-        }
+        msg = {'status_code': r.status_code, 'error': str(e)}
     return jsonify(msg)
 
 

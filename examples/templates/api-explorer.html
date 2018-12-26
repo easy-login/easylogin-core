@@ -12,6 +12,7 @@
                             <select class="form-control" id="id_api_name">
                                 <option value="link_user">Link User with Social Profile</option>
                                 <option value="unlink_user">Unlink User from Social Profile</option>
+                                <option value="merge">Merge profiles</option>
                                 <option value="diassociate">Disassociate User from Providers</option>
                                 <option value="profile">Get User Profile</option>
                                 <option value="associate_token">Get Associate Token</option>
@@ -46,6 +47,40 @@
                             <label for="id_social_id_unlink" class="col-md-2 col-form-label">Social ID</label>
                             <div class="col-md-8">
                                 <input class="form-control" id="id_social_id_unlink" placeholder="Social ID" type="text"
+                                       name="social_id">
+                            </div>
+                        </div>
+                    </form>
+                    <form class="form-horizontal" action="#" method="get" id="id_form_merge" style="display:none;">
+                        <div class="form-group row">
+                            <label for="id_src_user_id_merge" class="col-md-2 col-form-label">Source User ID</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_src_user_id_merge" placeholder="Source User ID"
+                                       type="text"
+                                       name="user_id">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="id_src_social_id_merge" class="col-md-2 col-form-label">Source Social ID</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_src_social_id_merge" placeholder="Source Social ID"
+                                       type="text"
+                                       name="social_id">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="id_dst_user_id_merge" class="col-md-2 col-form-label">Dest User ID</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_dst_user_id_merge" placeholder="Dest User ID"
+                                       type="text"
+                                       name="user_id">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="id_dst_social_id_merge" class="col-md-2 col-form-label">Dest Social ID</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_dst_social_id_merge" placeholder="Dest Social ID"
+                                       type="text"
                                        name="social_id">
                             </div>
                         </div>
