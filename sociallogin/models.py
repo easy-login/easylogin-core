@@ -211,6 +211,7 @@ class SocialProfiles(Base):
         d['social_id'] = str(self.alias)
         d['user_id'] = user_pk or Users.get_user_pk(self.user_id)
         d['verified'] = bool(self.verified)
+
         if self._allow_get_scope_id():
             d['attrs']['id'] = self.scope_id
             d['scope_id'] = self.scope_id
@@ -218,13 +219,6 @@ class SocialProfiles(Base):
 
     def merge(self, user_pk=None, social_id=None):
         raise NotImplementedError()
-
-    def link_user_by_id(self, user_id):
-        try:
-            _, pk = db.session.query(Users._id, Users.pk).filter_by(_id=user_id).one_or_none()
-            self._link_unsafe(user_id)
-        except TypeError:
-            raise NotFoundError('User not found')
 
     def _link_unsafe(self, user_id):
         self.user_id = user_id
@@ -263,8 +257,8 @@ class SocialProfiles(Base):
                 or (level == Admins.LEVEL_LINE_PLUS and self.provider == 'line'))
 
     @classmethod
-    def link_user_by_pk(cls, app_id, social_id, user_pk, create_if_not_exist=True):
-        profiles = cls.query.filter_by(alias=social_id).all()
+    def link_with_user(cls, app_id, alias, user_pk, create_if_not_exist=True):
+        profiles = cls.query.filter_by(alias=alias).all()
         if not profiles:
             raise NotFoundError('Social ID not found')
         if profiles[0].user_id:
@@ -288,39 +282,36 @@ class SocialProfiles(Base):
             p._link_unsafe(user._id)
 
     @classmethod
-    def unlink_user_by_pk(cls, app_id, social_id, user_pk):
+    def unlink_from_user(cls, app_id, alias, user_pk):
         user_id = db.session.query(Users._id).filter_by(pk=user_pk, app_id=app_id).scalar()
         if not user_id:
             raise NotFoundError('User ID not found')
-        return cls.query.filter_by(alias=social_id, user_id=user_id).update({
+        return cls.query.filter_by(alias=alias, user_id=user_id).update({
             'linked_at': None,
             'user_id': None
         }, synchronize_session=False)
 
     @classmethod
-    def delete_by_alias(cls, app_id, alias):
-        profiles = cls.query.filter_by(alias=alias).all()
-        if profiles:
-            user_pk = profiles[0].user_pk
-            if user_pk:
-                Users.delete_user(pk=user_pk, app_id=app_id)
-            for p in profiles:
-                p._delete_unsafe()
+    def delete_profile(cls, app_id, user_pk=None, alias=None):
+        if user_pk:
+            num_affected = Users.delete_user(pk=user_pk, app_id=app_id)
+            if num_affected > 0:
+                num_affected = cls.query.filter_by(user_pk=user_pk, app_id=app_id).update({
+                    '_deleted': 1,
+                    'pk': func.concat(int(time.time()), '.', cls._id),
+                    'user_id': None,
+                    'alias': 0
+                }, synchronize_session=False)
+            return num_affected
         else:
-            raise NotFoundError(msg='Social ID not found')
-
-    @classmethod
-    def delete_by_user_pk(cls, app_id, user_pk):
-        num_affected = Users.delete_user(pk=user_pk, app_id=app_id)
-        if num_affected > 0:
-            cls.query.filter_by(user_pk=user_pk, app_id=app_id).update({
-                '_deleted': 1,
-                'pk': func.concat(int(time.time()), '.', cls._id),
-                'user_id': None,
-                'alias': 0
-            }, synchronize_session=False)
-        else:
-            raise NotFoundError(msg='User ID not found')
+            profiles = cls.query.filter_by(alias=alias).all()
+            if profiles:
+                user_id = profiles[0].user_id
+                if user_pk:
+                    Users.delete_by_id(user_id=user_id)
+                for p in profiles:
+                    p._delete_unsafe()
+            return len(profiles)
 
     @classmethod
     def find_by_pk(cls, app_id, user_pk):
@@ -330,14 +321,14 @@ class SocialProfiles(Base):
         ).all())
 
     @classmethod
-    def reset_info(cls, app_id, user_pk=None, social_id=None):
+    def reset_info(cls, app_id, user_pk=None, alias=None):
         if user_pk:
             profiles = cls.find_by_pk(app_id=app_id, user_pk=user_pk)
             for p in profiles:
                 p._reset_info()
             return len(profiles)
         else:
-            return cls.query.filter_by(alias=social_id).update({
+            return cls.query.filter_by(alias=alias).update({
                 'login_count': 0,
                 'last_authorized_at': None,
                 'attrs': '{}',
@@ -345,24 +336,23 @@ class SocialProfiles(Base):
             }, synchronize_session=False)
 
     @classmethod
-    def disassociate_by_pk(cls, app_id, user_pk, providers):
-        profiles = cls.find_by_pk(user_pk=user_pk, app_id=app_id)
-        for p in profiles:
-            if p.provider not in providers:
-                continue
-            p._delete_unsafe()
-        return len(profiles)
-
-    @classmethod
-    def disassociate_by_id(cls, app_id, social_id, providers):
-        return (cls.query
-            .filter(cls.alias == social_id, not_(cls.provider.in_(providers)))
-            .update({
-                '_deleted': 1,
-                'pk': func.concat(int(time.time()), '.', cls._id),
-                'user_id': None,
-                'alias': 0
-            }, synchronize_session=False))
+    def disassociate_provider(cls, app_id, providers, user_pk=None, alias=None):
+        if user_pk:
+            profiles = cls.find_by_pk(user_pk=user_pk, app_id=app_id)
+            for p in profiles:
+                if p.provider not in providers:
+                    continue
+                p._delete_unsafe()
+            return len(profiles)
+        else:
+            return (cls.query
+                .filter(cls.alias == alias, not_(cls.provider.in_(providers)))
+                .update({
+                    '_deleted': 1,
+                    'pk': func.concat(int(time.time()), '.', cls._id),
+                    'user_id': None,
+                    'alias': 0
+                }, synchronize_session=False))
 
     @classmethod
     def add_or_update(cls, app_id, scope_id, provider, attrs):
@@ -391,9 +381,9 @@ class SocialProfiles(Base):
         }, synchronize_session=False)
 
     @classmethod
-    def get_full_profile(cls, app_id, user_pk=None, social_id=None):
+    def get_full_profile(cls, app_id, user_pk=None, alias=None):
         profiles = cls.find_by_pk(app_id=app_id, user_pk=user_pk)\
-            if user_pk else SocialProfiles.query.filter_by(alias=social_id).all()
+            if user_pk else SocialProfiles.query.filter_by(alias=alias).all()
         if not profiles:
             raise NotFoundError('User ID or Social ID not found')
 
@@ -412,7 +402,7 @@ class SocialProfiles(Base):
             'last_logged_in_provider': last_profile.provider,
             'last_logged_in_at': cls.to_isoformat(last_profile.last_authorized_at),
             'login_count': login_count,
-            'social_id': last_profile.alias
+            'social_id': str(last_profile.alias)
         })
         return {
             'user': user_attrs,
@@ -439,9 +429,17 @@ class Users(Base):
         return d
 
     @classmethod
-    def delete_user(cls, app_id, pk):
+    def delete_by_pk(cls, app_id, pk):
         salt = gen_random_token(nbytes=4, format='hex') + '.' + str(int(time.time()))
         return cls.query.filter_by(pk=pk, app_id=app_id).update({
+            '_deleted': 1,
+            'pk': func.concat(salt, '.', cls._id)
+        }, synchronize_session=False)
+
+    @classmethod
+    def delete_by_id(cls, user_id):
+        salt = gen_random_token(nbytes=4, format='hex') + '.' + str(int(time.time()))
+        return cls.query.filter_by(_id=user_id).update({
             '_deleted': 1,
             'pk': func.concat(salt, '.', cls._id)
         }, synchronize_session=False)

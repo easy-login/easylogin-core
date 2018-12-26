@@ -53,14 +53,14 @@ def activate(app_id):
 @login_required
 def link_user(app_id):
     body = request.json
-    social_id = int(body['social_id'])
+    alias = int(body['social_id'])
     user_pk = body['user_id']
-    if social_id <= 0:
+    if alias <= 0:
         abort(404, 'Social ID not found')
 
-    SocialProfiles.link_user_by_pk(
+    SocialProfiles.link_with_user(
         app_id=app_id,
-        social_id=social_id, user_pk=user_pk,
+        alias=alias, user_pk=user_pk,
         create_if_not_exist=body.get('create_user', True)
     )
     db.session.commit()
@@ -72,13 +72,13 @@ def link_user(app_id):
 def unlink_user(app_id):
     body = request.json
     user_pk = body['user_id']
-    social_id = int(body['social_id'])
-    if social_id <= 0:
+    alias = int(body['social_id'])
+    if alias <= 0:
         abort(404, 'Social ID not found')
 
-    num_affected = SocialProfiles.unlink_user_by_pk(
+    num_affected = SocialProfiles.unlink_from_user(
         app_id=app_id,
-        social_id=social_id, user_pk=user_pk
+        alias=alias, user_pk=user_pk
     )
     if not num_affected:
         abort(404, 'Social ID not found or not linked with any users')
@@ -110,23 +110,13 @@ def disassociate(app_id):
     for provider in providers:
         if not is_valid_provider(provider):
             abort(400, 'Invalid provider ' + provider)
-    user_pk = body.get('user_id')
-    social_id = int(body.get('social_id', '0'))
+    user_pk, alias = _parse_and_validate_identifiers(request.args)
 
-    if user_pk:
-        num_affected = SocialProfiles.disassociate_by_pk(
-            app_id=app_id, user_pk=user_pk,
-            providers=providers)
-        if not num_affected:
-            abort(404, 'User ID not found')
-    elif social_id > 0:
-        num_affected = SocialProfiles.disassociate_by_id(
-            app_id=app_id, social_id=social_id,
-            providers=providers)
-        if not num_affected:
-            abort(404, 'Social ID not found')
-    else:
-        abort(400, 'At least one valid parameter social_id or user_id must be provided')
+    num_affected = SocialProfiles.disassociate_provider(
+        app_id=app_id, providers=providers,
+        user_pk=user_pk, alias=alias)
+    if not num_affected:
+        abort(404, 'User ID or Social ID not found')
 
     db.session.commit()
     return jsonify({'success': True})
@@ -135,15 +125,10 @@ def disassociate(app_id):
 @flask_app.route('/<int:app_id>/users')
 @login_required
 def get_user(app_id):
-    user_pk = request.args.get('user_id')
-    social_id = int(request.args.get('social_id', '0'))
-    if not user_pk and social_id <= 0:
-        abort(400, 'At least one valid parameter social_id or user_id must be provided')
-
+    user_pk, alias = _parse_and_validate_identifiers(request.args)
     return jsonify(SocialProfiles.get_full_profile(
         app_id=app_id,
-        user_pk=user_pk,
-        social_id=social_id
+        user_pk=user_pk, alias=alias
     ))
 
 
@@ -151,15 +136,13 @@ def get_user(app_id):
 @login_required
 def delete_user(app_id):
     body = request.json
-    user_pk = body.get('user_id')
-    social_id = int(body.get('social_id', '0'))
+    user_pk, alias = _parse_and_validate_identifiers(body)
 
-    if user_pk:
-        SocialProfiles.delete_by_user_pk(app_id=app_id, user_pk=user_pk)
-    elif social_id > 0:
-        SocialProfiles.delete_by_alias(app_id=app_id, alias=social_id)
-    else:
-        abort(400, 'At least one valid parameter social_id or user_id must be provided')
+    num_affected = SocialProfiles.delete_profile(
+        app_id=app_id,
+        alias=alias, user_pk=user_pk)
+    if not num_affected:
+        abort(404, 'User ID or Social ID not found')
 
     db.session.commit()
     return jsonify({'success': True})
@@ -168,14 +151,11 @@ def delete_user(app_id):
 @flask_app.route('/<int:app_id>/users/reset', methods=['PUT'])
 def reset_user_info(app_id):
     body = request.json
-    user_pk = body.get('user_id')
-    social_id = int(body.get('social_id', '0'))
-    if not user_pk and social_id <= 0:
-        abort(400, 'At least one valid parameter social_id or user_id must be provided')
+    user_pk, alias = _parse_and_validate_identifiers(body)
 
     num_affected = SocialProfiles.reset_info(
         app_id=app_id,
-        social_id=social_id, user_pk=user_pk)
+        alias=alias, user_pk=user_pk)
     if not num_affected:
         abort(404, 'User ID or Social ID not found')
 
@@ -189,13 +169,10 @@ def get_associate_token(app_id):
     provider = request.args['provider']
     if not is_valid_provider(provider):
         abort(400, 'Invalid provider')
-    user_pk = request.args.get('user_id')
-    social_id = int(request.args.get('social_id', '0'))
-    if not user_pk and social_id <= 0:
-        abort(400, 'At least one valid parameter social_id or user_id must be provided')
+    user_pk, alias = _parse_and_validate_identifiers(request.args)
 
     profiles = SocialProfiles.find_by_pk(app_id=app_id, user_pk=user_pk)\
-        if user_pk else SocialProfiles.query.filter_by(alias=social_id).all()
+        if user_pk else SocialProfiles.query.filter_by(alias=alias).all()
     if not profiles:
         abort(404, 'User ID or Social ID not found')
 
@@ -214,3 +191,11 @@ def get_associate_token(app_id):
         'token': associate_token,
         'target_provider': provider
     })
+
+
+def _parse_and_validate_identifiers(params):
+    user_pk = params.get('user_id')
+    alias = int(params.get('social_id', '0'))
+    if not user_pk and alias <= 0:
+        abort(400, 'At least one valid parameter social_id or user_id must be provided')
+    return user_pk, alias
