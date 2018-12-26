@@ -205,14 +205,14 @@ class SocialProfiles(Base):
         self.scope_id = kwargs['scope_id']
         self.pk = kwargs['pk']
 
-    def as_dict(self):
+    def as_dict(self, user_pk=None):
         d = super().as_dict()
         d['attrs'] = json.loads(self.attrs, encoding='utf8')
         d['social_id'] = str(self.alias)
-        d['user_id'] = self.user_pk
+        d['user_id'] = user_pk or Users.get_user_pk(self.user_id)
         d['verified'] = bool(self.verified)
         if self._allow_get_scope_id():
-            # d['attrs']['id'] = self.scope_id
+            d['attrs']['id'] = self.scope_id
             d['scope_id'] = self.scope_id
         return d
 
@@ -366,6 +366,35 @@ class SocialProfiles(Base):
             'login_count': 1
         }, synchronize_session=False)
 
+    @classmethod
+    def get_full_profile(cls, app_id, user_pk=None, social_id=None):
+        profiles = cls.find_by_pk(app_id=app_id, user_pk=user_pk)\
+            if user_pk else SocialProfiles.query.filter_by(alias=social_id).all()
+        if not profiles:
+            raise NotFoundError('User ID or Social ID not found')
+
+        last_profile = None
+        login_count = 0
+        for p in profiles:
+            login_count += p.login_count
+            if not last_profile:
+                last_profile = p
+                continue
+            if last_profile.last_authorized_at < p.last_authorized_at:
+                last_profile = p
+        user = Users.query.filter_by(_id=last_profile.user_id).one_or_none()
+        user_attrs = user.as_dict() if user else {'user_id': None}
+        user_attrs.update({
+            'last_logged_in_provider': last_profile.provider,
+            'last_logged_in_at': cls.to_isoformat(last_profile.last_authorized_at),
+            'login_count': login_count,
+            'social_id': last_profile.alias
+        })
+        return {
+            'user': user_attrs,
+            'profiles': [p.as_dict(user_pk=user.pk) for p in profiles]
+        }
+
 
 class Users(Base):
     __tablename__ = 'users'
@@ -394,31 +423,8 @@ class Users(Base):
         }, synchronize_session=False)
 
     @classmethod
-    def get_full_as_dict(cls, app_id, pk):
-        user = cls.query.filter_by(pk=pk, app_id=app_id).one_or_none()
-        if user:
-            profiles = SocialProfiles.query.filter_by(user_id=user._id).all()
-            last_profile = None
-            login_count = 0
-            for p in profiles:
-                login_count += p.login_count
-                if not last_profile:
-                    last_profile = p
-                    continue
-                if last_profile.last_authorized_at < p.last_authorized_at:
-                    last_profile = p
-            user_attrs = user.as_dict()
-            user_attrs.update({
-                'last_logged_in_provider': last_profile.provider,
-                'last_logged_in_at': cls.to_isoformat(last_profile.last_authorized_at),
-                'login_count': login_count
-            })
-            return {
-                'user': user_attrs,
-                'profiles': [p.as_dict() for p in profiles]
-            }
-        else:
-            raise NotFoundError('User not found')
+    def get_user_pk(cls, _id):
+        return db.session.query(cls.pk).filter_by(_id=_id).scalar()
 
 
 class Tokens(Base):

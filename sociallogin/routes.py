@@ -59,7 +59,7 @@ def link_user(app_id):
         abort(404, 'Social ID not found')
 
     SocialProfiles.link_user_by_pk(
-        app_id=app_id, 
+        app_id=app_id,
         social_id=social_id, user_pk=user_pk,
         create_if_not_exist=body.get('create_user', True)
     )
@@ -77,7 +77,7 @@ def unlink_user(app_id):
         abort(404, 'Social ID not found')
 
     num_affected = SocialProfiles.unlink_user_by_pk(
-        app_id=app_id, 
+        app_id=app_id,
         social_id=social_id, user_pk=user_pk
     )
     if not num_affected:
@@ -112,16 +112,16 @@ def disassociate(app_id):
     for provider in providers:
         if not is_valid_provider(provider):
             abort(400, 'Invalid provider ' + provider)
-            
+
     if user_pk:
         num_affected = SocialProfiles.disassociate_by_pk(
-            app_id=app_id, user_pk=user_pk, 
+            app_id=app_id, user_pk=user_pk,
             providers=providers)
         if not num_affected:
             abort(404, 'User ID not found')
     elif social_id > 0:
         num_affected = SocialProfiles.disassociate_by_id(
-            app_id=app_id, social_id=social_id, 
+            app_id=app_id, social_id=social_id,
             providers=providers)
         if not num_affected:
             abort(404, 'Social ID not found')
@@ -137,22 +137,14 @@ def disassociate(app_id):
 def get_user(app_id):
     user_pk = request.args.get('user_id')
     social_id = int(request.args.get('social_id', '0'))
-
-    if user_pk:
-        return jsonify(Users.get_full_as_dict(app_id=app_id, pk=user_pk))
-    elif social_id > 0:
-        profile = SocialProfiles.query.filter_by(alias=social_id).first()
-        if not profile:
-            abort(404, 'Social ID not found')
-        if profile.user_pk:
-            return jsonify(Users.get_full_as_dict(app_id=app_id, pk=profile.user_pk))
-        else:
-            return jsonify({
-                'user': None,
-                'profiles': [profile.as_dict()]
-            })
-    else:
+    if not user_pk and social_id <= 0:
         abort(400, 'At least one valid parameter social_id or user_id must be provided')
+
+    return jsonify(SocialProfiles.get_full_profile(
+        app_id=app_id,
+        user_pk=user_pk,
+        social_id=social_id
+    ))
 
 
 @flask_app.route('/<int:app_id>/users', methods=['DELETE'])
