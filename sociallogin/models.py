@@ -206,8 +206,8 @@ class SocialProfiles(Base):
         d = super().as_dict()
         d['attrs'] = json.loads(self.attrs, encoding='utf8')
         d['social_id'] = str(self.alias)
-        d['user_id'] = user_pk or Users.get_user_pk(self.user_id)
         d['verified'] = bool(self.verified)
+        d['user_id'] = user_pk or Users.get_user_pk(_id=self.user_id)
 
         if self._allow_get_scope_id():
             d['attrs']['id'] = self.scope_id
@@ -336,14 +336,14 @@ class SocialProfiles(Base):
         if user_pk:
             user = Users.query.filter_by(pk=user_pk, app_id=app_id).one_or_none()
             if user:
-                Users.delete_by_id(user_id=user._id)
+                Users.delete_by_id(_id=user._id)
                 profiles = cls.query.filter_by(user_id=user._id).all()
         else:
             profiles = cls.query.filter_by(alias=alias).all()
             if profiles:
                 user_id = profiles[0].user_id
                 if user_id:
-                    Users.delete_by_id(user_id=user_id)
+                    Users.delete_by_id(_id=user_id)
         for p in profiles:
             p._delete_unsafe()
         return len(profiles)
@@ -464,9 +464,9 @@ class Users(Base):
         return d
 
     @classmethod
-    def delete_by_id(cls, user_id):
+    def delete_by_id(cls, _id):
         salt = gen_random_token(nbytes=4, format='hex') + '.' + str(int(time.time()))
-        return cls.query.filter_by(_id=user_id).update({
+        return cls.query.filter_by(_id=_id).update({
             '_deleted': 1,
             'pk': func.concat(salt, '.', cls._id)
         }, synchronize_session=False)
