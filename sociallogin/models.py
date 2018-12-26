@@ -235,6 +235,12 @@ class SocialProfiles(Base):
         self.user_id = None
         self.user_pk = None
 
+    def _reset_info_unsafe(self):
+        self.login_count = 0
+        self.last_authorized_at = None
+        self.attrs = '{}'
+        self.scope_id = ''
+
     def _delete_unsafe(self):
         self._deleted = 1
         self.pk = '%d.%d' % (int(time.time()), self._id)
@@ -322,6 +328,21 @@ class SocialProfiles(Base):
             Users, and_(Users._id == SocialProfiles.user_id,
                         Users.pk == user_pk, Users.app_id == app_id)
         ).all())
+
+    @classmethod
+    def reset_info(cls, app_id, user_pk=None, social_id=None):
+        if user_pk:
+            profiles = cls.find_by_pk(app_id=app_id, user_pk=user_pk)
+            for p in profiles:
+                p._reset_info()
+            return len(profiles)
+        else:
+            return cls.query.filter_by(alias=social_id).update({
+                'login_count': 0,
+                'last_authorized_at': None,
+                'attrs': '{}',
+                'scope_id': ''
+            }, synchronize_session=False)
 
     @classmethod
     def disassociate_by_pk(cls, app_id, user_pk, providers):

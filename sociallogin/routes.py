@@ -165,6 +165,24 @@ def delete_user(app_id):
     return jsonify({'success': True})
 
 
+@flask_app.route('/<int:app_id>/users/reset', methods=['PUT'])
+def reset_user_info(app_id):
+    body = request.json
+    user_pk = body.get('user_id')
+    social_id = int(body.get('social_id', '0'))
+    if not user_pk and social_id <= 0:
+        abort(400, 'At least one valid parameter social_id or user_id must be provided')
+
+    num_affected = SocialProfiles.reset_info(
+        app_id=app_id,
+        social_id=social_id, user_pk=user_pk)
+    if not num_affected:
+        abort(404, 'User ID or Social ID not found')
+
+    db.session.commit()
+    return jsonify({'success': True})
+
+
 @flask_app.route('/<int:app_id>/users/associate_token')
 @login_required
 def get_associate_token(app_id):
