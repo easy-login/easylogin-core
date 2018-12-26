@@ -188,7 +188,7 @@ def get_associate_token(app_id):
             abort(409, 'User has linked with another social profile for this provider')
     log = AssociateLogs(provider=provider, app_id=app_id,
                         social_id=profiles[0].alias,
-                        nonce=gen_random_token(nbytes=32))
+                        nonce=gen_random_token(nbytes=16, format='hex'))
     db.session.add(log)
     db.session.flush()
 

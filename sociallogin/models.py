@@ -619,13 +619,13 @@ class AssociateLogs(Base):
         self.status = kwargs.get('status', self.STATUS_NEW)
 
     def generate_associate_token(self):
-        return ests.generate(sub=self._id, exp_in_seconds=600,
+        return ests.generate(sub=self.dst_social_id, exp_in_seconds=600,
                              _type='associate', _nonce=self.nonce)
 
     @classmethod
     def parse_associate_token(cls, associate_token):
-        log_id, args = ests.decode(token=associate_token)
-        log = cls.query.filter_by(_id=log_id).one_or_none()
+        social_id, args = ests.decode(token=associate_token)
+        log = cls.query.filter_by(dst_social_id=social_id).order_by(cls._id.desc()).first()
 
         if not log or log.nonce != args.get('_nonce'):
             raise BadRequestError('Invalid associate token')
