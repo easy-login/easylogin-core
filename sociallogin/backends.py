@@ -210,7 +210,7 @@ class OAuthBackend(object):
             elif self.profile.user_id:
                 self._raise_redirect_error(error='conflict',
                                            msg='Profile has linked with another user')
-            self.profile.link_user_by_id(user_id=self.args.get('user_id'))
+            self.profile.merge(social_id=self.args.get('dst_social_id'))
         elif intent == AuthLogs.INTENT_LOGIN and not self.log.is_login:
             self._raise_redirect_error(
                 error='invalid_request',

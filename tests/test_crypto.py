@@ -120,3 +120,4 @@ token = generate_easylogin_token(11240, 3600, name='tjeubaoit', age=28)
 print(token, len(token))
 
 print('Decoded payload', json.dumps(decode_easylogin_token(token + '='), indent=2))
+print(decode_easylogin_token('gAN9cQAoWAMAAABzdWJxAUsDWAMAAABleHBxAkojMyNcWAQAAABkYXRhcQN9cQQoWAUAAABfdHlwZXEFWAkAAABhc3NvY2lhdGVxBlgGAAAAX25vbmNlcQdYIAAAAGkzdWdrV3A0ZDhpYlE4aURRR3Rnazg5SDdSRGlWb1hScQh1WAQAAABzaWducQlYLAAAAHAveGYweXRobVAwdFFnY2dTQkg2aWR3THNjYThoVlp2SWpyYnJqZHVQMDg9cQp1Lg'))

@@ -24,18 +24,17 @@ def authorize(provider, intent):
 
     sandbox = request.args.get('sandbox')
     backend = get_backend(provider, sandbox=smart_str2bool(sandbox))
-    authorize_uri = None
     extra = dict()
 
     if intent == AuthLogs.INTENT_ASSOCIATE:
-        assoc_token = request.args.get('token')
+        assoc_token = request.args.get('associate_token')
         try:
             alog = AssociateLogs.parse_associate_token(assoc_token)
             if alog.provider != provider:
                 abort(400, 'Invalid target provider, must be {}'.format(alog.provider))
 
             alog.status = AssociateLogs.STATUS_AUTHORIZING
-            update_dict(extra, user_id=alog.user_id, assoc_id=alog._id, provider=provider)
+            update_dict(extra, dst_social_id=alog.dst_social_id, provider=provider)
         except TokenParseError as e:
             logger.warning('Parse associate token failed',
                            error=e.description, token=assoc_token)

@@ -216,6 +216,9 @@ class SocialProfiles(Base):
             d['scope_id'] = self.scope_id
         return d
 
+    def merge(self, user_pk=None, social_id=None):
+        raise NotImplementedError()
+
     def link_user_by_id(self, user_id):
         try:
             _, pk = db.session.query(Users._id, Users.pk).filter_by(_id=user_id).one_or_none()
@@ -522,7 +525,7 @@ class AuthLogs(Base):
 
     def generate_auth_token(self):
         return ests.generate(sub=self._id, exp_in_seconds=3600,
-                             _nonce=self.nonce)
+                             _type='auth', _nonce=self.nonce)
 
     @classmethod
     def parse_oauth_state(cls, oauth_state):
@@ -556,22 +559,22 @@ class AssociateLogs(Base):
     STATUS_FAILED = 'failed'
 
     provider = db.Column(db.String(15), nullable=False)
+    dst_social_id = db.Column(db.BigInteger, nullable=False)
     status = db.Column(db.String(15), nullable=False)
     nonce = db.Column(db.String(32), nullable=False)
 
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-    def __init__(self, provider, app_id, **kwargs):
+    def __init__(self, provider, app_id, social_id, **kwargs):
         self.provider = provider
         self.app_id = app_id
-        self.user_id = kwargs.get('user_id')
+        self.dst_social_id = social_id
         self.nonce = kwargs.get('nonce')
         self.status = kwargs.get('status', self.STATUS_NEW)
 
     def generate_associate_token(self):
         return ests.generate(sub=self._id, exp_in_seconds=600,
-                             _nonce=self.nonce)
+                             _type='associate', _nonce=self.nonce)
 
     @classmethod
     def parse_associate_token(cls, associate_token):

@@ -106,12 +106,12 @@ def merge_user(app_id):
 @login_required
 def disassociate(app_id):
     body = request.json
-    user_pk = body.get('user_id')
-    social_id = int(body.get('social_id', '0'))
     providers = body['providers'].split(',')
     for provider in providers:
         if not is_valid_provider(provider):
             abort(400, 'Invalid provider ' + provider)
+    user_pk = body.get('user_id')
+    social_id = int(body.get('social_id', '0'))
 
     if user_pk:
         num_affected = SocialProfiles.disassociate_by_pk(
@@ -168,26 +168,29 @@ def delete_user(app_id):
 @flask_app.route('/<int:app_id>/users/associate_token')
 @login_required
 def get_associate_token(app_id):
-    user_pk = request.args['user_id']
     provider = request.args['provider']
     if not is_valid_provider(provider):
         abort(400, 'Invalid provider')
+    user_pk = request.args.get('user_id')
+    social_id = int(request.args.get('social_id', '0'))
+    if not user_pk and social_id <= 0:
+        abort(400, 'At least one valid parameter social_id or user_id must be provided')
 
-    tups = (db.session.query(Users._id, SocialProfiles._id, SocialProfiles.provider)
-            .join(SocialProfiles, and_(Users._id == SocialProfiles.user_id,
-                                       Users.pk == user_pk, Users.app_id == app_id))).all()
-    if not tups:
-        abort(404, 'User ID not found')
-    for tup in tups:
-        if provider == tup[2]:
+    profiles = SocialProfiles.find_by_pk(app_id=app_id, user_pk=user_pk)\
+        if user_pk else SocialProfiles.query.filter_by(alias=social_id).all()
+    if not profiles:
+        abort(404, 'User ID or Social ID not found')
+
+    for p in profiles:
+        if provider == p.provider:
             abort(409, 'User has linked with another social profile for this provider')
-    user_id = tups[0][0]
-
     log = AssociateLogs(provider=provider, app_id=app_id,
-                        user_id=user_id,
+                        social_id=profiles[0].alias,
                         nonce=gen_random_token(nbytes=32))
-    associate_token = log.generate_associate_token()
     db.session.add(log)
+    db.session.flush()
+
+    associate_token = log.generate_associate_token()
     db.session.commit()
     return jsonify({
         'token': associate_token,
