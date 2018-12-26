@@ -177,9 +177,7 @@ class Channels(Base):
 class SocialProfiles(Base):
     __tablename__ = 'social_profiles'
 
-    HIDDEN_FIELDS = {
-        'pk', 'scope_id', 'alias', 'user_id', 'user_pk', 'app_id'
-    }
+    HIDDEN_FIELDS = {'pk', 'scope_id', 'alias', 'user_id', 'app_id'}
 
     provider = db.Column(db.String(15), nullable=False)
     pk = db.Column(db.String(40), unique=True, nullable=False)
@@ -193,7 +191,6 @@ class SocialProfiles(Base):
     alias = db.Column(db.BigInteger, nullable=False)
 
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    user_pk = db.Column(db.String(128))
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
 
     def __init__(self, *args, **kwargs):
@@ -227,7 +224,6 @@ class SocialProfiles(Base):
     def _unlink_unsafe(self):
         self.linked_at = None
         self.user_id = None
-        self.user_pk = None
 
     def _reset_info_unsafe(self):
         self.login_count = 0
@@ -293,25 +289,21 @@ class SocialProfiles(Base):
 
     @classmethod
     def delete_profile(cls, app_id, user_pk=None, alias=None):
+        profiles = []
         if user_pk:
-            num_affected = Users.delete_user(pk=user_pk, app_id=app_id)
-            if num_affected > 0:
-                num_affected = cls.query.filter_by(user_pk=user_pk, app_id=app_id).update({
-                    '_deleted': 1,
-                    'pk': func.concat(int(time.time()), '.', cls._id),
-                    'user_id': None,
-                    'alias': 0
-                }, synchronize_session=False)
-            return num_affected
+            user = Users.query.filter_by(pk=user_pk, app_id=app_id).one_or_none()
+            if user:
+                Users.delete_by_id(user_id=user._id)
+                profiles = cls.query.filter_by(user_id=user._id).all()
         else:
             profiles = cls.query.filter_by(alias=alias).all()
             if profiles:
                 user_id = profiles[0].user_id
-                if user_pk:
+                if user_id:
                     Users.delete_by_id(user_id=user_id)
-                for p in profiles:
-                    p._delete_unsafe()
-            return len(profiles)
+        for p in profiles:
+            p._delete_unsafe()
+        return len(profiles)
 
     @classmethod
     def find_by_pk(cls, app_id, user_pk):
@@ -427,14 +419,6 @@ class Users(Base):
         d = super().as_dict()
         d['user_id'] = self.pk
         return d
-
-    @classmethod
-    def delete_by_pk(cls, app_id, pk):
-        salt = gen_random_token(nbytes=4, format='hex') + '.' + str(int(time.time()))
-        return cls.query.filter_by(pk=pk, app_id=app_id).update({
-            '_deleted': 1,
-            'pk': func.concat(salt, '.', cls._id)
-        }, synchronize_session=False)
 
     @classmethod
     def delete_by_id(cls, user_id):
