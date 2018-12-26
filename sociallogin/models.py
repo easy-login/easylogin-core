@@ -3,7 +3,7 @@ import json
 import time
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, not_
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import expression
 from sqlalchemy.types import DateTime
@@ -216,75 +216,15 @@ class SocialProfiles(Base):
             d['scope_id'] = self.scope_id
         return d
 
-    @classmethod
-    def link_user_by_pk(cls, app_id, social_id, user_pk, create_if_not_exist=True):
-        profiles = cls.query.filter_by(alias=social_id).all()
-        if not profiles:
-            raise NotFoundError('Social ID not found')
-        if profiles[0].user_id:
-            raise ConflictError('Unacceptable operation. '
-                                'Social profile has linked with an exists user')
-        num_user_same_pk = (db.session.query(func.count(SocialProfiles._id))
-            .join(Users, and_(Users._id == SocialProfiles.user_id,
-                              Users.pk == user_pk, Users.app_id == app_id))
-            .scalar())
-        if num_user_same_pk > 0:
-            raise ConflictError('User has linked with another social profile')
-            
-        user = Users.query.filter_by(pk=user_pk, app_id=app_id).one_or_none()
-        if not user:
-            if not create_if_not_exist:
-                raise NotFoundError('User not found')
-            user = Users(pk=user_pk, app_id=app_id)
-            db.session.add(user)
-            db.session.flush()
-        for p in profiles:
-            p._link_unsafe(user._id, user_pk)
-
     def link_user_by_id(self, user_id):
         try:
             _, pk = db.session.query(Users._id, Users.pk).filter_by(_id=user_id).one_or_none()
-            self._link_unsafe(user_id, pk)
+            self._link_unsafe(user_id)
         except TypeError:
             raise NotFoundError('User not found')
 
-    def _link_user_by_pk(self, user_pk, create_if_not_exist=True):
-        profiles = SocialProfiles.query.filter_by(user_pk=user_pk, app_id=self.app_id).all()
-        if not profiles:
-            user = Users.query.filter_by(pk=user_pk, app_id=self.app_id).one_or_none()
-            if not user:
-                if not create_if_not_exist:
-                    raise NotFoundError('User not found')
-                user = Users(pk=user_pk, app_id=self.app_id)
-                db.session.add(user)
-                db.session.flush()
-            self._link_unsafe(user._id, user_pk)
-        else:
-            for p in profiles:
-                if p.provider == self.provider:
-                    raise ConflictError('User has linked with a social profile in the same provider')
-            profile = profiles[0]
-            self._link_unsafe(profile.user_id, user_pk)
-
-    @classmethod
-    def unlink_user_by_pk(cls, app_id, social_id, user_pk):
-        user = Users.query.filter_by(pk=user_pk, app_id=app_id).one_or_none()
-        if not user:
-            raise NotFoundError('User ID not found')
-        return cls.query.filter_by(alias=social_id, user_id=user._id).update({
-            'linked_at': None,
-            'user_id': None
-        }, synchronize_session=False)
-
-    def _unlink_user_by_pk(self, user_pk):
-        if self.user_pk != user_pk:
-            raise ConflictError("Social profile and user are not linked with each other")
-
-        self._unlink_unsafe()
-
-    def _link_unsafe(self, user_id, user_pk):
+    def _link_unsafe(self, user_id):
         self.user_id = user_id
-        self.user_pk = user_pk
         self.linked_at = datetime.utcnow()
 
     def _unlink_unsafe(self):
@@ -307,12 +247,46 @@ class SocialProfiles(Base):
             return True
         elif return_scoped_id == 'never':
             return False
-        levels = (db.session.query(Admins.level).join(
-            Apps, and_(Admins._id == Apps.owner_id, Apps._id == self.app_id))).first()
-        level = levels[0]
+        level = (db.session.query(Admins.level).join(
+            Apps, and_(Admins._id == Apps.owner_id, Apps._id == self.app_id)).scalar())
         return (level == Admins.LEVEL_PREMIUM
                 or (level == Admins.LEVEL_AMAZON_PLUS and self.provider == 'amazon')
                 or (level == Admins.LEVEL_LINE_PLUS and self.provider == 'line'))
+
+    @classmethod
+    def link_user_by_pk(cls, app_id, social_id, user_pk, create_if_not_exist=True):
+        profiles = cls.query.filter_by(alias=social_id).all()
+        if not profiles:
+            raise NotFoundError('Social ID not found')
+        if profiles[0].user_id:
+            raise ConflictError('Unacceptable operation. '
+                                'Social profile has linked with an exists user')
+        num_user_same_pk = (db.session.query(func.count(SocialProfiles._id))
+                            .join(Users, and_(Users._id == SocialProfiles.user_id,
+                                              Users.pk == user_pk, Users.app_id == app_id))
+                            .scalar())
+        if num_user_same_pk > 0:
+            raise ConflictError('User has linked with another social profile')
+
+        user = Users.query.filter_by(pk=user_pk, app_id=app_id).one_or_none()
+        if not user:
+            if not create_if_not_exist:
+                raise NotFoundError('User not found')
+            user = Users(pk=user_pk, app_id=app_id)
+            db.session.add(user)
+            db.session.flush()
+        for p in profiles:
+            p._link_unsafe(user._id)
+
+    @classmethod
+    def unlink_user_by_pk(cls, app_id, social_id, user_pk):
+        user_id = db.session.query(Users._id).filter_by(pk=user_pk, app_id=app_id).scalar()
+        if not user_id:
+            raise NotFoundError('User ID not found')
+        return cls.query.filter_by(alias=social_id, user_id=user_id).update({
+            'linked_at': None,
+            'user_id': None
+        }, synchronize_session=False)
 
     @classmethod
     def delete_by_alias(cls, app_id, alias):
@@ -341,10 +315,10 @@ class SocialProfiles(Base):
 
     @classmethod
     def find_by_pk(cls, app_id, user_pk):
-        return (cls.query
-            .join(Users, and_(Users._id == SocialProfiles.user_id,
-                              Users.pk == user_pk, Users.app_id == app_id))
-            .all())
+        return (cls.query.join(
+            Users, and_(Users._id == SocialProfiles.user_id,
+                        Users.pk == user_pk, Users.app_id == app_id)
+        ).all())
 
     @classmethod
     def disassociate_by_pk(cls, app_id, user_pk, providers):
@@ -352,18 +326,19 @@ class SocialProfiles(Base):
         for p in profiles:
             if p.provider not in providers:
                 continue
-            print('Disassociate provider', p.provider)
             p._delete_unsafe()
         return len(profiles)
 
     @classmethod
     def disassociate_by_id(cls, app_id, social_id, providers):
-        return cls.query.filter_by(alias=social_id).update({
-            '_deleted': 1,
-            'pk': func.concat(int(time.time()), '.', cls._id),
-            'user_id': None,
-            'alias': 0
-        }, synchronize_session=False)
+        return (cls.query
+            .filter(cls.alias == social_id, not_(cls.provider.in_(providers)))
+            .update({
+                '_deleted': 1,
+                'pk': func.concat(int(time.time()), '.', cls._id),
+                'user_id': None,
+                'alias': 0
+            }, synchronize_session=False))
 
     @classmethod
     def add_or_update(cls, app_id, scope_id, provider, attrs):
@@ -591,20 +566,6 @@ class AssociateLogs(Base):
     def generate_associate_token(self):
         return ests.generate(sub=self._id, exp_in_seconds=600,
                              _nonce=self.nonce)
-
-    @classmethod
-    def add_or_reset(cls, provider, app_id, user_id, nonce):
-        log = cls.query.filter_by(user_id=user_id, provider=provider).one_or_none()
-        if log:
-            log.status = cls.STATUS_NEW
-            log.nonce = nonce
-            log.provider = provider
-        else:
-            log = AssociateLogs(provider=provider, app_id=app_id,
-                                user_id=user_id, nonce=nonce)
-            db.session.add(log)
-            db.session.flush()
-        return log
 
     @classmethod
     def parse_associate_token(cls, associate_token):
