@@ -202,12 +202,12 @@ class SocialProfiles(Base):
         self.scope_id = kwargs['scope_id']
         self.pk = kwargs['pk']
 
-    def as_dict(self, user_pk=None):
+    def as_dict(self, user_pk=None, fetch_user=False):
         d = super().as_dict()
         d['attrs'] = json.loads(self.attrs, encoding='utf8')
         d['social_id'] = str(self.alias)
         d['verified'] = bool(self.verified)
-        d['user_id'] = user_pk or Users.get_user_pk(_id=self.user_id)
+        d['user_id'] = Users.get_user_pk(_id=self.user_id) if fetch_user else user_pk
 
         if self._allow_get_scope_id():
             d['attrs']['id'] = self.scope_id
@@ -441,7 +441,9 @@ class SocialProfiles(Base):
         })
         return {
             'user': user_attrs,
-            'profiles': [p.as_dict(user_pk=user.pk) for p in profiles]
+            'profiles': [
+                p.as_dict(user_pk=user.pk if user else None, fetch_user=False) 
+                for p in profiles]
         }
 
 
