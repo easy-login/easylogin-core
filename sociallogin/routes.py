@@ -117,7 +117,7 @@ def disassociate(app_id):
     for provider in providers:
         if not is_valid_provider(provider):
             abort(400, 'Invalid provider ' + provider)
-    user_pk, alias = _parse_and_validate_identifiers(request.args)
+    user_pk, alias = _parse_and_validate_identifiers(body)
 
     num_affected = SocialProfiles.disassociate_provider(
         app_id=app_id, providers=providers,
