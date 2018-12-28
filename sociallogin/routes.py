@@ -64,7 +64,11 @@ def link_user(app_id):
         create_if_not_exist=body.get('create_user', True)
     )
     db.session.commit()
-    return jsonify({'success': True})
+    return jsonify({'success': True}) if app.config['DEBUG']\
+        else jsonify(SocialProfiles.get_full_profile(
+            app_id=app_id,
+            user_pk=user_pk, alias=alias
+        ))
 
 
 @flask_app.route('/<int:app_id>/users/unlink', methods=['PUT'])
@@ -83,7 +87,11 @@ def unlink_user(app_id):
     if not num_affected:
         abort(404, 'Social ID not found or not linked with any users')
     db.session.commit()
-    return jsonify({'success': True})
+    return jsonify({'success': True}) if app.config['DEBUG']\
+        else jsonify(SocialProfiles.get_full_profile(
+            app_id=app_id,
+            user_pk=user_pk, alias=alias
+        ))
 
 
 @flask_app.route('/<int:app_id>/users/merge', methods=['PUT'])
@@ -106,7 +114,11 @@ def merge_user(app_id):
         dst_user_pk=dst_user_pk, dst_alias=dst_alias
     )
     db.session.commit()
-    return jsonify({'success': True})
+    return jsonify({'success': True}) if app.config['DEBUG']\
+        else jsonify(SocialProfiles.get_full_profile(
+            app_id=app_id,
+            user_pk=dst_user_pk, alias=dst_alias
+        ))
 
 
 @flask_app.route('/<int:app_id>/users/disassociate', methods=['PUT'])
@@ -126,7 +138,11 @@ def disassociate(app_id):
         abort(404, 'User ID or Social ID not found')
 
     db.session.commit()
-    return jsonify({'success': True})
+    return jsonify({'success': True}) if app.config['DEBUG']\
+        else jsonify(SocialProfiles.get_full_profile(
+            app_id=app_id,
+            user_pk=user_pk, alias=alias
+        ))
 
 
 @flask_app.route('/<int:app_id>/users')
