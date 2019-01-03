@@ -3,6 +3,7 @@ import time
 from urllib import parse as urlparse
 import hashlib
 import jwt
+import msgpack
 
 from sociallogin.exc import TokenParseError
 from sociallogin.utils import calculate_hmac, base64encode, base64decode
@@ -10,6 +11,9 @@ from sociallogin import app
 
 
 class EasyTokenService:
+    """
+    First version, use Pickle to serialize/deserialize
+    """
     PREFIX = 'ESLG'
 
     def __init__(self, key=None):
@@ -26,13 +30,13 @@ class EasyTokenService:
         sign = calculate_hmac(self.key, raw, digestmod=hashlib.sha256)
         payload['sign'] = sign
 
-        token = base64encode(pickle.dumps(payload), urlsafe=True, padding=False)
+        token = base64encode(self.serialize(raw=payload), urlsafe=True, padding=False)
         return self.PREFIX + token
 
     def decode(self, token):
         try:
             data = base64decode(token[4:], urlsafe=True)
-            payload = pickle.loads(data)
+            payload = self.deserialize(packed=data)
             sign = payload['sign']
             del payload['sign']
             raw = urlparse.urlencode(payload)
@@ -48,6 +52,28 @@ class EasyTokenService:
             raise
         except Exception:
             raise TokenParseError('Token malformed')
+
+    @classmethod
+    def serialize(cls, raw):
+        return pickle.dumps(raw)
+
+    @classmethod
+    def deserialize(cls, packed):
+        return pickle.loads(packed)
+
+
+class EasyTokenService2(EasyTokenService):
+    """
+    Second version, use message packe to serialize/deserialize
+    """
+
+    @classmethod
+    def serialize(cls, raw):
+        return msgpack.packb(raw, use_bin_type=True)
+
+    @classmethod
+    def deserialize(cls, packed):
+        return msgpack.unpackb(packed, raw=False)
 
 
 class JwtTokenService:
@@ -81,4 +107,4 @@ class JwtTokenService:
 # Define default TokenService object
 jwt_token_service = JwtTokenService(key=app.config['SECRET_KEY'],
                                     issuer=app.config['SERVER_NAME'])
-easy_token_service = EasyTokenService(key=app.config['SECRET_KEY'])
+easy_token_service = EasyTokenService2(key=app.config['SECRET_KEY'])
