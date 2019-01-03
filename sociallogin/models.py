@@ -582,7 +582,8 @@ class AuthLogs(Base):
         log = cls.query.filter_by(_id=log_id).one_or_none()
 
         if not log or log.nonce != args.get('_nonce'):
-            logger.debug('Invalid OAuth state or nonce does not match', style='hybrid', log=log)
+            logger.debug('Invalid OAuth state or nonce does not match',
+                         style='hybrid', log=log.__dict__() if log else None)
             raise BadRequestError('Invalid OAuth state')
         if log.status != cls.STATUS_UNKNOWN:
             logger.debug('Validate OAuth state failed. Illegal auth log status.',
@@ -596,7 +597,8 @@ class AuthLogs(Base):
         log = cls.query.filter_by(_id=log_id).one_or_none()
 
         if not log or log.nonce != args.get('_nonce'):
-            logger.debug('Invalid auth token or nonce does not match', style='hybrid', log=log)
+            logger.debug('Invalid auth token or nonce does not match',
+                         style='hybrid', log=log.__dict__() if log else None)
             raise BadRequestError('Invalid auth token')
         if log.status not in [cls.STATUS_AUTHORIZED, cls.STATUS_WAIT_REGISTER]:
             logger.debug('Validate auth token failed. Illegal auth log status.',
@@ -638,7 +640,8 @@ class AssociateLogs(Base):
         log = cls.query.filter_by(dst_social_id=social_id).order_by(cls._id.desc()).first()
 
         if not log or log.nonce != args.get('_nonce'):
-            logger.debug('Invalid associate token or nonce does not match', style='hybrid', log=log)
+            logger.debug('Invalid associate token or nonce does not match',
+                         style='hybrid', log=log.__dict__() if log else None)
             raise BadRequestError('Invalid associate token')
         if log.status != cls.STATUS_NEW:
             logger.debug('Illegal associate log status', status=log.status, expected=cls.STATUS_NEW)
