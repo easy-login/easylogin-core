@@ -59,7 +59,7 @@ class EasyLogger(object):
         elif style == self.STYLE_HYBRID:
             msg += ' \t' + ' '.join(args)
             if kwargs:
-                msg += '\n' + json.dumps(kwargs, indent=2)
+                msg += '\n' + json.dumps(kwargs, indent=2, ensure_ascii=False)
         else:
             if args:
                 msg += '\t' + str(args or '')
