@@ -44,6 +44,8 @@ class EasyTokenService:
             if payload['exp'] < int(time.time()):
                 raise TokenParseError('Token expired')
             return payload['sub'], payload['data']
+        except TokenParseError:
+            raise
         except Exception:
             raise TokenParseError('Token malformed')
 
@@ -70,6 +72,8 @@ class JwtTokenService:
             if int(payload['exp']) < int(time.time()):
                 raise TokenParseError('Token expired')
             return payload['sub'], payload['data']
+        except TokenParseError:
+            raise
         except Exception:
             raise TokenParseError('Token malformed')
 
