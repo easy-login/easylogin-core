@@ -31,7 +31,7 @@ def authorized_profile(app_id):
         return jsonify(body)
     except TokenParseError as e:
         logger.warning('Parse auth token failed', error=e.description, token=token)
-        abort(400, 'Invalid auth token. ' + e.description)
+        abort(400, 'Invalid auth token')
 
 
 @flask_app.route('/<int:app_id>/profiles/activate', methods=['POST'])
@@ -46,7 +46,7 @@ def activate(app_id):
         return jsonify({'success': True})
     except TokenParseError as e:
         logger.warning('Parse auth token failed', error=e.description, token=token)
-        abort(400, 'Invalid auth token. ' + e.description)
+        abort(400, 'Invalid auth token')
 
 
 @flask_app.route('/<int:app_id>/users/link', methods=['PUT'])

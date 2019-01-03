@@ -38,7 +38,7 @@ def authorize(provider, intent):
         except TokenParseError as e:
             logger.warning('Parse associate token failed',
                            error=e.description, token=assoc_token)
-            abort(400, 'Invalid associate token. ' + e.description)
+            abort(400, 'Invalid associate token')
     elif intent == AuthLogs.INTENT_PAY_WITH_AMAZON:
         update_dict(extra, lpwa_domain=request.args.get('site_domain'))
 

@@ -445,7 +445,7 @@ class OAuthBackend(object):
             return AuthLogs.parse_oauth_state(oauth_state=state)
         except TokenParseError as e:
             logger.warning('Parse OAuth state failed', error=e.description, token=state)
-            raise BadRequestError('Invalid OAuth state. ' + e.description)
+            raise BadRequestError('Invalid OAuth state')
 
     @staticmethod
     def verify_callback_uri(allowed_uris, uri):
