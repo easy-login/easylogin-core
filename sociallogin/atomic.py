@@ -50,33 +50,33 @@ def inc(index, _counter):
     print('Executor {} done, took {}'.format(index, time.time() - now))
 
 
-# if __name__ == '__main__':
-#     counter = AtomicCounter()
-#     futs = []
-#     with cf.ThreadPoolExecutor(max_workers=4) as executor:
-#         for i in range(0, 4):
-#             print('Submit job to executor', i)
-#             fut = executor.submit(inc, i, counter)
-#             futs.append(fut)
-#
-#         last_val = counter.get()
-#         while True:
-#             all_futs_done = True
-#             for fut in futs:
-#                 if not fut.done():
-#                     all_futs_done = False
-#                     new_val = counter.get()
-#                     print('Counter: {}, speed/s: {}'.format(new_val, new_val - last_val))
-#                     last_val = new_val
-#                     time.sleep(1)
-#                     break
-#             if all_futs_done:
-#                 break
-#     print('All executors done')
-#
-#     for i in range(5):
-#         print(generate_64bit_id())
-#         time.sleep(0.01)
+if __name__ == '__main__':
+    # counter = AtomicCounter()
+    # futs = []
+    # with cf.ThreadPoolExecutor(max_workers=4) as executor:
+    #     for i in range(0, 4):
+    #         print('Submit job to executor', i)
+    #         fut = executor.submit(inc, i, counter)
+    #         futs.append(fut)
+    #
+    #     last_val = counter.get()
+    #     while True:
+    #         all_futs_done = True
+    #         for fut in futs:
+    #             if not fut.done():
+    #                 all_futs_done = False
+    #                 new_val = counter.get()
+    #                 print('Counter: {}, speed/s: {}'.format(new_val, new_val - last_val))
+    #                 last_val = new_val
+    #                 time.sleep(1)
+    #                 break
+    #         if all_futs_done:
+    #             break
+    # print('All executors done')
+    #
+    # for i in range(5):
+    #     print(generate_64bit_id())
+    #     time.sleep(0.01)
 
-print(generate_64bit_id())
-print(generate_64bit_id())
+    print(generate_64bit_id())
+    print(generate_64bit_id())
