@@ -218,7 +218,7 @@ class SocialProfiles(Base):
         if not user_pk and alias <= 0:
             raise BadRequestError('At least one parameter dst_user_id or '
                                   'dst_social_id must be provided')
-        profiles = SocialProfiles.find_by_pk(app_id=self.app_id, user_pk=user_pk)\
+        profiles = SocialProfiles.find_by_pk(app_id=self.app_id, user_pk=user_pk) \
             if user_pk else SocialProfiles.query.filter_by(alias=alias)
         if not profiles:
             raise NotFoundError('Destination User ID or Social ID not found')
@@ -443,7 +443,8 @@ class SocialProfiles(Base):
             'user': user_attrs,
             'profiles': [
                 p.as_dict(user_pk=user.pk if user else None, fetch_user=False) 
-                for p in profiles]
+                for p in profiles
+            ]
         }
 
 
@@ -581,8 +582,11 @@ class AuthLogs(Base):
         log = cls.query.filter_by(_id=log_id).one_or_none()
 
         if not log or log.nonce != args.get('_nonce'):
+            logger.debug('Invalid OAuth state or nonce does not match', style='hybrid', log=log)
             raise BadRequestError('Invalid OAuth state')
         if log.status != cls.STATUS_UNKNOWN:
+            logger.debug('Validate OAuth state failed. Illegal auth log status.',
+                         status=log.status, expected=cls.STATUS_UNKNOWN)
             raise BadRequestError('Invalid OAuth state')
         return log, args
 
@@ -592,8 +596,12 @@ class AuthLogs(Base):
         log = cls.query.filter_by(_id=log_id).one_or_none()
 
         if not log or log.nonce != args.get('_nonce'):
+            logger.debug('Invalid auth token or nonce does not match', style='hybrid', log=log)
             raise BadRequestError('Invalid auth token')
         if log.status not in [cls.STATUS_AUTHORIZED, cls.STATUS_WAIT_REGISTER]:
+            logger.debug('Validate auth token failed. Illegal auth log status.',
+                         status=log.status,
+                         expected=[cls.STATUS_AUTHORIZED, cls.STATUS_WAIT_REGISTER])
             raise BadRequestError('Invalid auth token')
         return log
 
@@ -630,8 +638,10 @@ class AssociateLogs(Base):
         log = cls.query.filter_by(dst_social_id=social_id).order_by(cls._id.desc()).first()
 
         if not log or log.nonce != args.get('_nonce'):
+            logger.debug('Invalid associate token or nonce does not match', style='hybrid', log=log)
             raise BadRequestError('Invalid associate token')
         if log.status != cls.STATUS_NEW:
+            logger.debug('Illegal associate log status', status=log.status, expected=cls.STATUS_NEW)
             raise BadRequestError('Invalid associate token')
         return log
 
