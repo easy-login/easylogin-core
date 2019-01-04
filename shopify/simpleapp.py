@@ -1,80 +1,87 @@
 import sys
-import os
-import requests
 import secrets
 from urllib import parse as up
+import json
+from functools import wraps
 
-from flask import Flask, request, redirect, jsonify, abort
+from flask import Flask, request, redirect, abort, session, jsonify
+from shopify import EasyLoginClient, ShopifyClient
 
 app = Flask(__name__, template_folder='templates', static_url_path='')
-app.config['SECRET_KEY'] = b'_5#y2L"F4Q8z\n\xec]/'
+app.config['SECRET_KEY'] = secrets.token_hex(nbytes=32)
 
-EASYLOGIN_APP_ID = os.getenv('EASYLOGIN_APP_ID', '1')
-EASYLOGIN_API_KEY = os.getenv('EASYLOGIN_API_KEY', 'xrcyz2AaN1s9OscnpFLup5DVTi3D7WCIGhYnsmjOyCO8HjAH')
-EASYLOGIN_API_ENDPOINT = os.getenv('EASYLOGIN_API_ENDPOINT', 'https://api.easy-login.jp')
+ENV = {
+    'easylogin-demo.myshopify.com': {
+        'easylogin': {
+            'app_id': '1',
+            'api_key': 'xrcyz2AaN1s9OscnpFLup5DVTi3D7WCIGhYnsmjOyCO8HjAH'
+        },
+        'shopify': {
+            'api_key': 'c1395644900ecc8ecaadebd8f2364e2a',
+            'api_secret': 'eaec588f1b6de0444dad30d2e7d48dac'
+        }
+    },
+    'http://easy-login-tst.myshopify.com': {
+        'easylogin': {
+            'app_id': '3',
+            'api_key': 'qswqIR3y14DnRDgn71F1kVcmgsio0wPPhchZuhJWsNhMBSA2aH44S3AE9ypQWle2'
+        },
+        'shopify': {
+            'api_key': '2100bb975c7b2effa89aa84d6ca39dba',
+            'api_secret': '875f94390ee3236b459deccbcc95af7b'
+        }
+    }
+}
 
-SHOPIFY_STORE = os.getenv('SHOPIFY_STORE', 'easylogin-demo.myshopify.com')
-SHOPIFY_API_KEY = os.getenv('SHOPIFY_API_KEY', 'c1395644900ecc8ecaadebd8f2364e2a')
-SHOPIFY_API_SECRET = os.getenv('SHOPIFY_API_SECRET', 'eaec588f1b6de0444dad30d2e7d48dac')
-SHOPIFY_API_ENDPOINT = 'https://{}:{}@{}'.format(SHOPIFY_API_KEY, SHOPIFY_API_SECRET, SHOPIFY_STORE)
 
-
-@app.route('/easylogin/auth/callback')
-def easylogin_callback():
+@app.route('/hosted/shopify/<shop_url>/auth/callback')
+def easylogin_callback(shop_url):
     provider = request.args.get('provider')
     token = request.args.get('token')
     if not provider or not token:
         abort(400, 'Missing or invalid input parameters')
 
-    easylogin_profile_url = '{}/{}/profiles/authorized'.format(
-        EASYLOGIN_API_ENDPOINT,
-        EASYLOGIN_APP_ID)
-    r = requests.post(url=easylogin_profile_url, verify=False,
-                      json={'token': token},
-                      headers={'X-Api-Key': EASYLOGIN_API_KEY})
-    if r.status_code != 200:
-        print(r.status_code, r.text)
-        abort(500, 'EasyLogin API error')
+    print('Load env for this store', ENV[shop_url])
+    easylogin_client = EasyLoginClient(
+        app_id=ENV[shop_url]['easylogin']['app_id'],
+        api_key=ENV[shop_url]['easylogin']['api_key']
+    )
+    shopify_client = ShopifyClient(
+        shop_url=shop_url,
+        api_key=ENV[shop_url]['shopify']['api_key'],
+        api_secret=ENV[shop_url]['shopify']['api_secret']
+    )
+
+    r = easylogin_client.get_authorized_profile(access_token=token)
+    if r.failed:
+        raise_error(500, 'EasyLogin API error', data=r.json())
 
     profile = r.json()
+    print('authorized profile', json.dumps(profile, indent=2, ensure_ascii=False))
     attrs = profile.get('attrs', {})
-    print('attrs', attrs)
     email = attrs.get('email')
     if not email:
         abort(403, 'Cannot log in without customer email')
 
-    shopify_customer_search_url = '{}/admin/customers/search.json?query=email:{}&fields=id'.format(
-        SHOPIFY_API_ENDPOINT,
-        email)
-    r = requests.get(url=shopify_customer_search_url)
-    if r.status_code != 200:
-        print(r.status_code, r.text)
-        abort(500, 'Shopify API error')
+    r = shopify_client.search_customer(email=email)
+    if r.failed:
+        raise_error(500, 'Shopify API error', data=r.json())
 
+    password = secrets.token_hex(nbytes=8)
     customers = r.json()['customers']
     print('shopify customers', customers)
+
     if customers:
         customer_id = customers[0]['id']
-        password = secrets.token_hex(nbytes=8)
-        shopify_update_customer_url = '{}/admin/customers/{}.json'.format(
-            SHOPIFY_API_ENDPOINT,
-            customer_id)
-        print(shopify_update_customer_url)
         body = {
-            'customer': {
-                'id': customer_id,
-                'password': password,
-                'password_confirmation': password
-            }
+            'id': customer_id,
+            'password': password,
+            'password_confirmation': password
         }
-        r = requests.put(url=shopify_update_customer_url, json=body)
-        if r.status_code != 200:
-            print(r.status_code, r.text)
-            abort(500, 'Shopify API error')
-        print('update customer info success', r.json())
-
-        params = up.urlencode({'a': 'l', 'k': email, 's': password})
-        return redirect('https://{}/account/login?{}'.format(SHOPIFY_STORE, params))
+        r = shopify_client.update_customer(customer_id=customer_id, customer=body)
+        if r.failed:
+            raise_error(500, 'Shopify API error', data=r.json())
+        print('update customer info success', r.json()['customer'])
     else:
         first_name = ''
         last_name = email
@@ -87,33 +94,55 @@ def easylogin_callback():
             first_name = attrs.get('given_name', first_name)
             last_name = attrs.get('family_name', last_name)
 
-        password = secrets.token_hex(nbytes=8)
-        shopify_create_customer_url = '{}/admin/customers.json'.format(SHOPIFY_API_ENDPOINT)
         body = {
             'customer': {
                 'first_name': first_name,
                 'last_name': last_name,
                 'email': email,
+                'verified_email': True,
                 'password': password,
                 'password_confirmation': password,
                 'send_email_welcome': False
             }
         }
-        r = requests.post(url=shopify_create_customer_url, json=body)
-        if r.status_code != 201:
-            print(r.status_code, r.text)
-            abort(500, 'Shopify API error')
-        print('create customer success', r.json())
+        r = shopify_client.create_customer(customer=body)
+        if r.failed:
+            raise_error(500, 'Shopify API error', data=r.json())
+        customer = r.json()['customer']
+        customer_id = customer['id']
+        print('create customer success', json.dumps(customer, indent=2))
 
-        params = up.urlencode({'a': 'l', 'k': email, 's': password})
-        return redirect('https://{}/account/login?{}'.format(SHOPIFY_STORE, params))
-        # params = up.urlencode({'a': 'r', 'k': email, 's': password,
-        #                        'f': first_name, 'l': last_name})
-        # return redirect('https://{}/account/register?{}'.format(SHOPIFY_STORE, params))
+    easylogin_social_id = profile['social_id']
+    if not profile.get('user_id'):
+        r = easylogin_client.get_user_profile(user_id=customer_id)
+        if r.failed:
+            if r.status_code != 404:
+                print(r.status_code, r.text)
+                raise_error(500, 'EasyLogin API error', data=r.json())
+            r = easylogin_client.link_social_profile_with_user(
+                social_id=easylogin_social_id,
+                user_id=customer_id)
+            if r.failed:
+                raise_error(500, 'EasyLogin API error', data=r.json())
+            print('link easylogin social ID with shopify customer ID success',
+                  easylogin_social_id, customer_id)
+        else:
+            r = easylogin_client.merge_user(
+                src_social_id=easylogin_social_id,
+                dst_user_id=customer_id)
+            if r.failed:
+                raise_error(500, 'EasyLogin API error', data=r.json())
+            print('merge easylogin user success', easylogin_social_id, customer_id)
+
+    params = up.urlencode({'a': 'l', 'k': email, 's': password})
+    return redirect('https://{}/account/login?{}'.format(shop_url, params))
+
+
+def raise_error(code, msg, data):
+    print(code, msg, json.dumps(data, indent=2, ensure_ascii=False))
+    abort(code, msg)
 
 
 if __name__ == '__main__':
-    import sys
-
     port = sys.argv[1] if len(sys.argv) > 1 else 8888
     app.run(host='0.0.0.0', port=port, debug=True)
