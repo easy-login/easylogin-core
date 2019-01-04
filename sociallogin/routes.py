@@ -24,7 +24,7 @@ def authorized_profile(app_id):
             log.status = AuthLogs.STATUS_SUCCEEDED
 
         profile = SocialProfiles.query.filter_by(_id=log.social_id).first_or_404()
-        body = profile.as_dict()
+        body = profile.as_dict(fetch_user=True)
         db.session.commit()
 
         logger.debug('Profile authenticated', style='hybrid', **body)
