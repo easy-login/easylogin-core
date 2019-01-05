@@ -21,7 +21,7 @@ ENV = {
             'api_secret': 'eaec588f1b6de0444dad30d2e7d48dac'
         }
     },
-    'http://easy-login-tst.myshopify.com': {
+    'easy-login-tst.myshopify.com': {
         'easylogin': {
             'app_id': '3',
             'api_key': 'qswqIR3y14DnRDgn71F1kVcmgsio0wPPhchZuhJWsNhMBSA2aH44S3AE9ypQWle2'
