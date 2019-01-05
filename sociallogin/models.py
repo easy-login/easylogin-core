@@ -55,14 +55,14 @@ class Base(db.Model):
         for k, v in self.__dict__.items():
             if k.startswith('_') or k in self.HIDDEN_FIELDS:
                 continue
-            if v and isinstance(v, datetime):
+            if isinstance(v, datetime):
                 v = self.to_isoformat(v)
             attrs[k] = v
         return attrs
 
     @staticmethod
     def to_isoformat(dt):
-        return convert_to_user_timezone(dt).isoformat()
+        return convert_to_user_timezone(dt).isoformat() if dt else None
 
 
 class Providers(Base):
