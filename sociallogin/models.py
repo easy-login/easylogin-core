@@ -55,7 +55,7 @@ class Base(db.Model):
         for k, v in self.__dict__.items():
             if k.startswith('_') or k in self.HIDDEN_FIELDS:
                 continue
-            if isinstance(v, datetime):
+            if v and isinstance(v, datetime):
                 v = self.to_isoformat(v)
             attrs[k] = v
         return attrs
@@ -210,7 +210,7 @@ class SocialProfiles(Base):
         d['user_id'] = Users.get_user_pk(_id=self.user_id) if fetch_user else user_pk
 
         if self._allow_get_scope_id():
-            d['attrs']['id'] = self.scope_id
+            # d['attrs']['id'] = self.scope_id
             d['scope_id'] = self.scope_id
         return d
 
