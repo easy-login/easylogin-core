@@ -209,7 +209,7 @@ class SocialProfiles(Base):
         d['verified'] = bool(self.verified)
         d['user_id'] = Users.get_user_pk(_id=self.user_id) if fetch_user else user_pk
 
-        if not self._prohibited:
+        if self._prohibited:
             d['attrs'] = None
             d['scope_id'] = None
         else:
