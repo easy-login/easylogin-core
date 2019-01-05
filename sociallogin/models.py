@@ -234,7 +234,7 @@ class SocialProfiles(Base):
     def _merge_unsafe(self, dst_profile):
         self.user_id = dst_profile.user_id
         self.alias = dst_profile.alias
-        self.linked_at = datetime.utcnow() if self.user_id or None
+        self.linked_at = datetime.utcnow() if self.user_id else None
 
     def _link_unsafe(self, user_id):
         self.user_id = user_id
