@@ -94,17 +94,16 @@ def easylogin_callback(shop_url):
         elif provider == 'yahoojp':
             first_name = attrs.get('given_name', first_name)
             last_name = attrs.get('family_name', last_name)
+        print('create new customer', first_name, last_name, email)
 
         body = {
-            'customer': {
-                'first_name': first_name,
-                'last_name': last_name,
-                'email': email,
-                'verified_email': True,
-                'password': password,
-                'password_confirmation': password,
-                'send_email_welcome': False
-            }
+            'first_name': first_name,
+            'last_name': last_name,
+            'email': email,
+            'verified_email': True,
+            'password': password,
+            'password_confirmation': password,
+            'send_email_welcome': False
         }
         r = shopify_client.create_customer(customer=body)
         if r.failed:
@@ -155,6 +154,7 @@ def support_jsonp(f):
             return app.response_class(content, mimetype='application/json')
         else:
             return f(*args, **kwargs)
+
     return decorated_function
 
 
