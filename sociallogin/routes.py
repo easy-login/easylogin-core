@@ -155,8 +155,8 @@ def delete_user(app_id):
     return jsonify({'success': True})
 
 
-@flask_app.route('/<int:app_id>/users/reset', methods=['PUT'])
-def reset_user_info(app_id):
+@flask_app.route('/<int:app_id>/users/delete_info', methods=['PUT'])
+def delete_user_info(app_id):
     body = request.json
     user_pk, alias = _parse_and_validate_identifiers(body)
 

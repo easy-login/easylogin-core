@@ -177,7 +177,7 @@ class Channels(Base):
 class SocialProfiles(Base):
     __tablename__ = 'social_profiles'
 
-    HIDDEN_FIELDS = {'pk', 'scope_id', 'alias', 'user_id', 'app_id'}
+    HIDDEN_FIELDS = {'pk', 'scope_id', 'attrs', 'alias', 'user_id', 'app_id'}
 
     provider = db.Column(db.String(15), nullable=False)
     pk = db.Column(db.String(40), unique=True, nullable=False)
@@ -187,6 +187,7 @@ class SocialProfiles(Base):
     login_count = db.Column(db.Integer, default=0, nullable=False)
     verified = db.Column(db.SmallInteger, default=0, nullable=False)
     _deleted = db.Column("deleted", db.SmallInteger, default=0)
+    _prohibited = db.Column("prohibited", db.SmallInteger, default=0)
     linked_at = db.Column(db.DateTime)
     alias = db.Column(db.BigInteger, nullable=False)
 
@@ -204,14 +205,18 @@ class SocialProfiles(Base):
 
     def as_dict(self, user_pk=None, fetch_user=False):
         d = super().as_dict()
-        d['attrs'] = json.loads(self.attrs, encoding='utf8')
         d['social_id'] = str(self.alias)
         d['verified'] = bool(self.verified)
         d['user_id'] = Users.get_user_pk(_id=self.user_id) if fetch_user else user_pk
 
-        if self._allow_get_scope_id():
-            # d['attrs']['id'] = self.scope_id
-            d['scope_id'] = self.scope_id
+        if not self._prohibited:
+            d['attrs'] = None
+            d['scope_id'] = None
+        else:
+            d['attrs'] = json.loads(self.attrs, encoding='utf8')
+            if self._allow_get_scope_id():
+                d['attrs']['id'] = self.scope_id
+                d['scope_id'] = self.scope_id
         return d
 
     def merge_with(self, user_pk=None, alias=None):
@@ -239,11 +244,8 @@ class SocialProfiles(Base):
         self.linked_at = None
         self.user_id = None
 
-    def _reset_info_unsafe(self):
-        self.login_count = 0
-        self.last_authorized_at = None
-        self.attrs = '{}'
-        self.scope_id = ''
+    def _delete_info_unsafe(self):
+        self._prohibited = 1
 
     def _delete_unsafe(self):
         self._deleted = 1
@@ -364,10 +366,7 @@ class SocialProfiles(Base):
             return len(profiles)
         else:
             return cls.query.filter_by(alias=alias).update({
-                'login_count': 0,
-                'last_authorized_at': None,
-                'attrs': '{}',
-                'scope_id': ''
+                '_prohibited': 1
             }, synchronize_session=False)
 
     @classmethod
@@ -406,6 +405,7 @@ class SocialProfiles(Base):
             profile.last_authorized_at = datetime.utcnow()
             profile.attrs = json.dumps(attrs)
             profile.scope_id = scope_id
+            profile._prohibited = 0
         return profile, exists
 
     @classmethod
