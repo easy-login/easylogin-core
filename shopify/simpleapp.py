@@ -40,6 +40,7 @@ def easylogin_callback(shop_url):
     token = request.args.get('token')
     if not provider or not token:
         abort(400, 'Missing or invalid input parameters')
+    print(request.url)
 
     print('Load env for this store', ENV[shop_url])
     easylogin_client = EasyLoginClient(
@@ -134,13 +135,37 @@ def easylogin_callback(shop_url):
                 raise_error(500, 'EasyLogin API error', data=r.json())
             print('merge easylogin user success', easylogin_social_id, customer_id)
 
-    params = up.urlencode({'a': 'l', 'k': email, 's': password})
-    return redirect('https://{}/account/login?{}'.format(shop_url, params))
+    params = up.urlencode({'k': email, 's': password, 'a': 'l'})
+    return redirect('https://{}/account/login?{}#abc'.format(shop_url, params))
 
 
 def raise_error(code, msg, data):
     print(code, msg, json.dumps(data, indent=2, ensure_ascii=False))
     abort(code, msg)
+
+
+def support_jsonp(f):
+    """Wraps JSONified output for JSONP"""
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        callback = request.args.get('callback', False)
+        if callback:
+            content = str(callback) + '(' + f().data.decode('utf8') + ')'
+            return app.response_class(content, mimetype='application/json')
+        else:
+            return f(*args, **kwargs)
+    return decorated_function
+
+
+@app.route('/hosted/shopify/me')
+@support_jsonp
+def me():
+    return jsonify({
+        'a': session['action'],
+        'k': session['key'],
+        's': session['secret']
+    })
 
 
 if __name__ == '__main__':
