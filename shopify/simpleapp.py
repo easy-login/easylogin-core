@@ -5,7 +5,7 @@ import json
 from functools import wraps
 
 from flask import Flask, request, redirect, abort, session, jsonify
-from shopify import EasyLoginClient, ShopifyClient
+from apiclient import EasyLoginClient, ShopifyClient
 
 app = Flask(__name__, template_folder='templates', static_url_path='')
 app.config['SECRET_KEY'] = secrets.token_hex(nbytes=32)
