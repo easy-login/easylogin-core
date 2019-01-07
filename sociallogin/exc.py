@@ -96,7 +96,7 @@ def common_error(error):
         raise error
     else:
         msg = '{}: {}'.format(type(error).__name__, repr(error))
-        return get_error_response(400, description=msg)
+        return get_error_response(code=400, error=SocialLoginError(msg))
 
 
 @app.errorhandler(400)
@@ -148,6 +148,7 @@ def server_internal_error(error):
 
 def get_error_response(code, error):
     payload = error.as_dict() if isinstance(error, SocialLoginError) \
-        else { 'error_description': error.description }
-    payload['error'] = ERROR_CODES.get(code, 'unknown')
+        else {'error_description': error.description}
+    if not payload.get('error'):
+        payload['error'] = ERROR_CODES.get(code, 'unknown')
     return jsonify(payload), code
