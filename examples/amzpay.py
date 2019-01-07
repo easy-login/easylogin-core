@@ -19,7 +19,6 @@ CURRENCY_CODE = 'JPY'
 
 @amazon_pay.route('/pay.html')
 def show_pay():
-    url_for()
     return render_template('pay.html')
 
 

@@ -28,7 +28,7 @@
 <br/>
 <div id="AmazonPayButton">
 </div>
-<div
+<!-- <div
     data-ap-widget-type="expressPaymentButton"
     data-ap-signature="U6RAVwuIaarwc0FQ6%2FwFswN8b9fSf1FYGXhuR88xTVg%3D"
     data-ap-seller-id="AXRHKH1P12JT4"
@@ -40,9 +40,8 @@
     data-ap-amount="500"
     data-ap-note=""
     data-ap-shipping-address-required="true"
-    data-ap-payment-action="None"
-    >
-</div>
+    data-ap-payment-action="None">
+</div> -->
 <div id="addressBookWidgetDiv">
 </div> 
 <div id="walletWidgetDiv">
@@ -97,34 +96,60 @@
         console.log('amz seller ID: ' + sellerId);
     };
 
+    function showAmazonPayButtonWithEasyLogin(container, sellerId, options) {
+        var authRequest; 
+        options.authorization = function() {
+            loginOptions = {
+                scope: "profile payments:widget payments:shipping_address postal_code", 
+                interactive: "never",
+                popup: true
+            }; 
+            authRequest = amazon.Login.authorize(loginOptions, options.onAuthorization);
+        }
+        OffAmazonPayments.Button(container, sellerId, options); 
+    }
+
     function showAmazonPayButton(){
         var authRequest; 
-        OffAmazonPayments.Button("AmazonPayButton", sellerId, { 
+        showAmazonPayButtonWithEasyLogin("AmazonPayButton", sellerId, {
+        // OffAmazonPayments.Button("AmazonPayButton", sellerId, { 
             type:  "PwA", 
             color: "Gold", 
             size:  "normal", 
 
-            authorization: function() { 
-                loginOptions = {
-                    scope: "profile payments:widget payments:shipping_address postal_code", 
-                    interactive: "never",
-                    popup: true
-                }; 
-                authRequest = amazon.Login.authorize (loginOptions, 
-                    function(response) {
-                        addressConsentToken = response.access_token;
-                        console.log('Constent token: ' + addressConsentToken);
-                        if (!addressConsentToken) {
-                            // alert('You must log in before can pay');
-                            onAmazonLoginButtonClicked();
-                        } else {                            
-                            console.log("logIn success, render address and wallet widgets");
-                            showAddressBookWidget();
-                            // showWalletWidget();                        
-                        }                    
-                    }
-                ); 
-            }, 
+            // authorization: function() { 
+            //     loginOptions = {
+            //         scope: "profile payments:widget payments:shipping_address postal_code", 
+            //         interactive: "never",
+            //         popup: true
+            //     }; 
+            //     authRequest = amazon.Login.authorize (loginOptions, 
+            //         function(response) {
+            //             addressConsentToken = response.access_token;
+            //             console.log('Constent token: ' + addressConsentToken);
+            //             if (!addressConsentToken) {
+            //                 // alert('You must log in before can pay');
+            //                 onAmazonLoginButtonClicked();
+            //             } else {                            
+            //                 console.log("logIn success, render address and wallet widgets");
+            //                 showAddressBookWidget();
+            //                 // showWalletWidget();                        
+            //             }                    
+            //         }
+            //     ); 
+            // }, 
+            onAuthorization: function(response) {
+                addressConsentToken = response.access_token;
+                console.log('Constent token: ' + addressConsentToken);
+                if (!addressConsentToken) {
+                    // alert('You must log in before can pay');
+                    onAmazonLoginButtonClicked();
+                } else {                            
+                    console.log("logIn success, render address and wallet widgets");
+                    showAddressBookWidget();
+                    // showWalletWidget();                        
+                }   
+            },
             // onSignIn: function(orderReference) {
             //     amazonOrderReferenceId = orderReference.getAmazonOrderReferenceId();
             //     console.log("amazonOrderReferenceId: " + amazonOrderReferenceId);
