@@ -102,10 +102,13 @@ class EasyLoginClient(BaseApiClient):
 
 class ShopifyClient(BaseApiClient):
 
-    def __init__(self, shop_url, api_key, api_secret):
-        self.api_key = api_key
-        self.api_secret = api_key
-        self.base_url = 'https://{}:{}@{}/admin'.format(api_key, api_secret, shop_url)
+    def __init__(self, shop_url, access_token):
+        self.access_token = access_token
+        self.base_url = 'https://{}/admin'.format(shop_url)
+
+    def get_shop_info(self):
+        url = self.base_url + '/shop.json'
+        return self._send_get(url=url, params={'fields': 'id'})
 
     def get_customer(self, customer_id):
         pass
@@ -130,13 +133,17 @@ class ShopifyClient(BaseApiClient):
         method = method.upper()
         print(method, url)
         if method == 'GET':
-            r = requests.get(url=url, params=params)
+            r = requests.get(url=url, params=params,
+                             headers={'X-Shopify-Access-Token': self.access_token})
         elif method == 'POST':
-            r = requests.post(url=url, json=params)
+            r = requests.post(url=url, json=params,
+                              headers={'X-Shopify-Access-Token': self.access_token})
         elif method == 'PUT':
-            r = requests.put(url=url, json=params)
+            r = requests.put(url=url, json=params,
+                             headers={'X-Shopify-Access-Token': self.access_token})
         elif method == 'DELETE':
-            r = requests.delete(url=url, json=params)
+            r = requests.delete(url=url, json=params,
+                                headers={'X-Shopify-Access-Token': self.access_token})
         else:
             raise ValueError('Invalid or unsupported method')
         return Response(r)

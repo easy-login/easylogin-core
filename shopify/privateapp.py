@@ -18,7 +18,8 @@ ENV = {
         },
         'shopify': {
             'api_key': 'c1395644900ecc8ecaadebd8f2364e2a',
-            'api_secret': 'eaec588f1b6de0444dad30d2e7d48dac'
+            'api_secret': 'eaec588f1b6de0444dad30d2e7d48dac',
+            'access_token': ''
         }
     },
     'easy-login-tst.myshopify.com': {
@@ -49,8 +50,7 @@ def easylogin_callback(shop_url):
     )
     shopify_client = ShopifyClient(
         shop_url=shop_url,
-        api_key=ENV[shop_url]['shopify']['api_key'],
-        api_secret=ENV[shop_url]['shopify']['api_secret']
+        access_token=ENV[shop_url]['shopify']['access_token']
     )
 
     r = easylogin_client.get_authorized_profile(access_token=token)

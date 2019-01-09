@@ -67,6 +67,8 @@ class Stores(Base):
 
     store_url = db.Column(db.String(255), unique=True, nullable=False)
     easylogin_app_id = db.Column(db.String(255))
+    easylogin_api_key = db.Column(db.String(255))
+    access_token = db.Column(db.String(1023))
     installed_at = db.Column(db.DateTime)
     installed = db.Column(db.SmallInteger, default=0, nullable=False)
     last_activated_at = db.Column('activated_at', db.DateTime)
@@ -76,12 +78,19 @@ class Stores(Base):
         self.last_activated_at = utcnow()
 
     @classmethod
-    def set_installed(cls, store_url, app_id):
+    def set_installed(cls, store_url, access_token):
         return cls.query.filter_by(store_url=store_url).update({
-            'easylogin_app_id': app_id,
+            'access_token': access_token
             'installed_at': utcnow(),
             'installed': 1
         }, synchronize_session=False)
+
+    @classmethod
+    def update_easylogin_config(cls, store_url, app_id, api_key):
+        return cls.query.filter_by(store_url=store_url).update({
+            'easylogin_app_id': app_id,
+            'easylogin_api_key': api_key
+        })
 
 
 class Customer(Base):
@@ -90,23 +99,3 @@ class Customer(Base):
     shopify_id = db.Column(db.BigInteger, nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
-
-
-class AccessTokens(Base):
-    __tablename__ = 'tokens'
-
-    online_access = db.Column(db.SmallInteger, default=0, nullable=False)
-    access_token = db.Column(db.String(2047), nullable=False)
-    refresh_token = db.Column(db.String(2047))
-    expires_at = db.Column(db.DateTime)
-    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=False)
-
-    def __init__(self, **kwargs):
-        self.access_token = kwargs.get('access_token')
-        self.refresh_token = kwargs.get('refresh_token')
-        self.expires_at = kwargs.get('expires_at')
-        self.store_id = kwargs.get('store_id')
-
-    @classmethod
-    def find_latest_by_store_id(cls, store_id):
-        return cls.query.filter_by(store_id=store_id).order_by(cls._id.desc()).first()
