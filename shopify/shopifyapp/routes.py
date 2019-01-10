@@ -313,4 +313,5 @@ def check_install_script_tag(shop, access_token):
         
         
 def url_for_safe(endpoint, **values):
-    return url_for(endpoint=endpoint, _scheme='https', _external=True, **values)
+    scheme = request.environ.get('X-FORWARDED-PROTO', 'https')
+    return url_for(endpoint=endpoint, _scheme=scheme, _external=True, **values)

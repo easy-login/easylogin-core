@@ -113,7 +113,7 @@ class ShopifyClient(BaseApiClient):
     def search_customer(self, query, fields='id'):
         qs = ' '.join(['{}:{}'.format(k, v) for k, v in query.items()])
         url = self.base_url + '/customers/search.json'
-        return self._send_get(url=url, params={'query': query, 'fields': fields})
+        return self._send_get(url=url, params={'query': qs, 'fields': fields})
 
     def update_customer(self, customer_id, customer):
         url = self.base_url + '/customers/{}.json'.format(customer_id)
