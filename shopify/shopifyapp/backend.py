@@ -57,20 +57,10 @@ def install():
 
 @app.route('/shopify/oauth/callback')
 def oauth_callback():
-    args = {}
-    logger.debug('Callback request args', style='hybrid', **request.args)
-    for k, v in request.args.items():
-        if k != 'hmac':
-            args[k] = v
-    query = up.urlencode(args)
-    sign = request.args['hmac']
-    expected_sign = calculate_hmac(key=app.config['SHOPIFY_OAUTH_CLIENT_SECRET'],
-                                   raw=query, digestmod=hashlib.sha256)
-    if sign != expected_sign:
-        logger.warning('HMAC signature invalid', sign=sign, expected=expected_sign)
+    if not verify_request():
         abort(403, 'HMAC signature invalid')
 
-    shop = args['shop']
+    shop = request.args['shop']
     store = Stores.query.filter_by(store_url=shop).one_or_none()
     if not store:
         abort(404, 'Store not found')
@@ -79,7 +69,7 @@ def oauth_callback():
         data={
             'client_id': app.config['SHOPIFY_OAUTH_CLIENT_ID'],
             'client_secret': app.config['SHOPIFY_OAUTH_CLIENT_SECRET'],
-            'code': args['code']
+            'code': request.args['code']
         })
     if r.status_code != 200:
         abort(500, 'Unknown error. Cannot get Shopify access token')
@@ -272,6 +262,20 @@ def easylogin_callback(shop):
     db.session.commit()
     params = up.urlencode({'k': email, 's': password})
     return redirect('https://{}/account/login?{}#abc'.format(shop, params))
+
+
+def verify_request():
+    args = {}
+    logger.debug('Callback request args', style='hybrid', **request.args)
+    for k, v in request.args.items():
+        if k != 'hmac':
+            args[k] = v
+    query = up.urlencode(args)
+    sign = request.args['hmac']
+    expected_sign = calculate_hmac(key=app.config['SHOPIFY_OAUTH_CLIENT_SECRET'],
+                                   raw=query, digestmod=hashlib.sha256)
+    logger.debug('Verify HMAC signature', sign=sign, expected=expected_sign)
+    return sign == expected_sign
 
 
 def raise_error(code, msg, data):

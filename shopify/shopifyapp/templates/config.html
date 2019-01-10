@@ -19,7 +19,7 @@
             <div class="card-box">
                 <h4 style="margin-top:30px; margin-bottom:30px">Easy Login Configuration</h4>
                 <div class="p-l-30">
-                    <form class="form-horizontal" action="/hosted/shopify/{{ shop }}/config" method="post" id="id_form_link">
+                    <form class="form-horizontal" action="/shopify/{{ shop }}/config" method="post" id="id_form_link">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token}}">
                         <div class="form-group row">
                             <label for="easylogin_app_id" class="col-md-2 col-form-label">App ID</label>

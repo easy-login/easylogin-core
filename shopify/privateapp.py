@@ -2,9 +2,8 @@ import sys
 import secrets
 from urllib import parse as up
 import json
-from functools import wraps
 
-from flask import Flask, request, redirect, abort, session, jsonify
+from flask import Flask, request, redirect, abort
 from apiclient import EasyLoginClient, ShopifyClient
 
 app = Flask(__name__, template_folder='templates', static_url_path='')
@@ -35,7 +34,7 @@ ENV = {
 }
 
 
-@app.route('/hosted/shopify/<shop_url>/auth/callback')
+@app.route('/shopify/<shop_url>/auth/callback')
 def easylogin_callback(shop_url):
     provider = request.args.get('provider')
     token = request.args.get('token')
@@ -141,31 +140,6 @@ def easylogin_callback(shop_url):
 def raise_error(code, msg, data):
     print(code, msg, json.dumps(data, indent=2, ensure_ascii=False))
     abort(code, msg)
-
-
-def support_jsonp(f):
-    """Wraps JSONified output for JSONP"""
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        callback = request.args.get('callback', False)
-        if callback:
-            content = str(callback) + '(' + f().data.decode('utf8') + ')'
-            return app.response_class(content, mimetype='application/json')
-        else:
-            return f(*args, **kwargs)
-
-    return decorated_function
-
-
-@app.route('/hosted/shopify/me')
-@support_jsonp
-def me():
-    return jsonify({
-        'a': session['action'],
-        'k': session['key'],
-        's': session['secret']
-    })
 
 
 if __name__ == '__main__':
