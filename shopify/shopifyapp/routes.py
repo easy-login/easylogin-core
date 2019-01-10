@@ -313,4 +313,4 @@ def check_install_script_tag(shop, access_token):
         
         
 def url_for_safe(endpoint, **values):
-    return url_for_safe(endpoint=endpoint, _scheme='https', _external=True, **values)
+    return url_for(endpoint=endpoint, _scheme='https', _external=True, **values)
