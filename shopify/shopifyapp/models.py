@@ -65,8 +65,8 @@ class Base(db.Model):
 class Stores(Base):
     __tablename__ = 'stores'
 
-    store_url = db.Column(db.String(255), unique=True, nullable=False)
-    easylogin_app_id = db.Column(db.String(255))
+    store_url = db.Column(db.String(128), unique=True, nullable=False)
+    easylogin_app_id = db.Column(db.String(64))
     easylogin_api_key = db.Column(db.String(255))
     access_token = db.Column(db.String(1023))
     installed_at = db.Column(db.DateTime)
@@ -96,9 +96,9 @@ class Stores(Base):
 class Customers(Base):
     __tablename__ = 'customers'
 
-    shopify_id = db.Column(db.BigInteger, nullable=False)
-    email = db.Column(db.String(255), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
+    shopify_id = db.Column(db.BigInteger, unique=True, nullable=False)
+    email = db.Column(db.String(128), unique=True, nullable=False)
+    password = db.Column(db.String(32), nullable=False)
     first_name = db.Column(db.String(255), nullable=False)
     last_name = db.Column(db.String(255), nullable=False)
 
