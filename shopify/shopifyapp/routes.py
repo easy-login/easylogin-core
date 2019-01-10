@@ -46,7 +46,7 @@ def install():
     uri = add_params_to_uri(
         uri='https://' + shop + '/admin/oauth/authorize',
         client_id=app.config['SHOPIFY_OAUTH_CLIENT_ID'],
-        redirect_uri=url_for('oauth_callback', _external=True),
+        redirect_uri=url_for_safe('oauth_callback'),
         scope=','.join(scopes),
         nonce=state)
     logger.debug('Redirect to Shopify authorize URL', uri)
@@ -117,7 +117,7 @@ def get_auth_url(shop, provider):
     uri = add_params_to_uri(
         uri='https://api.easy-login.jp/auth/' + provider,
         app_id=store.easylogin_app_id,
-        callback_uri=url_for('easylogin_callback', shop=shop, _external=True),
+        callback_uri=url_for_safe('easylogin_callback', shop=shop),
         nonce=secrets.token_hex(nbytes=16))
     return redirect(uri)
 
@@ -145,9 +145,9 @@ def get_login_buttons_html(shop):
         </div>
     </div>
     """.strip().format(
-        line_url=url_for('get_auth_url', shop=shop, provider='line', _external=True),
-        yahoo_url=url_for('get_auth_url', shop=shop, provider='yahoojp', _external=True),
-        facebook_url=url_for('get_auth_url', shop=shop, provider='facebook', _external=True)
+        line_url=url_for_safe('get_auth_url', shop=shop, provider='line'),
+        yahoo_url=url_for_safe('get_auth_url', shop=shop, provider='yahoojp'),
+        facebook_url=url_for_safe('get_auth_url', shop=shop, provider='facebook')
     )
     return jsonify({'html': html})
 
@@ -310,3 +310,7 @@ def check_install_script_tag(shop, access_token):
     r = shopify_client.create_script_tag(src=script_src, display_scope='online_store')
     if r.failed:
         raise_error(500, 'Shopify API error', data=r.json())
+        
+        
+def url_for_safe(endpoint, **values):
+    return url_for_safe(endpoint=endpoint, _scheme='https', _external=True, **values)
