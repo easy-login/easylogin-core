@@ -80,7 +80,7 @@ class Stores(Base):
     @classmethod
     def set_installed(cls, store_url, access_token):
         return cls.query.filter_by(store_url=store_url).update({
-            'access_token': access_token
+            'access_token': access_token,
             'installed_at': utcnow(),
             'installed': 1
         }, synchronize_session=False)

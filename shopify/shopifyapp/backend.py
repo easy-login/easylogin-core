@@ -1,4 +1,3 @@
-import sys
 import secrets
 from urllib import parse as up
 import hashlib
@@ -8,47 +7,35 @@ from flask import request, url_for, redirect, abort, render_template, \
 import requests
 
 from shopifyapp import app, db, logger
-from shopifyapp.utils import add_params_to_uri, calculate_hmac
-from shopifyapp.models import Stores, AccessTokens
+from shopifyapp.utils import add_params_to_uri, calculate_hmac, support_jsonp
+from shopifyapp.models import Stores
 from shopifyapp.apiclient import ShopifyClient
 
 
-def support_jsonp(f):
-    """Wraps JSONified output for JSONP"""
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        callback = request.args.get('callback', False)
-        if callback:
-            content = str(callback) + '(' + f().data.decode('utf8') + ')'
-            return app.response_class(content, mimetype='application/json')
-        else:
-            return f(*args, **kwargs)
-
-    return decorated_function
-
-
-@app.route('/hosted/shopify')
+@app.route('/shopify')
 def install():
     shop = request.args.get('shop')
     # ts = int(request.args.get('timestamp'))
     # hmac = request.args.get('hmac')
+    if not shop or not shop.endswith('.myshopify.com'):
+        abort(400, 'Invalid shop')
 
     store = Stores.query.filter_by(store_url=shop).one_or_none()
     if not store:
         logger.debug('Store does not exists in db, create new', store=shop)
         store = Stores(store_url=shop)
         db.session.add(store)
-        db.session.commit()
     if store.access_token:
         shopify_client = ShopifyClient(shop_url=shop, access_token=store.access_token)
         r = shopify_client.get_shop_info()
         if r.success:
+            logger.debug('Store has installed', style='hybrid', **store.as_dict())
             return render_config_page(
                 shop=shop,
-                app_id=store.app_id,
-                api_key=store.api_key
+                app_id=store.easylogin_app_id,
+                api_key=store.easylogin_api_key
             )
+    logger.info('Store did not installed', store_url=shop)
     scopes = [
         'read_customers', 'write_customers',
         'read_script_tags', 'write_script_tags',
@@ -62,10 +49,12 @@ def install():
         scope=','.join(scopes),
         nonce=state)
     logger.debug('Redirect to Shopify authorize URL', uri)
+
+    db.session.commit()
     return redirect(uri)
 
 
-@app.route('/hosted/shopify/oauth/callback')
+@app.route('/shopify/oauth/callback')
 def oauth_callback():
     args = {}
     logger.debug('Callback request args', style='hybrid', **request.args)
@@ -93,15 +82,15 @@ def oauth_callback():
         })
     if r.status_code != 200:
         abort(500, 'Unknown error. Cannot get Shopify access token')
-        logger.warn('Get Shopify access token failed', **r.json())
+        logger.error('Get Shopify access token failed', **r.json())
 
     tokens = r.json()
     Stores.set_installed(store_url=shop, access_token=tokens['access_token'])
     db.session.commit()
-    return redirect(url_for('install'))
+    return redirect('https://' + shop + '/admin/apps/' + app.config['SHOPIFY_APP_NAME'])
 
 
-@app.route('/hosted/shopify/<shop>/config', methods=['POST'])
+@app.route('/shopify/<shop>/config', methods=['POST'])
 def update_config(shop):
     try:
         csrf_token = request.form['csrf_token']
@@ -124,7 +113,7 @@ def update_config(shop):
         abort(400, 'Missing or invalid parameters')
 
 
-@app.route('/hosted/shopify/<shop>/auth/<provider>')
+@app.route('/shopify/<shop>/auth/<provider>')
 def get_auth_url(shop, provider):
     store = Stores.query.filter_by(store_url=shop).one_or_none()
     if not store:
@@ -139,10 +128,9 @@ def get_auth_url(shop, provider):
     return redirect(uri)
 
 
-@app.route('/hosted/shopify/<shop>/login-buttons/jsonp')
+@app.route('/shopify/<shop>/resources/buttons')
 @support_jsonp
 def get_login_buttons_html(shop):
-    callback = request.args.get('callback')
     html = """
     <div id="SocialAuthForm" class="col-md-6">
         <h4 class="text-center">OR</h4>
@@ -152,19 +140,18 @@ def get_login_buttons_html(shop):
             </a>
         </div>
         <div class="login-form yahoo-form">
-            <a href="hosted/shopify/{shop}/auth/yahoojp">
+            <a href="/hosted/shopify/{shop}/auth/yahoojp">
             <button class="yahoo-btn">Login with YAHOOJP</button>
             </a>
         </div>
         <div class="login-form facebook-form">
-            <a href="hosted/shopify/{shop}/auth/facebook">
+            <a href="/hosted/shopify/{shop}/auth/facebook">
             <button class="facebook-btn">Login with FACEBOOK</button>
             </a>
         </div>
     </div>
     """.strip().format(shop=shop)
-    return html
-    # return callback + '(' + html + ');';
+    return jsonify({'html': html})
 
 
 def render_config_page(shop, app_id, api_key):

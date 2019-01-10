@@ -9,10 +9,10 @@ import urllib.parse as urlparse
 from datetime import timezone, datetime
 import logging
 import json
+from functools import wraps
 
 import pytz
 from flask import current_app as app, request
-
 
 epoch = datetime.utcfromtimestamp(0)
 
@@ -184,3 +184,18 @@ def smart_str2int(s, def_val=0):
         return int(s)
     except (TypeError, ValueError):
         return def_val
+
+
+def support_jsonp(f):
+    """Wraps JSONified output for JSONP"""
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        callback = request.args.get('callback', False)
+        if callback:
+            content = str(callback) + '(' + f(*args, **kwargs).data.decode('utf8') + ')'
+            return app.response_class(content, mimetype='application/json')
+        else:
+            return f(*args, **kwargs)
+
+    return decorated_function

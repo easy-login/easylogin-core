@@ -3,36 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <title>EasyLogin Configuration</title>
+  <!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 </head>
 <body>
 <div class="container">
     <div class="row">
         <div class="col-md-12">
             <div class="card-box">
-                <h4>Easy Login API Explorer</h4>
+                <h4 style="margin-top:30px; margin-bottom:30px">Easy Login Configuration</h4>
                 <div class="p-l-30">
-                    <form class="form-horizontal" action="#" method="get" id="id_form_link">
+                    <form class="form-horizontal" action="/hosted/shopify/{{ shop }}/config" method="post" id="id_form_link">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token}}">
                         <div class="form-group row">
-                            <label for="id_user_id_link" class="col-md-2 col-form-label">User ID</label>
+                            <label for="easylogin_app_id" class="col-md-2 col-form-label">App ID</label>
                             <div class="col-md-8">
-                                <input class="form-control" id="id_user_id_link" placeholder="User ID" type="text"
-                                       name="user_id">
+                                <input class="form-control" id="easylogin_app_id" placeholder="App ID" type="text"
+                                       name="easylogin_app_id" value="{{ app_id }}">
                             </div>
                         </div>
                         <div class="form-group row">
-                            <label for="id_social_id_link" class="col-md-2 col-form-label">Social ID</label>
+                            <label for="easylogin_api_key" class="col-md-2 col-form-label">API Key</label>
                             <div class="col-md-8">
-                                <input class="form-control" id="id_social_id_link" placeholder="Social ID" type="text"
-                                       name="social_id">
+                                <input class="form-control" id="easylogin_api_key" placeholder="API Key" type="text"
+                                       name="easylogin_api_key" value="{{ api_key }}">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-8"></div>
+                            <div class="col-md-2">
+                                <button class="btn btn-primary btn-block" type="submit" id="btn_submit">Submit</button>
                             </div>
                         </div>
                     </form>
-                    <div class="form-group row">
-                        <div class="col-md-8"></div>
-                        <div class="col-md-2">
-                            <button class="btn btn-primary btn-block" type="submit" id="btn_submit">Submit</button>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
