@@ -34,22 +34,22 @@ ENV = {
 }
 
 
-@app.route('/shopify/<shop_url>/auth/callback')
-def easylogin_callback(shop_url):
+@app.route('/shopify/<store_url>/auth/callback')
+def easylogin_callback(store_url):
     provider = request.args.get('provider')
     token = request.args.get('token')
     if not provider or not token:
         abort(400, 'Missing or invalid input parameters')
     print(request.url)
 
-    print('Load env for this store', ENV[shop_url])
+    print('Load env for this store', ENV[store_url])
     easylogin_client = EasyLoginClient(
-        app_id=ENV[shop_url]['easylogin']['app_id'],
-        api_key=ENV[shop_url]['easylogin']['api_key']
+        app_id=ENV[store_url]['easylogin']['app_id'],
+        api_key=ENV[store_url]['easylogin']['api_key']
     )
     shopify_client = ShopifyClient(
-        shop_url=shop_url,
-        access_token=ENV[shop_url]['shopify']['access_token']
+        store_url=store_url,
+        access_token=ENV[store_url]['shopify']['access_token']
     )
 
     r = easylogin_client.get_authorized_profile(access_token=token)
@@ -134,7 +134,7 @@ def easylogin_callback(shop_url):
             print('merge easylogin user success', easylogin_social_id, customer_id)
 
     params = up.urlencode({'k': email, 's': password, 'a': 'l'})
-    return redirect('https://{}/account/login?{}#abc'.format(shop_url, params))
+    return redirect('https://{}/account/login?{}#abc'.format(store_url, params))
 
 
 def raise_error(code, msg, data):

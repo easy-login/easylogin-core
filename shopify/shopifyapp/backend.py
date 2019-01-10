@@ -27,7 +27,7 @@ def install():
         store = Stores(store_url=shop)
         db.session.add(store)
     if store.access_token:
-        shopify_client = ShopifyClient(shop_url=shop, access_token=store.access_token)
+        shopify_client = ShopifyClient(store_url=shop, access_token=store.access_token)
         r = shopify_client.get_shop_info()
         if r.success:
             logger.debug('Store has installed', style='hybrid', **store.as_dict())
@@ -36,7 +36,7 @@ def install():
                 app_id=store.easylogin_app_id,
                 api_key=store.easylogin_api_key
             )
-    logger.info('Store did not installed', store_url=shop)
+    logger.info('Store did not installed', shop=shop)
     scopes = [
         'read_customers', 'write_customers',
         'read_script_tags', 'write_script_tags',
@@ -61,9 +61,6 @@ def oauth_callback():
         abort(403, 'HMAC signature invalid')
 
     shop = request.args['shop']
-    store = Stores.query.filter_by(store_url=shop).one_or_none()
-    if not store:
-        abort(404, 'Store not found')
     r = requests.post(
         url='https://' + shop + '/admin/oauth/access_token',
         data={
@@ -72,11 +69,15 @@ def oauth_callback():
             'code': request.args['code']
         })
     if r.status_code != 200:
+        logger.warning('Get Shopify access token failed', body=r.text)
         abort(500, 'Unknown error. Cannot get Shopify access token')
-        logger.error('Get Shopify access token failed', **r.json())
 
-    tokens = r.json()
-    Stores.set_installed(store_url=shop, access_token=tokens['access_token'])
+    # Install script tag to new store
+    access_token = r.json()['access_token']
+    check_install_script_tag(shop=shop, access_token=access_token)
+
+    if not Stores.set_installed(store_url=shop, access_token=access_token):
+        abort(404, 'Shop not found')
     db.session.commit()
     return redirect('https://' + shop + '/admin/apps/' + app.config['SHOPIFY_APP_NAME'])
 
@@ -91,10 +92,12 @@ def update_config(shop):
 
         easylogin_app_id = request.form['easylogin_app_id']
         easylogin_api_key = request.form['easylogin_api_key']
-        Stores.update_easylogin_config(
-            store_url=shop,
-            app_id=easylogin_app_id,
-            api_key=easylogin_api_key)
+        if not Stores.update_easylogin_config(
+                store_url=shop,
+                app_id=easylogin_app_id,
+                api_key=easylogin_api_key):
+            abort(404, 'Shop not found')
+
         db.session.commit()
         return render_config_page(
             shop=shop,
@@ -165,7 +168,7 @@ def easylogin_callback(shop):
         api_key=store.easylogin_api_key
     )
     shopify_client = ShopifyClient(
-        shop_url=store.store_url,
+        store_url=store.store_url,
         access_token=store.access_token
     )
 
@@ -180,7 +183,9 @@ def easylogin_callback(shop):
     if not email:
         abort(403, 'Cannot log in without customer email')
 
-    r = shopify_client.search_customer(email=email, fields='id,email,first_name,last_name')
+    r = shopify_client.search_customer(
+        fields='id,email,first_name,last_name',
+        query={'email': email})
     if r.failed:
         raise_error(500, 'Shopify API error', data=r.json())
 
@@ -266,7 +271,6 @@ def easylogin_callback(shop):
 
 def verify_request():
     args = {}
-    logger.debug('Callback request args', style='hybrid', **request.args)
     for k, v in request.args.items():
         if k != 'hmac':
             args[k] = v
@@ -291,3 +295,18 @@ def render_config_page(shop, app_id, api_key):
         shop=shop, csrf_token=csrf_token,
         app_id=app_id or '',
         api_key=api_key or '')
+
+
+def check_install_script_tag(shop, access_token):
+    script_src = app.config['SHOPIFY_SCRIPT_SRC']
+    shopify_client = ShopifyClient(store_url=shop, access_token=access_token)
+    r = shopify_client.search_script_tag(src=script_src)
+    if r.failed:
+        raise_error(500, 'Shopify API error', data=r.json())
+    if r.json()['script_tags']:
+        return
+
+    logger.info('Add script tag to new store', store_url=shop)
+    r = shopify_client.create_script_tag(src=script_src, display_scope='online_store')
+    if r.failed:
+        raise_error(500, 'Shopify API error', data=r.json())

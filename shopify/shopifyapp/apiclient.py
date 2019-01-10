@@ -102,22 +102,16 @@ class EasyLoginClient(BaseApiClient):
 
 class ShopifyClient(BaseApiClient):
 
-    def __init__(self, shop_url, access_token):
+    def __init__(self, store_url, access_token):
         self.access_token = access_token
-        self.base_url = 'https://{}/admin'.format(shop_url)
+        self.base_url = 'https://{}/admin'.format(store_url)
 
     def get_shop_info(self):
         url = self.base_url + '/shop.json'
         return self._send_get(url=url, params={'fields': 'id'})
 
-    def get_customer(self, customer_id):
-        pass
-
-    def get_customers(self, ids=None):
-        pass
-
-    def search_customer(self, fields='id', **kwargs):
-        query = ' '.join(['{}:{}'.format(k, v) for k, v in kwargs.items()])
+    def search_customer(self, query, fields='id'):
+        qs = ' '.join(['{}:{}'.format(k, v) for k, v in query.items()])
         url = self.base_url + '/customers/search.json'
         return self._send_get(url=url, params={'query': query, 'fields': fields})
 
@@ -128,6 +122,19 @@ class ShopifyClient(BaseApiClient):
     def create_customer(self, customer):
         url = self.base_url + '/customers.json'
         return self._send_post(url=url, params={'customer': customer})
+
+    def search_script_tag(self, src, fields='id'):
+        url = self.base_url + '/script_tags.json'
+        return self._send_get(url=url, params={'src': src, 'fields': fields})
+
+    def create_script_tag(self, src, display_scope='all'):
+        url = self.base_url + '/script_tags.json'
+        script_tag = {
+            'src': src,
+            'display_scope': display_scope,
+            'event': 'onload'
+        }
+        return self._send_post(url=url, params={'script_tag': script_tag})
 
     def _send_request(self, method, url, params):
         method = method.upper()

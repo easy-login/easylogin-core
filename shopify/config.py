@@ -31,8 +31,12 @@ LOG_DATE_FORMAT = os.getenv('LOG_DATE_FORMAT', '%Y-%m-%d %H:%M:%S')
 LOG_DIR = os.getenv('LOG_DIR', '/var/log/sociallogin/shopifyapp')
 LOG_STYLE = os.getenv('LOG_STYLE', 'inline')
 
-
 # Shopify settings
 SHOPIFY_OAUTH_CLIENT_ID = os.getenv('SHOPIFY_OAUTH_CLIENT_ID', '983f69980c64f0ac587c17d705cbdac0')
 SHOPIFY_OAUTH_CLIENT_SECRET = os.getenv('SHOPIFY_OAUTH_CLIENT_SECRET', 'e21cee33478c86475dab8690dcfcb8da')
+
 SHOPIFY_APP_NAME = os.getenv('SHOPIFY_APP_NAME', 'easylogin-auth-demo')
+SHOPIFY_SCRIPT_SRC = os.getenv(
+    'SHOPIFY_SCRIPT_SRC',
+    'https://s3-ap-northeast-1.amazonaws.com/static.easy-login.jp/shopify/easylogin-shopify.js'
+)
