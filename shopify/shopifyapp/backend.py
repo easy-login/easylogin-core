@@ -1,6 +1,7 @@
 import secrets
 from urllib import parse as up
 import hashlib
+import json
 
 from flask import request, url_for, redirect, abort, render_template, \
     make_response, jsonify, session
@@ -8,8 +9,8 @@ import requests
 
 from shopifyapp import app, db, logger
 from shopifyapp.utils import add_params_to_uri, calculate_hmac, support_jsonp
-from shopifyapp.models import Stores
-from shopifyapp.apiclient import ShopifyClient
+from shopifyapp.models import Stores, Customers
+from shopifyapp.apiclient import ShopifyClient, EasyLoginClient
 
 
 @app.route('/shopify')
@@ -123,35 +124,159 @@ def get_auth_url(shop, provider):
     uri = add_params_to_uri(
         uri='https://api.easy-login.jp/auth/' + provider,
         app_id=store.easylogin_app_id,
-        callback_uri=url_for('install', _external=True),
+        callback_uri=url_for('easylogin_callback', shop=shop, _external=True),
         nonce=secrets.token_hex(nbytes=16))
     return redirect(uri)
 
 
-@app.route('/shopify/<shop>/resources/buttons')
+@app.route('/shopify/<shop>/buttons')
 @support_jsonp
 def get_login_buttons_html(shop):
     html = """
     <div id="SocialAuthForm" class="col-md-6">
         <h4 class="text-center">OR</h4>
         <div class="login-form line-form">
-            <a href="/hosted/shopify/{shop}/auth/line">
+            <a href="{line_url}">
             <button class="line-btn">Login with LINE</button>
             </a>
         </div>
         <div class="login-form yahoo-form">
-            <a href="/hosted/shopify/{shop}/auth/yahoojp">
+            <a href="{yahoo_url}">
             <button class="yahoo-btn">Login with YAHOOJP</button>
             </a>
         </div>
         <div class="login-form facebook-form">
-            <a href="/hosted/shopify/{shop}/auth/facebook">
+            <a href="{facebook_url}">
             <button class="facebook-btn">Login with FACEBOOK</button>
             </a>
         </div>
     </div>
-    """.strip().format(shop=shop)
+    """.strip().format(
+        line_url=url_for('get_auth_url', shop=shop, provider='line', _external=True),
+        yahoo_url=url_for('get_auth_url', shop=shop, provider='yahoojp', _external=True),
+        facebook_url=url_for('get_auth_url', shop=shop, provider='facebook', _external=True)
+    )
     return jsonify({'html': html})
+
+
+@app.route('/shopify/<shop>/auth/callback')
+def easylogin_callback(shop):
+    provider = request.args.get('provider')
+    token = request.args.get('token')
+    if not provider or not token:
+        abort(400, 'Missing or invalid input parameters')
+    logger.debug('Request URL', request.url)
+
+    store = Stores.query.filter_by(store_url=shop).one_or_none()
+    if not store:
+        abort(404, 'Store not found')
+    easylogin_client = EasyLoginClient(
+        app_id=store.easylogin_app_id,
+        api_key=store.easylogin_api_key
+    )
+    shopify_client = ShopifyClient(
+        shop_url=store.store_url,
+        access_token=store.access_token
+    )
+
+    r = easylogin_client.get_authorized_profile(access_token=token)
+    if r.failed:
+        raise_error(500, 'EasyLogin API error', data=r.json())
+
+    profile = r.json()
+    logger.debug('authorized profile', json.dumps(profile, indent=2, ensure_ascii=False))
+    attrs = profile.get('attrs', {})
+    email = attrs.get('email')
+    if not email:
+        abort(403, 'Cannot log in without customer email')
+
+    r = shopify_client.search_customer(email=email, fields='id,email,first_name,last_name')
+    if r.failed:
+        raise_error(500, 'Shopify API error', data=r.json())
+
+    password = secrets.token_urlsafe(nbytes=16)
+    customers = r.json()['customers']
+    logger.debug('shopify customers', customers)
+
+    if customers:
+        customer = customers[0]
+        customer.update({
+            'password': password,
+            'password_confirmation': password
+        })
+        r = shopify_client.update_customer(customer_id=customer['id'], customer=customer)
+        if r.failed:
+            raise_error(500, 'Shopify API error', data=r.json())
+
+        Customers.add_or_update(**customer)
+        logger.debug('update customer info success', r.json()['customer'])
+    else:
+        first_name = ''
+        last_name = email
+        if provider == 'line':
+            last_name = attrs.get('displayName', last_name)
+        elif provider == 'facebook':
+            first_name = attrs.get('first_name', first_name)
+            last_name = attrs.get('last_name', last_name)
+        elif provider == 'yahoojp':
+            first_name = attrs.get('given_name', first_name)
+            last_name = attrs.get('family_name', last_name)
+        logger.debug('create new customer', first_name, last_name, email)
+
+        customer = {
+            'first_name': first_name,
+            'last_name': last_name,
+            'email': email,
+            'verified_email': True,
+            'password': password,
+            'password_confirmation': password,
+            'send_email_welcome': False
+        }
+        r = shopify_client.create_customer(customer=customer)
+        if r.failed:
+            raise_error(500, 'Shopify API error', data=r.json())
+
+        customer = r.json()['customer']
+        Customers.add_or_update(
+            id=customer['id'],
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name
+        )
+        logger.debug('Create customer success', json.dumps(customer, indent=2))
+
+    easylogin_social_id = profile['social_id']
+    customer_id = customer['id']
+    if not profile.get('user_id'):
+        r = easylogin_client.get_user_profile(user_id=customer_id)
+        if r.failed:
+            if r.status_code != 404:
+                logger.debug(r.status_code, r.text)
+                raise_error(500, 'EasyLogin API error', data=r.json())
+            r = easylogin_client.link_social_profile_with_user(
+                social_id=easylogin_social_id,
+                user_id=customer_id)
+            if r.failed:
+                raise_error(500, 'EasyLogin API error', data=r.json())
+            logger.debug('Link easylogin social ID with shopify customer ID success',
+                         easylogin_social_id, customer_id)
+        else:
+            r = easylogin_client.merge_user(
+                src_social_id=easylogin_social_id,
+                dst_user_id=customer_id)
+            if r.failed:
+                raise_error(500, 'EasyLogin API error', data=r.json())
+            logger.debug('Merge easylogin user success', easylogin_social_id, customer_id)
+
+    db.session.commit()
+    params = up.urlencode({'k': email, 's': password})
+    return redirect('https://{}/account/login?{}#abc'.format(shop, params))
+
+
+def raise_error(code, msg, data):
+    logger.debug(msg, code=code, data=json.dumps(data, indent=2, ensure_ascii=False))
+    abort(code, msg)
 
 
 def render_config_page(shop, app_id, api_key):

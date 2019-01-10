@@ -55,9 +55,11 @@ class EasyLogger(object):
         if self.impl.level > lvl:
             return
         style = style or self.style
+        args = [str(e) for e in args]
+
         if style == self.STYLE_INLINE:
             arg_str = ' '.join(args)
-            kwarg_str = ' '.join(['%s=%s' % (k, self._check_quote(v))
+            kwarg_str = ' '.join(['%s=%s' % (str(k), self._check_quote(v))
                                   for k, v in kwargs.items()])
             msg += ' \t' + arg_str + '\t' + kwarg_str
         elif style == self.STYLE_JSON:

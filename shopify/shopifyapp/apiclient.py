@@ -86,7 +86,7 @@ class EasyLoginClient(BaseApiClient):
     def _send_request(self, method, url, params):
         headers = {'X-Api-Key': self.api_key}
         method = method.upper()
-        print(method, url)
+        print(method, url, params)
         if method == 'GET':
             r = requests.get(url=url, params=params, headers=headers, verify=False)
         elif method == 'POST':
@@ -116,10 +116,10 @@ class ShopifyClient(BaseApiClient):
     def get_customers(self, ids=None):
         pass
 
-    def search_customer(self, **kwargs):
+    def search_customer(self, fields='id', **kwargs):
         query = ' '.join(['{}:{}'.format(k, v) for k, v in kwargs.items()])
         url = self.base_url + '/customers/search.json'
-        return self._send_get(url=url, params={'query': query, 'fields': 'id'})
+        return self._send_get(url=url, params={'query': query, 'fields': fields})
 
     def update_customer(self, customer_id, customer):
         url = self.base_url + '/customers/{}.json'.format(customer_id)
@@ -131,7 +131,7 @@ class ShopifyClient(BaseApiClient):
 
     def _send_request(self, method, url, params):
         method = method.upper()
-        print(method, url)
+        print(method, url, params)
         if method == 'GET':
             r = requests.get(url=url, params=params,
                              headers={'X-Shopify-Access-Token': self.access_token})

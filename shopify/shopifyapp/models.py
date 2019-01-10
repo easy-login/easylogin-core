@@ -93,9 +93,31 @@ class Stores(Base):
         })
 
 
-class Customer(Base):
+class Customers(Base):
     __tablename__ = 'customers'
 
     shopify_id = db.Column(db.BigInteger, nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
+    first_name = db.Column(db.String(255), nullable=False)
+    last_name = db.Column(db.String(255), nullable=False)
+
+    def __init__(self, **kwargs):
+        self.shopify_id = kwargs.get('id')
+        self.email = kwargs.get('email')
+        self.password = kwargs.get('password')
+        self.first_name = kwargs.get('first_name')
+        self.last_name = kwargs.get('last_name')
+
+    @classmethod
+    def add_or_update(cls, **kwargs):
+        if not cls.update_password(shopify_id=kwargs['id'], password=kwargs['password']):
+            customer = Customers(**kwargs)
+            db.session.add(customer)
+
+    @classmethod
+    def update_password(cls, shopify_id, password):
+        return cls.query.filter_by(shopify_id=shopify_id).update({
+            'password': password
+        })
+
