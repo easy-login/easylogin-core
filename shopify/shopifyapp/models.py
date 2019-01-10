@@ -71,11 +71,9 @@ class Stores(Base):
     access_token = db.Column(db.String(1023))
     installed_at = db.Column(db.DateTime)
     installed = db.Column(db.SmallInteger, default=0, nullable=False)
-    last_activated_at = db.Column('activated_at', db.DateTime)
 
     def __init__(self, **kwargs):
         self.store_url = kwargs.get('store_url')
-        self.last_activated_at = utcnow()
 
     @classmethod
     def set_installed(cls, store_url, access_token):
