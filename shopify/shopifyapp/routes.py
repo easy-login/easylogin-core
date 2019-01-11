@@ -220,8 +220,9 @@ def easylogin_callback(shop):
     )
     db.session.commit()
 
-    nonce = request.args.get('nonce')
-    return_url = b64decode_string(nonce) if nonce else '/account'
+    # nonce = request.args.get('nonce')
+    # return_url = b64decode_string(nonce) if nonce else '/account'
+    return_url = '/account'
     params = up.urlencode({'k': email, 's': password, 'r': return_url})
     return redirect('https://{}/account/login?{}#amp'.format(shop, params))
 
