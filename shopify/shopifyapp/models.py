@@ -97,19 +97,16 @@ class Customers(Base):
     shopify_id = db.Column(db.BigInteger, unique=True, nullable=False)
     email = db.Column(db.String(128), unique=True, nullable=False)
     password = db.Column(db.String(32), nullable=False)
-    first_name = db.Column(db.String(255), nullable=False)
-    last_name = db.Column(db.String(255), nullable=False)
 
     def __init__(self, **kwargs):
-        self.shopify_id = kwargs.get('id')
+        self.shopify_id = kwargs.get('shopify_id')
         self.email = kwargs.get('email')
         self.password = kwargs.get('password')
-        self.first_name = kwargs.get('first_name')
-        self.last_name = kwargs.get('last_name')
 
     @classmethod
     def add_or_update(cls, **kwargs):
-        if not cls.update_password(shopify_id=kwargs['id'], password=kwargs['password']):
+        if not cls.update_password(shopify_id=kwargs['shopify_id'],
+                                   password=kwargs['password']):
             customer = Customers(**kwargs)
             db.session.add(customer)
 

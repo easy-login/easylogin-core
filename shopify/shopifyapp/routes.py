@@ -177,7 +177,7 @@ def easylogin_callback(shop):
         raise_error(500, 'EasyLogin API error', data=r.json())
 
     profile = r.json()
-    logger.debug('authorized profile', json.dumps(profile, indent=2, ensure_ascii=False))
+    logger.debug('Authorized profile', json.dumps(profile, indent=2, ensure_ascii=False))
     attrs = profile.get('attrs', {})
     email = attrs.get('email')
     if not email:
@@ -191,82 +191,113 @@ def easylogin_callback(shop):
 
     password = secrets.token_urlsafe(nbytes=16)
     customers = r.json()['customers']
-    logger.debug('shopify customers', customers)
+    logger.debug('Search results customers', customers)
 
+    customer = None
     if customers:
-        customer = customers[0]
-        customer.update({
-            'password': password,
-            'password_confirmation': password
-        })
-        r = shopify_client.update_customer(customer_id=customer['id'], customer=customer)
-        if r.failed:
-            raise_error(500, 'Shopify API error', data=r.json())
-
-        Customers.add_or_update(**customer)
-        logger.debug('update customer info success', r.json()['customer'])
+        for c in customers:
+            if c['email'] == email:
+                customer = c
+                break
+    if customer:
+        update_shopify_customer(shopify_client=shopify_client,
+                                customer=customer, password=password)
     else:
-        first_name = ''
-        last_name = email
-        if provider == 'line':
-            last_name = attrs.get('displayName', last_name)
-        elif provider == 'facebook':
-            first_name = attrs.get('first_name', first_name)
-            last_name = attrs.get('last_name', last_name)
-        elif provider == 'yahoojp':
-            first_name = attrs.get('given_name', first_name)
-            last_name = attrs.get('family_name', last_name)
-        logger.debug('create new customer', first_name, last_name, email)
-
-        customer = {
-            'first_name': first_name,
-            'last_name': last_name,
-            'email': email,
-            'verified_email': True,
-            'password': password,
-            'password_confirmation': password,
-            'send_email_welcome': False
-        }
-        r = shopify_client.create_customer(customer=customer)
-        if r.failed:
-            raise_error(500, 'Shopify API error', data=r.json())
-
-        customer = r.json()['customer']
-        Customers.add_or_update(
-            id=customer['id'],
+        customer = create_shopify_customer(
+            shopify_client=shopify_client,
+            provider=provider,
+            attrs=attrs,
             email=email,
-            password=password,
-            first_name=first_name,
-            last_name=last_name
+            password=password
         )
-        logger.debug('Create customer success', json.dumps(customer, indent=2))
 
-    easylogin_social_id = profile['social_id']
-    customer_id = customer['id']
-    if not profile.get('user_id'):
-        r = easylogin_client.get_user_profile(user_id=customer_id)
-        if r.failed:
-            if r.status_code != 404:
-                logger.debug(r.status_code, r.text)
-                raise_error(500, 'EasyLogin API error', data=r.json())
-            r = easylogin_client.link_social_profile_with_user(
-                social_id=easylogin_social_id,
-                user_id=customer_id)
-            if r.failed:
-                raise_error(500, 'EasyLogin API error', data=r.json())
-            logger.debug('Link easylogin social ID with shopify customer ID success',
-                         easylogin_social_id, customer_id)
-        else:
-            r = easylogin_client.merge_user(
-                src_social_id=easylogin_social_id,
-                dst_user_id=customer_id)
-            if r.failed:
-                raise_error(500, 'EasyLogin API error', data=r.json())
-            logger.debug('Merge easylogin user success', easylogin_social_id, customer_id)
+    link_shopify_customer_with_easylogin(
+        easylogin_client=easylogin_client,
+        customer_id=customer['id'],
+        profile=profile
+    )
 
     db.session.commit()
     params = up.urlencode({'k': email, 's': password})
     return redirect('https://{}/account/login?{}#abc'.format(shop, params))
+
+
+def update_shopify_customer(shopify_client, customer, password):
+    customer.update({
+        'password': password,
+        'password_confirmation': password
+    })
+    r = shopify_client.update_customer(customer_id=customer['id'], customer=customer)
+    if r.failed:
+        raise_error(500, 'Shopify API error', data=r.json())
+
+    Customers.add_or_update(
+        shopify_id=customer['id'],
+        email=customer['email'],
+        password=password
+    )
+    logger.debug('Update customer info success', r.json()['customer'])
+
+
+def create_shopify_customer(shopify_client, provider, attrs, email, password):
+    first_name = ''
+    last_name = email
+    if provider == 'line':
+        last_name = attrs.get('displayName', last_name)
+    elif provider == 'facebook':
+        first_name = attrs.get('first_name', first_name)
+        last_name = attrs.get('last_name', last_name)
+    elif provider == 'yahoojp':
+        first_name = attrs.get('given_name', first_name)
+        last_name = attrs.get('family_name', last_name)
+    logger.debug('create new customer', first_name, last_name, email)
+
+    customer = {
+        'first_name': first_name,
+        'last_name': last_name,
+        'email': email,
+        'verified_email': True,
+        'password': password,
+        'password_confirmation': password,
+        'send_email_welcome': False
+    }
+    r = shopify_client.create_customer(customer=customer)
+    if r.failed:
+        raise_error(500, 'Shopify API error', data=r.json())
+
+    customer = r.json()['customer']
+    Customers.add_or_update(
+        shopify_id=customer['id'],
+        email=customer['email'],
+        password=password
+    )
+    logger.debug('Create customer success', json.dumps(customer, indent=2))
+    return customer
+
+
+def link_shopify_customer_with_easylogin(easylogin_client, customer_id, profile):
+    easylogin_social_id = profile['social_id']
+    if profile.get('user_id'):
+        return
+    r = easylogin_client.get_user_profile(user_id=customer_id)
+    if r.failed:
+        if r.status_code != 404:
+            logger.debug(r.status_code, r.text)
+            raise_error(500, 'EasyLogin API error', data=r.json())
+        r = easylogin_client.link_social_profile_with_user(
+            social_id=easylogin_social_id,
+            user_id=customer_id)
+        if r.failed:
+            raise_error(500, 'EasyLogin API error', data=r.json())
+        logger.debug('Link easylogin social ID with shopify customer ID success',
+                     easylogin_social_id, customer_id)
+    else:
+        r = easylogin_client.merge_user(
+            src_social_id=easylogin_social_id,
+            dst_user_id=customer_id)
+        if r.failed:
+            raise_error(500, 'EasyLogin API error', data=r.json())
+        logger.debug('Merge easylogin user success', easylogin_social_id, customer_id)
 
 
 def verify_request():
@@ -310,8 +341,8 @@ def check_install_script_tag(shop, access_token):
     r = shopify_client.create_script_tag(src=script_src, display_scope='online_store')
     if r.failed:
         raise_error(500, 'Shopify API error', data=r.json())
-        
-        
+
+
 def url_for_safe(endpoint, **values):
     scheme = request.environ.get('X-FORWARDED-PROTO', 'https')
     return url_for(endpoint=endpoint, _scheme=scheme, _external=True, **values)
