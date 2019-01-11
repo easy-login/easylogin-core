@@ -111,7 +111,7 @@ def update_config(shop):
 @app.route('/shopify/<shop>/auth/<provider>')
 def get_auth_url(shop, provider):
     store = Stores.query.filter_by(store_url=shop).one_or_none()
-    return_url = request.args.get('return_url')
+    return_url = request.args.get('return_url', '')
     if not store:
         abort(404, 'Store URL not found')
     if provider not in ['line', 'yahoojp', 'facebook']:
@@ -120,7 +120,7 @@ def get_auth_url(shop, provider):
         uri='https://api.easy-login.jp/auth/' + provider,
         app_id=store.easylogin_app_id,
         callback_uri=url_for_safe('easylogin_callback', shop=shop),
-        nonce=b64encode_string(return_url) or '')
+        nonce=b64encode_string(return_url))
     return redirect(uri)
 
 
