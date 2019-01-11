@@ -8,7 +8,8 @@ from flask import request, url_for, redirect, abort, render_template, \
 import requests
 
 from shopifyapp import app, db, logger
-from shopifyapp.utils import add_params_to_uri, calculate_hmac, support_jsonp
+from shopifyapp.utils import add_params_to_uri, calculate_hmac, support_jsonp, \
+    b64encode_string, b64decode_string
 from shopifyapp.models import Stores, Customers
 from shopifyapp.apiclient import ShopifyClient, EasyLoginClient
 
@@ -110,6 +111,7 @@ def update_config(shop):
 @app.route('/shopify/<shop>/auth/<provider>')
 def get_auth_url(shop, provider):
     store = Stores.query.filter_by(store_url=shop).one_or_none()
+    return_url = request.args.get('return_url')
     if not store:
         abort(404, 'Store URL not found')
     if provider not in ['line', 'yahoojp', 'facebook']:
@@ -118,7 +120,7 @@ def get_auth_url(shop, provider):
         uri='https://api.easy-login.jp/auth/' + provider,
         app_id=store.easylogin_app_id,
         callback_uri=url_for_safe('easylogin_callback', shop=shop),
-        nonce=secrets.token_hex(nbytes=16))
+        nonce=b64encode_string(return_url) or '')
     return redirect(uri)
 
 
@@ -216,10 +218,12 @@ def easylogin_callback(shop):
         customer_id=customer['id'],
         profile=profile
     )
-
     db.session.commit()
-    params = up.urlencode({'k': email, 's': password})
-    return redirect('https://{}/account/login?{}#abc'.format(shop, params))
+
+    nonce = request.args.get('nonce')
+    return_url = b64decode_string(nonce) if nonce else '/account'
+    params = up.urlencode({'k': email, 's': password, 'r': return_url})
+    return redirect('https://{}/account/login?{}#amp'.format(shop, params))
 
 
 def update_shopify_customer(shopify_client, customer, password):
