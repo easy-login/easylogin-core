@@ -93,6 +93,9 @@ def update_config(shop):
 
         easylogin_app_id = request.form['easylogin_app_id']
         easylogin_api_key = request.form['easylogin_api_key']
+        if not easylogin_app_id or not easylogin_api_key:
+            raise ValueError('App ID and API Key cannot be empty')
+
         if not Stores.update_easylogin_config(
                 store_url=shop,
                 app_id=easylogin_app_id,
