@@ -103,9 +103,14 @@ def update_config(shop):
         return render_config_page(
             shop=shop,
             app_id=easylogin_app_id,
-            api_key=easylogin_api_key)
-    except KeyError:
-        abort(400, 'Missing or invalid parameters')
+            api_key=easylogin_api_key,
+            alert='success')
+    except Exception:
+        return render_config_page(
+            shop=shop,
+            app_id=request.form.get('easylogin_app_id'),
+            api_key=request.form.get('easylogin_api_key'),
+            alert='failed')
 
 
 @app.route('/shopify/<shop>/auth/<provider>')
@@ -323,14 +328,15 @@ def raise_error(code, msg, data):
     abort(code, msg)
 
 
-def render_config_page(shop, app_id, api_key):
+def render_config_page(shop, app_id, api_key, alert=None):
     csrf_token = secrets.token_urlsafe(nbytes=64)
     session['csrf_token'] = csrf_token
     return render_template(
         'config.html',
         shop=shop, csrf_token=csrf_token,
         app_id=app_id or '',
-        api_key=api_key or '')
+        api_key=api_key or '',
+        alert=alert)
 
 
 def check_install_script_tag(shop, access_token):
