@@ -95,7 +95,7 @@ class Customers(Base):
     __tablename__ = 'customers'
 
     shopify_id = db.Column(db.BigInteger, unique=True, nullable=False)
-    email = db.Column(db.String(128), unique=True, nullable=False)
+    email = db.Column(db.String(128), nullable=False)
     password = db.Column(db.String(32), nullable=False)
 
     def __init__(self, **kwargs):
