@@ -42,9 +42,11 @@
       dataType: 'jsonp'
     }).done(function(data) {
       if (document.getElementById(container)) {
-        $('#' + container).html(data.html);
+        var target = $('#' + container);
+        $(data.html).hide().appendTo(target).fadeIn("fast");
       } else {
-        $('input[name="customer[email]"]').closest('form').parent().append(data.html);
+        var target = $('input[name="customer[email]"]').closest('form').parent();
+        $(data.html).hide().appendTo(target).fadeIn("fast");
       }
 
       var checkoutUrl = getUrlParameter('checkout_url');
