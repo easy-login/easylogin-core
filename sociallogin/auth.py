@@ -19,8 +19,6 @@ def authorize(provider, intent):
     nonce = request.args.get('nonce', '')
     if len(nonce) > 255:
         abort(400, 'Nonce length exceeded limit 255 characters')
-    if nonce and not nonce.isalnum():
-        abort(400, 'Invalid nonce, only alphanumeric string accepted')
 
     sandbox = request.args.get('sandbox')
     backend = get_backend(provider, sandbox=smart_str2bool(sandbox))
