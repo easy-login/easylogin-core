@@ -1,16 +1,14 @@
-from flask import abort, jsonify, request, url_for
+from flask import abort, jsonify, request
 from flask_login import login_required, current_user as app
-from sqlalchemy import func, and_
 
 from sociallogin import app as flask_app, db, logger
-from sociallogin.models import SocialProfiles, Users, AuthLogs, AssociateLogs
+from sociallogin.models import SocialProfiles, AuthLogs, AssociateLogs
 from sociallogin.utils import gen_random_token, smart_str2int
 from sociallogin.backends import is_valid_provider
-from sociallogin.exc import TokenParseError, ConflictError
+from sociallogin.exc import TokenParseError
 
 
 @flask_app.route('/<int:app_id>/profiles/authorized', methods=['POST'])
-@login_required
 def authorized_profile(app_id):
     token = request.json.get('token')
     try:
@@ -35,7 +33,6 @@ def authorized_profile(app_id):
 
 
 @flask_app.route('/<int:app_id>/profiles/activate', methods=['POST'])
-@login_required
 def activate(app_id):
     token = request.json.get('token')
     try:
