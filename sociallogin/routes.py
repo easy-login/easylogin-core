@@ -58,7 +58,7 @@ def link_user(app_id):
     SocialProfiles.link_with_user(
         app_id=app_id,
         alias=alias, user_pk=user_pk,
-        create_if_not_exist=body.get('create_user', True)
+        create_if_not_exist=body.get('create_user', 'true') == 'true'
     )
     db.session.commit()
     return jsonify({'success': True})
@@ -132,7 +132,8 @@ def get_user(app_id):
     user_pk, alias = _parse_and_validate_identifiers(request.args)
     return jsonify(SocialProfiles.get_full_profile(
         app_id=app_id,
-        user_pk=user_pk, alias=alias
+        user_pk=user_pk, alias=alias,
+        pretty=request.args.get('pretty', 'false') == 'true'
     ))
 
 

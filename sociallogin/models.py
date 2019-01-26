@@ -65,9 +65,10 @@ class Base(db.Model):
         return convert_to_user_timezone(dt).isoformat() if dt else None
 
 
-class Providers(Base):
+class Providers(db.Model):
     __tablename__ = 'providers'
 
+    _id = db.Column("id", db.Integer, primary_key=True)
     name = db.Column(db.String(15), nullable=False)
     version = db.Column(db.String(15), nullable=False)
     required_permissions = db.Column(db.String(1023), nullable=False)
@@ -203,7 +204,7 @@ class SocialProfiles(Base):
         self.scope_id = kwargs['scope_id']
         self.pk = kwargs['pk']
 
-    def as_dict(self, user_pk=None, fetch_user=False):
+    def as_dict(self, user_pk=None, fetch_user=False, pretty=False):
         d = super().as_dict()
         d['social_id'] = str(self.alias)
         d['verified'] = bool(self.verified)
@@ -213,10 +214,29 @@ class SocialProfiles(Base):
             d['attrs'] = None
             d['scope_id'] = None
         else:
-            d['attrs'] = json.loads(self.attrs, encoding='utf8')
+            if pretty:
+                d['provider'] = self.provider.upper() \
+                    if self.provider != 'yahoojp' else 'YAHOO JAPAN'
+                d['attrs'] = self._normalize_attributes()
+            else:
+                d['attrs'] = json.loads(self.attrs, encoding='utf8')
             if self._allow_get_scope_id():
                 d['attrs']['id'] = self.scope_id
                 d['scope_id'] = self.scope_id
+        return d
+
+    def _normalize_attributes(self):
+        provider = Providers.query.filter_by(name=self.provider).one_or_none()
+        fields = json.loads(provider.basic_fields, encoding='utf8')
+        fields.extend(json.loads(provider.advanced_fields, encoding='utf8'))
+        fields = { e['key']: e['name'] for e in fields }
+
+        d = dict()
+        attrs = json.loads(self.attrs, encoding='utf8')
+        for k, v in attrs.items():
+            newk = fields.get(k)
+            if newk:
+                d[newk] = v
         return d
 
     def merge_with(self, user_pk=None, alias=None):
@@ -416,7 +436,7 @@ class SocialProfiles(Base):
         }, synchronize_session=False)
 
     @classmethod
-    def get_full_profile(cls, app_id, user_pk=None, alias=None):
+    def get_full_profile(cls, app_id, user_pk=None, alias=None, pretty=False):
         profiles = cls.find_by_pk(app_id=app_id, user_pk=user_pk) \
             if user_pk else SocialProfiles.query.filter_by(alias=alias).all()
         if not profiles:
@@ -442,7 +462,8 @@ class SocialProfiles(Base):
         return {
             'user': user_attrs,
             'profiles': [
-                p.as_dict(user_pk=user.pk if user else None, fetch_user=False) 
+                p.as_dict(user_pk=user.pk if user else None, 
+                          fetch_user=False, pretty=pretty) 
                 for p in profiles
             ]
         }
