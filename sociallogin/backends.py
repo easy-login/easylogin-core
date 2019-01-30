@@ -493,7 +493,7 @@ class LineBackend(OAuthBackend):
     def _build_authorize_uri(self, state):
         uri = super()._build_authorize_uri(state)
         if self.channel.option_enabled('add_friend'):
-            uri += '&bot_prompt=normal'
+            uri += '&bot_prompt=aggressive'
         return uri
 
     def _get_profile(self, tokens):
