@@ -98,8 +98,13 @@ def verify_app_auth(req):
     except PermissionError:
         abort(403, 'Your IP is not allowed to access this API')
     except Exception as e:
-        logger.warning('API authorization failed. ' + repr(e))
-        abort(401, 'Wrong credentials, could not verify your API key')
+        logger.debug('API authorization failed. ' + repr(e))
+        return None
+
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    abort(401, 'Wrong credentials, could not verify your API key')
 
 
 def _extract_api_key(req):
