@@ -458,6 +458,12 @@ class OAuthBackend(object):
         if not uri:
             return False
         r1 = up.urlparse(uri)
+        # Always allow callback for hosted JS
+        if r1.netloc == 'api.easy-login.jp' \
+                and r1.path == '/hosted/auth/callback' \
+                and r1.scheme == 'https':
+            return True
+
         for _uri in allowed_uris:
             r2 = up.urlparse(_uri)
             ok = r1.scheme == r2.scheme and r1.netloc == r2.netloc and r1.path == r2.path
