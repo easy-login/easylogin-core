@@ -129,6 +129,6 @@ db.create_all()
 db.session.commit()
 
 # Import all API endpoint definitions
-from sociallogin import auth, routes, exc
+from sociallogin import auth, routes, hosted, exc
 
 auth.init_app(app)
