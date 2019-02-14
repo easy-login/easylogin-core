@@ -16,6 +16,8 @@
                                 <option value="diassociate">Disassociate User from Providers</option>
                                 <option value="profile">Get User Profile</option>
                                 <option value="associate_token">Get Associate Token</option>
+                                <option value="delete_profile">Delete User Profile</option>
+                                <option value="delete_info">Delete Profile Info</option>
                             </select>
                         </div>
                     </div>
@@ -157,6 +159,42 @@
                             <label for="id_social_id_associate" class="col-md-2 col-form-label">Social ID</label>
                             <div class="col-md-8">
                                 <input class="form-control" id="id_social_id_associate" placeholder="Social ID"
+                                       type="text"
+                                       name="social_id">
+                            </div>
+                        </div>
+                    </form>
+                    <form class="form-horizontal" action="#" method="GET" id="id_form_delete_profile" style="display:none;">
+                        <div class="form-group row">
+                            <label for="id_user_id_delete_profile" class="col-md-2 col-form-label">User ID</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_user_id_delete_profile" placeholder="User ID"
+                                       type="text"
+                                       name="user_id">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="id_social_id_delete_profile" class="col-md-2 col-form-label">Social ID</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_social_id_delete_profile" placeholder="Social ID"
+                                       type="text"
+                                       name="social_id">
+                            </div>
+                        </div>
+                    </form>
+                    <form class="form-horizontal" action="#" method="GET" id="id_form_delete_info" style="display:none;">
+                        <div class="form-group row">
+                            <label for="id_user_id_delete_info" class="col-md-2 col-form-label">User ID</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_user_id_delete_info" placeholder="User ID"
+                                       type="text"
+                                       name="user_id">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="id_social_id_delete_info" class="col-md-2 col-form-label">Social ID</label>
+                            <div class="col-md-8">
+                                <input class="form-control" id="id_social_id_delete_info" placeholder="Social ID"
                                        type="text"
                                        name="social_id">
                             </div>

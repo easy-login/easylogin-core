@@ -16,6 +16,10 @@ $(document).ready(function() {
             selectedForm = $('#id_form_profile');
         } else if (apiName === 'associate_token') {
             selectedForm = $('#id_form_associate');
+        } else if (apiName === 'delete_profile') {
+            selectedForm = $('#id_form_delete_profile');
+        } else if (apiName === 'delete_info') {
+            selectedForm = $('#id_form_delete_info')
         }
         selectedForm.show();
     });
@@ -107,6 +111,30 @@ $(document).ready(function() {
         }).done(updateResult);
     }
 
+    function deleteUserProfile() {
+        $.ajax({
+            url: '/api/delete_profile',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                user_id: $('#id_user_id_delete_profile').val(),
+                social_id: $('#id_social_id_delete_profile').val()
+            }
+        }).done(updateResult);
+    }
+
+    function deleteUserInfo() {
+        $.ajax({
+            url: '/api/delete_info',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                user_id: $('#id_user_id_delete_info').val(),
+                social_id: $('#id_social_id_delete_info').val()
+            }
+        }).done(updateResult);
+    }
+
     $('#btn_submit').click(function() {
         var apiName = $('#id_api_name').val();
         console.log('Call API: ' + apiName);
@@ -122,6 +150,10 @@ $(document).ready(function() {
             getProfile();
         } else if (apiName === 'associate_token') {
             getAssociateToken();
+        } else if (apiName === 'delete_profile') {
+            deleteUserProfile();
+        } else if (apiName === 'delete_info') {
+            deleteUserInfo();
         }
     });
 });

@@ -154,6 +154,7 @@ def delete_user(app_id):
 
 
 @flask_app.route('/<int:app_id>/users/delete_info', methods=['PUT'])
+@login_required
 def delete_user_info(app_id):
     body = request.json
     user_pk, alias = _parse_and_validate_identifiers(body)

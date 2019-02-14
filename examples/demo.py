@@ -82,7 +82,7 @@ def pay_setting():
 @app.route('/api/<api_name>', methods=['POST'])
 def call_api(api_name):
     if api_name not in ['link', 'unlink', 'disassociate', 'profile',
-                        'merge', 'associate_token']:
+                        'merge', 'associate_token', 'delete_profile', 'delete_info']:
         abort(404, 'Invalid API name')
 
     api_url = request.cookies['api_url']
@@ -96,6 +96,10 @@ def call_api(api_name):
     elif api_name == 'associate_token':
         r = requests.get(url=url, verify=False, params=request.form,
                          headers={'X-Api-Key': request.cookies['api_key']})
+    elif api_name == 'delete_profile':
+        url = '{}/{}/users'.format(api_url, app_id)
+        r = requests.delete(url=url, verify=False, json=request.form,
+                            headers={'X-Api-Key': request.cookies['api_key']})
     else:
         r = requests.put(url=url, verify=False, json=request.form,
                          headers={'X-Api-Key': request.cookies['api_key']})
