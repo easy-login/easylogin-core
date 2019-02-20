@@ -1,10 +1,9 @@
-from flask import jsonify, redirect
+from flask import jsonify
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 import traceback
 import sys
 
-from sociallogin import app, logger
-from sociallogin.utils import add_params_to_uri
+from shopifyapp import app, logger
 
 
 ERROR_CODES = {
@@ -36,22 +35,6 @@ class SocialLoginError(Exception):
         }
 
 
-class RedirectLoginError(SocialLoginError):
-    def __init__(self, *args, **kwargs):
-        self.provider = kwargs['provider']
-        self.redirect_uri = kwargs['redirect_uri']
-        self.nonce = kwargs.get('nonce')
-        super().__init__(*args, **kwargs)
-
-    def as_dict(self):
-        return {
-            'provider': self.provider,
-            'error': self.error,
-            'error_description': self.description,
-            'nonce': self.nonce
-        }
-
-
 class PermissionDeniedError(SocialLoginError):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -65,27 +48,6 @@ class BadRequestError(SocialLoginError):
 class NotFoundError(SocialLoginError):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-
-class ConflictError(SocialLoginError):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-
-class UnsupportedProviderError(NotFoundError):
-    def __init__(self, **kwargs):
-        super().__init__(msg='Unsupported provider', **kwargs)
-
-
-class TokenParseError(BadRequestError):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-
-@app.errorhandler(RedirectLoginError)
-def redirect_login_error(error):
-    redirect_uri = add_params_to_uri(error.redirect_uri, **error.as_dict())
-    return redirect(redirect_uri)
 
 
 @app.errorhandler(LookupError)
@@ -125,12 +87,6 @@ def not_found(error):
 @app.errorhandler(405)
 def method_not_allowed(error):
     return get_error_response(405, error=error)
-
-
-@app.errorhandler(409)
-@app.errorhandler(ConflictError)
-def conflict(error):
-    return get_error_response(409, error=error)
 
 
 @app.errorhandler(500)

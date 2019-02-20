@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
+        integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+
+  <title>EasyLogin configuration for Shopify</title>
+</head>
+<body>
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card-box">
+        <h4 style="margin-top:30px; margin-bottom:30px">Easy Login Configuration</h4>
+        <div class="p-l-30">
+          <div>
+            {% if alert == 'success' %}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+              Update configuration succeeded !
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            {% elif alert == 'failed' %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+              Update configuration failed !
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            {% endif %}
+          </div>
+          <form class="form-horizontal" action="/shopify/{{ shop }}/config" method="post" id="id_form_link">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token}}">
+            <div class="form-group row">
+              <label for="easylogin_app_id" class="col-md-2 col-form-label">App ID</label>
+              <div class="col-md-8">
+                <input class="form-control" id="easylogin_app_id" placeholder="App ID" type="text"
+                       name="easylogin_app_id" value="{{ app_id }}">
+              </div>
+            </div>
+            <div class="form-group row">
+              <label for="easylogin_api_key" class="col-md-2 col-form-label">API Key</label>
+              <div class="col-md-8">
+                <input class="form-control" id="easylogin_api_key" placeholder="API Key" type="text"
+                       name="easylogin_api_key" value="{{ api_key }}">
+              </div>
+            </div>
+            <div class="form-group row">
+              <div class="col-md-8"></div>
+              <div class="col-md-2">
+                <button class="btn btn-primary btn-block" type="submit" id="btn_submit">Submit</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script> -->
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"
+        integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k"
+        crossorigin="anonymous"></script>
+</body>
+</html>
