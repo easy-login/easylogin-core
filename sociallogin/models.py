@@ -229,7 +229,7 @@ class SocialProfiles(Base):
         provider = Providers.query.filter_by(name=self.provider).one_or_none()
         fields = json.loads(provider.basic_fields, encoding='utf8')
         fields.extend(json.loads(provider.advanced_fields, encoding='utf8'))
-        fields = { e['key']: e['name'] for e in fields }
+        fields = {e['key']: e['name'] for e in fields}
 
         d = dict()
         attrs = json.loads(self.attrs, encoding='utf8')

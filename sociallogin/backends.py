@@ -20,13 +20,7 @@ __PROVIDER_SETTINGS__ = {
         'authorize_uri': 'https://access.line.me/oauth2/{version}/authorize?response_type=code',
         'token_uri': 'https://api.line.me/oauth2/{version}/token/',
         'profile_uri': 'https://api.line.me/v2/profile',
-        'identify_attrs': ['userId'],
-        'attr_mappings': {
-            'displayName': 'Display Name',
-            'email': 'Email',
-            'profile_url': 'Profile URL',
-            'status': 'Message Status'
-        }
+        'identify_attrs': ['userId']
     },
     'yahoojp': {
         'authorize_uri': '''
