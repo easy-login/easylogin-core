@@ -1,1 +1,0 @@
-from shopifyapp import app

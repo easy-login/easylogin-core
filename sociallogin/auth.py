@@ -1,10 +1,10 @@
 from flask import abort, redirect, request, jsonify
 
-from sociallogin import app as flask_app, db, login_manager, logger, get_remote_ip
+from sociallogin import app as flask_app, db, login_manager, logger
 from sociallogin.backends import get_backend
 from sociallogin.exc import TokenParseError
 from sociallogin.models import Apps, AuthLogs, AssociateLogs
-from sociallogin.utils import smart_str2bool, update_dict
+from sociallogin.utils import smart_str2bool, update_dict, get_remote_ip
 
 
 @flask_app.route('/auth/<provider>', defaults={'intent': None})

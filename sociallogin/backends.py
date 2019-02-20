@@ -7,13 +7,13 @@ import requests
 import jwt
 from flask import request, url_for, make_response, redirect
 
-from sociallogin import db, logger, get_remote_ip
+from sociallogin import db, logger
 from sociallogin.exc import RedirectLoginError, PermissionDeniedError, \
     UnsupportedProviderError, NotFoundError, BadRequestError, TokenParseError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, \
     SocialProfiles, JournalLogs
 from sociallogin.utils import gen_random_token, add_params_to_uri, \
-    calculate_hmac, smart_str2bool, unix_time_millis
+    calculate_hmac, smart_str2bool, unix_time_millis, get_remote_ip
 
 __PROVIDER_SETTINGS__ = {
     'line': {
@@ -746,7 +746,7 @@ class TwitterBackend(OAuthBackend):
             base_url=up.quote(url, safe=''),
             param=up.quote(param, safe=''))
         sign_key = up.quote(consumer_secret) + '&' + up.quote(oauth_token_secret)
-        return calculate_hmac(key=sign_key, raw=sign_base)
+        return calculate_hmac(key=sign_key, raw=sign_base, output_format='base64')
 
 
 class GoogleBackend(OAuthBackend):

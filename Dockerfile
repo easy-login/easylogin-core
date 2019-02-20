@@ -20,4 +20,4 @@ EXPOSE 5000
 ENV DEBUG True
 
 # Run wsgi.py when the container launches
-CMD ["sh", "prod.sh"]
+CMD ["sh", "gunicorn.sh"]
