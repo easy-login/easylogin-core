@@ -13,7 +13,7 @@ def authorize(provider, intent):
     callback_uri = request.args.get('callback_uri')
     callback_if_failed = request.args.get('callback_if_failed')
     if not callback_uri or not app_id:
-        abort(400, 'Missing parameters app_id or callback_uri')
+        abort(400, 'Missing or invalid required parameters: app_id, callback_uri')
 
     backend = get_backend(provider)
     resp = backend.authorize(
@@ -32,10 +32,23 @@ def authorize_callback(provider):
     backend = get_backend(provider)
     state = request.args.get('state')
     if not state:
-        abort(400, 'Missing parameter state')
+        abort(400, 'Missing a required parameter: state')
 
     if not backend.verify_callback_success(request.args):
         backend.handle_authorize_error(state, request.args)
+
+    resp = backend.handle_authorize_success(state=state, qs=request.args)
+    db.session.commit()
+    return resp
+
+
+@flask_app.route('/auth/<provider>/verify-token', methods=['POST'])
+def verify_token(provider):
+    backend = get_backend(provider)
+    token = request.form.get('access_token')
+    state = request.form.get('state')
+    if not token or not state:
+        abort(400, 'Missing or invalid required parameters: access token, state')
 
     resp = backend.handle_authorize_success(state=state, qs=request.args)
     db.session.commit()

@@ -20,6 +20,7 @@ __PROVIDER_SETTINGS__ = {
         'authorize_uri': 'https://access.line.me/oauth2/{version}/authorize?response_type=code',
         'token_uri': 'https://api.line.me/oauth2/{version}/token/',
         'profile_uri': 'https://api.line.me/v2/profile',
+        'verify_token_uri': 'https://api.line.me/oauth2/{version}/verify',
         'identify_attrs': ['userId']
     },
     'yahoojp': {
@@ -34,17 +35,20 @@ __PROVIDER_SETTINGS__ = {
     'amazon': {
         'authorize_uri': 'https://apac.account.amazon.com/ap/oa?response_type=code',
         'token_uri': 'https://api.amazon.com/auth/o2/token',
+        'verify_token_uri': 'https://api.amazon.com/auth/o2/tokeninfo',
         'profile_uri': 'https://api.amazon.com/user/profile',
         'identify_attrs': ['user_id']
     },
     'amazon_sandbox': {
         'authorize_uri': 'https://apac.account.amazon.com/ap/oa?response_type=code&sandbox=true',
         'token_uri': 'https://api.sandbox.amazon.com/auth/o2/token',
+        'verify_token_uri': 'https://api.amazon.com/auth/o2/tokeninfo',
         'profile_uri': 'https://api.sandbox.amazon.com/user/profile'
     },
     'facebook': {
         'authorize_uri': 'https://www.facebook.com/{version}/dialog/oauth?response_type=code',
         'token_uri': 'https://graph.facebook.com/{version}/oauth/access_token',
+        'verify_token_uri': 'https://graph.facebook.com/{version}/debug_token',
         'profile_uri': 'https://graph.facebook.com/{version}/me',
         'identify_attrs': ['id']
     },
@@ -61,8 +65,9 @@ __PROVIDER_SETTINGS__ = {
             &prompt=select_account&login_hint=sub&include_granted_scopes=true&access_type=offline
             '''.strip().replace('\n', '').replace(' ', ''),
         'token_uri': 'https://www.googleapis.com/oauth2/v4/token',
+        'verify_token_uri': 'https://www.googleapis.com/oauth2/v4/tokeninfo',
         'profile_uri': 'https://people.googleapis.com/{version}/people/me',
-        'identify_attrs': 'sub'
+        'identify_attrs': ['sub']
     }
 }
 
@@ -248,8 +253,8 @@ class OAuthBackend(object):
         error, desc = self._get_error(qs, action='authorize')
         logger.info('Authorize failed', provider=self.provider.upper(),
                     error=error, message=desc)
-        self._raise_redirect_error(error=self.ERROR_AUTHORIZE_FAILED,
-                                   msg='{}, {}'.format(error, desc))
+        self._raise_error(error=self.ERROR_AUTHORIZE_FAILED,
+                          msg='{}, {}'.format(error, desc))
 
     def handle_authorize_success(self, state, qs):
         """
@@ -271,19 +276,19 @@ class OAuthBackend(object):
         intent = self.log.intent
         if intent == AuthLogs.INTENT_ASSOCIATE:
             if self.args.get('provider') != self.provider:
-                self._raise_redirect_error(error='permission_denied',
-                                           msg='Target provider does not match')
+                self._raise_error(error='permission_denied',
+                                  msg='Target provider does not match')
             elif self.profile.user_id:
-                self._raise_redirect_error(error='conflict',
-                                           msg='Profile has linked with another user')
+                self._raise_error(error='conflict',
+                                  msg='Profile has linked with another user')
             self.profile.merge_with(alias=self.args.get('dst_social_id'))
         elif intent == AuthLogs.INTENT_LOGIN and not self.log.is_login:
-            self._raise_redirect_error(
+            self._raise_error(
                 error='invalid_request',
                 msg='Social profile does not exist, should register instead'
             )
         elif intent == AuthLogs.INTENT_REGISTER and self.log.is_login:
-            self._raise_redirect_error(
+            self._raise_error(
                 error='invalid_request',
                 msg='Social profile already existed, should login instead'
             )
@@ -303,8 +308,12 @@ class OAuthBackend(object):
         :param qs:
         :return:
         """
-        code = qs['code']
-        tokens = self._get_token(code=code)
+        if self._is_mobile():
+            access_token = qs['access_token']
+            tokens = self._debug_token(access_token=access_token)
+        else:
+            code = qs['code']
+            tokens = self._get_token(code=code)
         user_id, attrs = self._get_profile(tokens=tokens)
 
         profile, existed = SocialProfiles.add_or_update(
@@ -351,9 +360,36 @@ class OAuthBackend(object):
             error, desc = self._get_error(body, action='get_token')
             logger.warn('Getting access token failed', style='hybrid',
                         provider=self.provider.upper(), **body)
-            self._raise_redirect_error(error=self.ERROR_GET_TOKEN_FAILED,
-                                       msg='{}: {}'.format(error, desc))
+            self._raise_error(error=self.ERROR_GET_TOKEN_FAILED,
+                              msg='{}: {}'.format(error, desc))
         return res.json()
+
+    def _debug_token(self, access_token):
+        """
+
+        :param access_token:
+        :return:
+        """
+        res = request.get(self.__verify_token_uri(version=self.channel.api_version),
+                          params={'access_token': access_token})
+        if res.status_code != 200:
+            body = res.json()
+            error, desc = self._get_error(body, action='get_token')
+            logger.warn('Verify access token failed', style='hybrid',
+                        provider=self.provider.upper(), **body)
+            self._raise_error(error=self.ERROR_GET_TOKEN_FAILED,
+                              msg='{}: {}'.format(error, desc))
+        token_info = res.json()
+        client_id = token_info['client_id']
+        if client_id != self.channel.client_id:
+            logger.warn('Access token does not belong to current app',
+                        client_id=client_id, expected=self.channel.client_id)
+            raise PermissionDeniedError('Illegal access token')
+        return {
+            'access_token': access_token,
+            'expires_in': token_info['expires_in'],
+            'token_type': 'Bearer'
+        }
 
     def _get_profile(self, tokens):
         """
@@ -368,7 +404,7 @@ class OAuthBackend(object):
             body = res.json()
             logger.warn('Getting profile failed', style='hybrid',
                         provider=self.provider.upper(), **body)
-            self._raise_redirect_error(
+            self._raise_error(
                 error=self.ERROR_GET_PROFILE_FAILED,
                 msg='Getting user attributes from provider failed')
 
@@ -405,28 +441,42 @@ class OAuthBackend(object):
     def _get_error(self, response, action):
         return response['error'], response.get('error_description', '')
 
-    def _raise_redirect_error(self, error, msg):
-        raise RedirectLoginError(error=error, msg=msg,
-                                 nonce=self.args.get('nonce', ''),
-                                 redirect_uri=self.log.get_failed_callback(),
-                                 provider=self.provider)
+    def _raise_error(self, error, msg):
+        if self._is_mobile():
+            return jsonify({
+                'error': error,
+                'error_description': msg,
+                'provider': self.provider
+            })
+        else:
+            raise RedirectLoginError(
+                error=error, msg=msg,
+                nonce=self.args.get('nonce', ''),
+                redirect_uri=self.log.get_failed_callback(),
+                provider=self.provider)
 
     def __identify_attrs__(self):
         return __PROVIDER_SETTINGS__[self.provider]['identify_attrs']
 
-    def __authorize_uri__(self, version=None, numeric_format=False):
+    def __authorize_uri__(self, version, numeric_format=False):
         if version and numeric_format:
             version = version.replace('v', '')
         key = self.provider + '_sandbox' if self.sandbox else self.provider
         return __PROVIDER_SETTINGS__[key]['authorize_uri'].format(version=version)
 
-    def __token_uri__(self, version=None, numeric_format=False):
+    def __token_uri__(self, version, numeric_format=False):
         if version and numeric_format:
             version = version.replace('v', '')
         key = self.provider + '_sandbox' if self.sandbox else self.provider
         return __PROVIDER_SETTINGS__[key]['token_uri'].format(version=version)
 
-    def __profile_uri__(self, version=None, numeric_format=False):
+    def __verify_token_uri(self, version, numeric_format=False):
+        if version and numeric_format:
+            version = version.replace('v', '')
+        key = self.provider + '_sandbox' if self.sandbox else self.provider
+        return __PROVIDER_SETTINGS__[key]['verify_token_uri'].format(version=version)
+
+    def __profile_uri__(self, version, numeric_format=False):
         if version and numeric_format:
             version = version.replace('v', '')
         key = self.provider + '_sandbox' if self.sandbox else self.provider
@@ -585,8 +635,8 @@ class FacebookBackend(OAuthBackend):
             error, desc = self._get_error(body, action='get_token')
             logger.warn('Getting access token failed',
                         provider=self.provider.upper(), **body)
-            self._raise_redirect_error(error=self.ERROR_GET_TOKEN_FAILED,
-                                       msg='{}: {}'.format(error, desc))
+            self._raise_error(error=self.ERROR_GET_TOKEN_FAILED,
+                              msg='{}: {}'.format(error, desc))
         return res.json()
 
     def _get_profile(self, tokens):
@@ -599,7 +649,7 @@ class FacebookBackend(OAuthBackend):
             body = res.json()
             logger.warn('Getting profile failed', style='hybrid',
                         provider=self.provider.upper(), **body)
-            self._raise_redirect_error(
+            self._raise_error(
                 error=self.ERROR_GET_PROFILE_FAILED,
                 msg='Getting user attributes from provider failed')
 
@@ -632,14 +682,14 @@ class TwitterBackend(OAuthBackend):
         if res.status_code != 200:
             body = up.parse_qs(res.text)
             logger.warn('Getting request token failed', code=res.status_code, **body)
-            self._raise_redirect_error(
+            self._raise_error(
                 error=self.ERROR_GET_TOKEN_FAILED,
                 msg='Getting request token failed')
 
         body = up.parse_qs(res.text)
         if not body['oauth_callback_confirmed'][0]:
             logger.warn('Getting request token failed', oauth_callback_confirmed=0)
-            self._raise_redirect_error(
+            self._raise_error(
                 error=self.ERROR_GET_TOKEN_FAILED,
                 msg='Getting request token failed: oauth_callback_confirmed=false')
 
@@ -695,7 +745,7 @@ class TwitterBackend(OAuthBackend):
         if res.status_code != 200:
             body = up.parse_qs(res.text)
             logger.warn('Getting access token failed', code=res.status_code, **body)
-            self._raise_redirect_error(
+            self._raise_error(
                 error=self.ERROR_GET_TOKEN_FAILED,
                 msg='Getting access token failed')
 
@@ -723,7 +773,7 @@ class TwitterBackend(OAuthBackend):
         if res.status_code != 200:
             body = res.json()
             logger.warn('Getting profile failed', code=res.status_code, **body)
-            self._raise_redirect_error(
+            self._raise_error(
                 error=self.ERROR_GET_PROFILE_FAILED,
                 msg='Getting profile failed')
 
@@ -789,7 +839,7 @@ class GoogleBackend(OAuthBackend):
             body = res.json()
             logger.warn('Getting profile failed', style='hybrid',
                         provider=self.provider.upper(), **body)
-            self._raise_redirect_error(
+            self._raise_error(
                 error=self.ERROR_GET_PROFILE_FAILED,
                 msg='Getting user attributes from provider failed')
 
