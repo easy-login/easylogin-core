@@ -174,12 +174,7 @@ class OAuthBackend(object):
                 'state': oauth_state
             })
         else:
-            if self.OAUTH_VERSION == 2:
-                url = self._build_authorize_uri(state=oauth_state)
-            else:
-                url, oa1_token, oa1_secret = self._build_oauth1_authorize_uri(state=oauth_state)
-                self.log.oa1_token = oa1_token
-                self.log.oa1_secret = oa1_secret
+            url = self._build_authorize_uri(state=oauth_state)
             logger.debug('Authorize URL', url)
             return redirect(url)
 
@@ -224,6 +219,22 @@ class OAuthBackend(object):
     def _is_mobile(self):
         return self.platform != 'web'
 
+    def _build_authorize_uri(self, state):
+        """
+
+        :param state:
+        :return:
+        """
+        uri = add_params_to_uri(
+            uri=self.__authorize_uri__(version=self.channel.api_version),
+            client_id=self.channel.client_id,
+            redirect_uri=self.__provider_callback_uri__(),
+            scope=up.unquote_plus(self.channel.get_perms_as_oauth_scope()),
+            state=state)
+        if self.OPENID_CONNECT_SUPPORT:
+            uri += '&nonce=' + gen_random_token(nbytes=16, format='hex')
+        return uri
+
     def handle_authorize_error(self, state, qs):
         """
 
@@ -255,10 +266,7 @@ class OAuthBackend(object):
 
         self.channel = Channels.query.filter_by(app_id=self.log.app_id,
                                                 provider=self.provider).one_or_none()
-        if self.OAUTH_VERSION == 2:
-            self.profile, self.token = self.handle_oauth2_authorize_success(qs)
-        else:
-            self.profile, self.token = self.handle_oauth1_authorize_success(qs)
+        self.profile, self.token = self._handle_authentication(qs)
 
         intent = self.log.intent
         if intent == AuthLogs.INTENT_ASSOCIATE:
@@ -289,72 +297,33 @@ class OAuthBackend(object):
         )
         return self._make_redirect_response(callback_uri=callback_uri)
 
-    def handle_oauth2_authorize_success(self, qs):
+    def _handle_authentication(self, qs):
         """
 
-        :param log:
-        :param channel:
         :param qs:
         :return:
         """
         code = qs['code']
         tokens = self._get_token(code=code)
         user_id, attrs = self._get_profile(tokens=tokens)
-        try:
-            profile, existed = SocialProfiles.add_or_update(
-                app_id=self.log.app_id,
-                provider=self.provider,
-                scope_id=user_id, attrs=attrs)
-            self.log.set_authorized(social_id=profile._id, is_login=existed,
-                                    nonce=gen_random_token(nbytes=32))
-            token = Tokens(
-                provider=self.provider,
-                access_token=tokens['access_token'],
-                token_type=tokens['token_type'],
-                expires_at=datetime.utcnow() + timedelta(seconds=tokens['expires_in']),
-                refresh_token=tokens.get('refresh_token'),
-                jwt_token=tokens.get('id_token'),
-                social_id=profile._id
-            )
-            db.session.add(token)
-            return profile, token
-        except Exception as e:
-            logger.error(repr(e))
-            db.session.rollback()
-            raise
 
-    def handle_oauth1_authorize_success(self, qs):
-        """
-
-        :param log:
-        :param channel:
-        :param qs:
-        :return:
-        """
-        verifier = qs['oauth_verifier']
-        tokens = self._get_oauth1_token(verifier=verifier)
-        user_id, attrs = self._get_oauth1_profile(tokens=tokens)
-        try:
-            profile, existed = SocialProfiles.add_or_update(
-                app_id=self.log.app_id,
-                provider=self.provider,
-                scope_id=user_id, attrs=attrs)
-            self.log.set_authorized(social_id=profile._id, is_login=existed,
-                                    nonce=gen_random_token(nbytes=32))
-            token = Tokens(
-                provider=self.provider,
-                token_type='OAuth',
-                oa_version=Tokens.OA_VERSION_1A,
-                oa1_token=tokens[0],
-                oa1_secret=tokens[1],
-                social_id=profile._id
-            )
-            db.session.add(token)
-            return profile, token
-        except Exception as e:
-            logger.error(repr(e))
-            db.session.rollback()
-            raise
+        profile, existed = SocialProfiles.add_or_update(
+            app_id=self.log.app_id,
+            provider=self.provider,
+            scope_id=user_id, attrs=attrs)
+        self.log.set_authorized(social_id=profile._id, is_login=existed,
+                                nonce=gen_random_token(nbytes=32))
+        token = Tokens(
+            provider=self.provider,
+            access_token=tokens['access_token'],
+            token_type=tokens['token_type'],
+            expires_at=datetime.utcnow() + timedelta(seconds=tokens['expires_in']),
+            refresh_token=tokens.get('refresh_token'),
+            jwt_token=tokens.get('id_token'),
+            social_id=profile._id
+        )
+        db.session.add(token)
+        return profile, token
 
     def _enable_sandbox(self):
         if self.SANDBOX_SUPPORT:
@@ -364,29 +333,10 @@ class OAuthBackend(object):
             logger.warn('Cannot enable sandbox mode, provider is not supported',
                         provider=self.provider)
 
-    def _build_authorize_uri(self, state):
-        """
-
-        :param channel:
-        :param state:
-        :return:
-        """
-        uri = add_params_to_uri(
-            uri=self.__authorize_uri__(version=self.channel.api_version),
-            client_id=self.channel.client_id,
-            redirect_uri=self.__provider_callback_uri__(),
-            scope=up.unquote_plus(self.channel.get_perms_as_oauth_scope()),
-            state=state)
-        if self.OPENID_CONNECT_SUPPORT:
-            uri += '&nonce=' + gen_random_token(nbytes=16, format='hex')
-        return uri
-
     def _get_token(self, code):
         """
 
-        :param channel:
         :param code:
-        :param fail_callback:
         :return:
         """
         res = requests.post(self.__token_uri__(version=self.channel.api_version), data={
@@ -408,9 +358,7 @@ class OAuthBackend(object):
     def _get_profile(self, tokens):
         """
 
-        :param channel:
         :param tokens:
-        :param fail_callback:
         :return:
         """
         authorization = tokens['token_type'] + ' ' + tokens['access_token']
@@ -430,7 +378,6 @@ class OAuthBackend(object):
         """
 
         :param response:
-        :param channel:
         :param nofilter:
         :return:
         """
@@ -454,15 +401,6 @@ class OAuthBackend(object):
         :return:
         """
         return redirect(callback_uri)
-
-    def _build_oauth1_authorize_uri(self, state):
-        raise NotImplementedError()
-
-    def _get_oauth1_token(self, verifier):
-        raise NotImplementedError()
-
-    def _get_oauth1_profile(self, tokens):
-        raise NotImplementedError()
 
     def _get_error(self, response, action):
         return response['error'], response.get('error_description', '')
@@ -680,7 +618,7 @@ class TwitterBackend(OAuthBackend):
     """
     OAUTH_VERSION = 1
 
-    def _build_oauth1_authorize_uri(self, state):
+    def _build_authorize_uri(self, state):
         request_token_uri = __PROVIDER_SETTINGS__[self.provider]['request_token_uri']
         callback_uri = add_params_to_uri(self.__provider_callback_uri__(), state=state)
         auth = self.create_authorization_header(
@@ -707,12 +645,42 @@ class TwitterBackend(OAuthBackend):
 
         token = body['oauth_token'][0]
         secret = body['oauth_token_secret'][0]
+        self.log.oa1_token = token
+        self.log.oa1_secret = secret
+
         uri = add_params_to_uri(
             uri=self.__authorize_uri__(version=self.channel.api_version),
             oauth_token=token)
-        return uri, token, secret
+        return uri
 
-    def _get_oauth1_token(self, verifier):
+    def _handle_authentication(self, qs):
+        """
+
+        :param qs:
+        :return:
+        """
+        verifier = qs['oauth_verifier']
+        tokens = self._get_token(verifier)
+        user_id, attrs = self._get_profile(tokens=tokens)
+
+        profile, existed = SocialProfiles.add_or_update(
+            app_id=self.log.app_id,
+            provider=self.provider,
+            scope_id=user_id, attrs=attrs)
+        self.log.set_authorized(social_id=profile._id, is_login=existed,
+                                nonce=gen_random_token(nbytes=32))
+        token = Tokens(
+            provider=self.provider,
+            token_type='OAuth',
+            oa_version=Tokens.OA_VERSION_1A,
+            oa1_token=tokens[0],
+            oa1_secret=tokens[1],
+            social_id=profile._id
+        )
+        db.session.add(token)
+        return profile, token
+
+    def _get_token(self, verifier):
         token_uri = self.__token_uri__(version=self.channel.api_version)
         auth = self.create_authorization_header(
             method='POST',
@@ -734,7 +702,7 @@ class TwitterBackend(OAuthBackend):
         body = up.parse_qs(res.text)
         return body['oauth_token'][0], body['oauth_token_secret'][0]
 
-    def _get_oauth1_profile(self, tokens):
+    def _get_profile(self, tokens):
         profile_uri = self.__profile_uri__(version=self.channel.api_version, numeric_format=True)
         auth = self.create_authorization_header(
             method='GET',
