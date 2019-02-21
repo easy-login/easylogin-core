@@ -1,10 +1,9 @@
-from flask import abort, redirect, request, jsonify
+from flask import abort, request, jsonify
 
 from sociallogin import app as flask_app, db, login_manager, logger
 from sociallogin.backends import get_backend
-from sociallogin.exc import TokenParseError
-from sociallogin.models import Apps, AuthLogs, AssociateLogs
-from sociallogin.utils import smart_str2bool, update_dict, get_remote_ip
+from sociallogin.models import Apps
+from sociallogin.utils import get_remote_ip
 
 
 @flask_app.route('/auth/<provider>', defaults={'intent': None})
@@ -16,39 +15,16 @@ def authorize(provider, intent):
     if not callback_uri or not app_id:
         abort(400, 'Missing parameters app_id or callback_uri')
 
-    nonce = request.args.get('nonce', '')
-    if len(nonce) > 255:
-        abort(400, 'Nonce length exceeded limit 255 characters')
-
-    sandbox = request.args.get('sandbox')
-    backend = get_backend(provider, sandbox=smart_str2bool(sandbox))
-    extra = dict()
-
-    if intent == AuthLogs.INTENT_ASSOCIATE:
-        assoc_token = request.args.get('associate_token')
-        try:
-            alog = AssociateLogs.parse_associate_token(assoc_token)
-            if alog.provider != provider:
-                abort(400, 'Invalid target provider, must be {}'.format(alog.provider))
-
-            alog.status = AssociateLogs.STATUS_AUTHORIZING
-            update_dict(extra, dst_social_id=alog.dst_social_id, provider=provider)
-        except TokenParseError as e:
-            logger.warning('Parse associate token failed',
-                           error=e.description, token=assoc_token)
-            abort(400, 'Invalid associate token')
-    elif intent == AuthLogs.INTENT_PAY_WITH_AMAZON:
-        update_dict(extra, lpwa_domain=request.args.get('site_domain'))
-
-    authorize_uri = backend.build_authorize_uri(
+    backend = get_backend(provider)
+    resp = backend.authorize(
         app_id=app_id,
         intent=intent,
         succ_callback=callback_uri,
         fail_callback=callback_if_failed,
-        nonce=nonce,
-        sandbox=sandbox, **extra)
+        qs=request.args
+    )
     db.session.commit()
-    return redirect(authorize_uri)
+    return resp
 
 
 @flask_app.route('/auth/<provider>/callback')

@@ -114,8 +114,8 @@ class Admins(Base):
     username = db.Column(db.String(32), nullable=False)
     email = db.Column(db.String(32), nullable=False)
     password = db.Column(db.String(64), nullable=False)
-    is_superuser = db.Column(db.SmallInteger, nullable=False, default=0)
-    level = db.Column(db.SmallInteger, nullable=False, default=0)
+    is_superuser = db.Column(db.SmallInteger, nullable=False)
+    level = db.Column(db.SmallInteger, nullable=False)
 
 
 class Apps(Base):
@@ -187,10 +187,11 @@ class SocialProfiles(Base):
     last_authorized_at = db.Column("authorized_at", db.DateTime)
     login_count = db.Column(db.Integer, default=0, nullable=False)
     verified = db.Column(db.SmallInteger, default=0, nullable=False)
-    _deleted = db.Column("deleted", db.SmallInteger, default=0)
-    _prohibited = db.Column("prohibited", db.SmallInteger, default=0)
     linked_at = db.Column(db.DateTime)
     alias = db.Column(db.BigInteger, nullable=False)
+
+    _deleted = db.Column("deleted", db.SmallInteger, default=0)
+    _prohibited = db.Column("prohibited", db.SmallInteger, default=0)
 
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
@@ -560,6 +561,8 @@ class AuthLogs(Base):
     status = db.Column(db.String(15), nullable=False)
     is_login = db.Column(db.SmallInteger)
     intent = db.Column(db.String(32))
+    platform = db.Column(db.String(8), nullable=False)
+
     oa1_token = db.Column(db.String(1023))
     oa1_secret = db.Column(db.String(1023))
 
@@ -571,8 +574,9 @@ class AuthLogs(Base):
         self.app_id = app_id
         self.callback_uri = callback_uri
         self.callback_if_failed = kwargs.get('callback_if_failed')
+        self.status = self.STATUS_UNKNOWN
 
-        self.status = kwargs.get('status') or self.STATUS_UNKNOWN
+        self.platform = kwargs.get('platform') or 'web'
         self.nonce = kwargs.get('nonce')
         self.intent = kwargs.get('intent') or self.INTENT_AUTHENTICATE
         self.oa1_token = kwargs.get('oa1_token')

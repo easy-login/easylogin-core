@@ -5,15 +5,15 @@ import json
 
 import requests
 import jwt
-from flask import request, url_for, make_response, redirect
+from flask import request, url_for, make_response, redirect, jsonify
 
 from sociallogin import db, logger
 from sociallogin.exc import RedirectLoginError, PermissionDeniedError, \
     UnsupportedProviderError, NotFoundError, BadRequestError, TokenParseError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, \
-    SocialProfiles, JournalLogs
+    SocialProfiles, JournalLogs, AssociateLogs
 from sociallogin.utils import gen_random_token, add_params_to_uri, \
-    calculate_hmac, smart_str2bool, unix_time_millis, get_remote_ip
+    calculate_hmac, smart_str2bool, unix_time_millis, get_remote_ip, update_dict
 
 __PROVIDER_SETTINGS__ = {
     'line': {
@@ -67,19 +67,19 @@ __PROVIDER_SETTINGS__ = {
 }
 
 
-def get_backend(provider, sandbox=False):
+def get_backend(provider):
     if provider == 'line':
-        return LineBackend(provider, sandbox)
+        return LineBackend(provider)
     elif provider == 'amazon':
-        return AmazonBackend(provider, sandbox)
+        return AmazonBackend(provider)
     elif provider == 'yahoojp':
-        return YahooJpBackend(provider, sandbox)
+        return YahooJpBackend(provider)
     elif provider == 'facebook':
-        return FacebookBackend(provider, sandbox)
+        return FacebookBackend(provider)
     elif provider == 'twitter':
-        return TwitterBackend(provider, sandbox)
+        return TwitterBackend(provider)
     elif provider == 'google':
-        return GoogleBackend(provider, sandbox)
+        return GoogleBackend(provider)
     else:
         raise UnsupportedProviderError()
 
@@ -97,9 +97,11 @@ class OAuthBackend(object):
     ERROR_GET_TOKEN_FAILED = 'get_token_failed'
     ERROR_GET_PROFILE_FAILED = 'get_profile_failed'
 
-    def __init__(self, provider, sandbox):
+    def __init__(self, provider):
         self.provider = provider
-        self.sandbox = sandbox and self.SANDBOX_SUPPORT
+        self.sandbox = False
+        self.platform = None
+
         self.channel = None
         self.log = None
         self.token = None
@@ -112,40 +114,43 @@ class OAuthBackend(object):
         else:
             return 'oauth_token' in qs and 'oauth_verifier' in qs
 
-    def build_authorize_uri(self, app_id, intent, succ_callback, fail_callback, **kwargs):
+    def authorize(self, app_id, intent, succ_callback, fail_callback, qs):
         """
 
         :param app_id:
         :param intent:
         :param succ_callback:
         :param fail_callback:
-        :param kwargs:
+        :param qs:
         :return:
         """
+        # Verify request params and extract extra args
+        self._init_authorize(intent=intent, qs=qs)
+
         app = Apps.query.filter_by(_id=app_id, _deleted=0).one_or_none()
         self.channel = Channels.query.filter_by(app_id=app_id,
                                                 provider=self.provider).one_or_none()
         if not app or not self.channel:
             raise NotFoundError(msg='Application or channel not found')
 
-        allowed_uris = [up.unquote_plus(uri) for uri in app.get_callback_uris()]
-        logger.debug('Verify callback URI', style='hybrid', allowed_uris=allowed_uris,
-                     succ_callback=succ_callback, fail_callback=fail_callback)
+        if not self._is_mobile():
+            allowed_uris = [up.unquote_plus(uri) for uri in app.get_callback_uris()]
+            logger.debug('Verify callback URI', style='hybrid', allowed_uris=allowed_uris,
+                         succ_callback=succ_callback, fail_callback=fail_callback)
 
-        if not self.verify_callback_uri(allowed_uris, succ_callback):
-            raise PermissionDeniedError(
-                msg='Invalid callback_uri value. '
-                    'Check if it is registered in EasyLogin developer site')
-        if fail_callback and not self.verify_callback_uri(allowed_uris, fail_callback):
-            raise PermissionDeniedError(
-                msg='Invalid callback_if_failed value. '
-                    'Check if it is registered in EasyLogin developer site')
+            illegal_callback_msg = ('Invalid callback_uri value. '
+                                    'Check if it is registered in EasyLogin developer site')
+            if not self.verify_callback_uri(allowed_uris, succ_callback):
+                raise PermissionDeniedError(msg=illegal_callback_msg)
+            if fail_callback and not self.verify_callback_uri(allowed_uris, fail_callback):
+                raise PermissionDeniedError(msg=illegal_callback_msg)
 
         self.log = AuthLogs(
             provider=self.provider,
             app_id=app_id,
             nonce=gen_random_token(nbytes=32),
             intent=intent,
+            platform=self.platform,
             callback_uri=succ_callback,
             callback_if_failed=fail_callback
         )
@@ -158,15 +163,66 @@ class OAuthBackend(object):
             ref_id=self.log._id
         ))
 
-        if self.OAUTH_VERSION == 2:
-            url = self._build_authorize_uri(state=self.log.generate_oauth_state(**kwargs))
+        oauth_state = self.log.generate_oauth_state(**self.args)
+        if self._is_mobile():
+            return jsonify({
+                'channel': {
+                    'client_id': self.channel.client_id,
+                    'options': self.channel.get_options(),
+                    'scopes': self.channel.get_permissions()
+                },
+                'state': oauth_state
+            })
         else:
-            url, oa1_token, oa1_secret = self._build_oauth1_authorize_uri(
-                state=self.log.generate_oauth_state(**kwargs))
-            self.log.oa1_token = oa1_token
-            self.log.oa1_secret = oa1_secret
-        logger.debug('Authorize URL', url)
-        return url
+            if self.OAUTH_VERSION == 2:
+                url = self._build_authorize_uri(state=oauth_state)
+            else:
+                url, oa1_token, oa1_secret = self._build_oauth1_authorize_uri(state=oauth_state)
+                self.log.oa1_token = oa1_token
+                self.log.oa1_secret = oa1_secret
+            logger.debug('Authorize URL', url)
+            return redirect(url)
+
+    def _init_authorize(self, intent, qs):
+        self.sandbox = smart_str2bool(qs.get('sandbox'))
+        if self.sandbox:
+            self._enable_sandbox()
+
+        nonce = qs.get('nonce', '')
+        if len(nonce) > 255:
+            raise BadRequestError('Nonce length exceeded limit 255 characters')
+
+        self.platform = qs.get('platform', 'web')
+        if self.platform not in ['web', 'ios', 'and']:
+            raise BadRequestError('Invalid or unsupported platform')
+        if self._is_mobile() and 'verifier' not in qs:
+            raise BadRequestError('Parameter verifier must be provided '
+                                  'for platform ' + self.platform)
+        self.args = {
+            'sandbox': self.sandbox,
+            'platform': self.platform,
+            'nonce': nonce,
+            'verifier': qs.get('verifier', '')
+        }
+
+        if intent == AuthLogs.INTENT_ASSOCIATE:
+            assoc_token = qs.get('associate_token')
+            try:
+                alog = AssociateLogs.parse_associate_token(assoc_token)
+                if alog.provider != self.provider:
+                    raise BadRequestError('Invalid target provider, must be {}'.format(alog.provider))
+
+                alog.status = AssociateLogs.STATUS_AUTHORIZING
+                update_dict(self.args, dst_social_id=alog.dst_social_id, provider=self.provider)
+            except TokenParseError as e:
+                logger.warning('Parse associate token failed',
+                               error=e.description, token=assoc_token)
+                raise BadRequestError('Invalid associate token')
+        elif intent == AuthLogs.INTENT_PAY_WITH_AMAZON:
+            update_dict(self.args, lpwa_domain=qs.get('site_domain'))
+
+    def _is_mobile(self):
+        return self.platform != 'web'
 
     def handle_authorize_error(self, state, qs):
         """
@@ -192,9 +248,11 @@ class OAuthBackend(object):
         :return:
         """
         self.log, self.args = self.verify_and_parse_state(state)
-        logger.debug('Parse OAuth state result', sub=self.log._id, **self.args)
-        if smart_str2bool(self.args.get('sandbox')):
+        if self.args.get('sandbox'):
             self._enable_sandbox()
+        self.platform = self.args.get('platform')
+        logger.debug('Parse OAuth state result', sub=self.log._id, **self.args)
+
         self.channel = Channels.query.filter_by(app_id=self.log.app_id,
                                                 provider=self.provider).one_or_none()
         if self.OAUTH_VERSION == 2:
