@@ -354,7 +354,7 @@ class OAuthBackend(object):
             token_type=tokens['token_type'],
             expires_at=datetime.utcnow() + timedelta(seconds=tokens['expires_in']),
             refresh_token=tokens.get('refresh_token'),
-            jwt_token=tokens.get('id_token'),
+            id_token=tokens.get('id_token'),
             social_id=profile._id
         )
         db.session.add(token)

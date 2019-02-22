@@ -512,7 +512,7 @@ class Tokens(Base):
     token_type = db.Column(db.String(15), nullable=False)
     access_token = db.Column(db.String(2047))
     refresh_token = db.Column(db.String(2047))
-    jwt_token = db.Column(db.String(2047))
+    id_token = db.Column(db.String(2047))
     expires_at = db.Column(db.DateTime)
     oa1_token = db.Column(db.String(1023))
     oa1_secret = db.Column(db.String(1023))
@@ -527,7 +527,7 @@ class Tokens(Base):
         self.expires_at = kwargs.get('expires_at')
         self.access_token = kwargs.get('access_token')
         self.refresh_token = kwargs.get('refresh_token')
-        self.jwt_token = kwargs.get('jwt_token')
+        self.id_token = kwargs.get('id_token')
         self.oa1_token = kwargs.get('oa1_token')
         self.oa1_secret = kwargs.get('oa1_secret')
 
