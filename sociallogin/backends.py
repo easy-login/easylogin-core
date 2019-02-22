@@ -335,7 +335,8 @@ class OAuthBackend(object):
         """
         if self._is_mobile():
             access_token = params['access_token']
-            tokens = self._debug_token(access_token=access_token)
+            id_token = params.get('id_token')
+            tokens = self._debug_token(access_token=access_token, id_token=id_token)
         else:
             code = params['code']
             tokens = self._get_token(code=code)
@@ -389,7 +390,7 @@ class OAuthBackend(object):
                               msg='{}: {}'.format(error, desc))
         return res.json()
 
-    def _debug_token(self, access_token):
+    def _debug_token(self, access_token, id_token=None):
         """
 
         :param access_token:
@@ -413,7 +414,8 @@ class OAuthBackend(object):
         return {
             'access_token': access_token,
             'expires_in': token_info['expires_in'],
-            'token_type': 'Bearer'
+            'token_type': 'Bearer',
+            'id_token': id_token
         }
 
     def _get_profile(self, tokens):
@@ -571,7 +573,7 @@ class LineBackend(OAuthBackend):
                                  algorithms=['HS256'])
             if payload.get('email'):
                 attrs['email'] = payload['email']
-        except jwt.PyJWTError as e:
+        except (jwt.PyJWTError, KeyError) as e:
             logger.error(repr(e))
         return user_id, attrs
 
