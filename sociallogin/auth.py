@@ -47,12 +47,11 @@ def authorize_callback(provider):
 @flask_app.route('/auth/<provider>/verify-token', methods=['POST'])
 def verify_token(provider):
     backend = get_backend(provider)
-    token = request.form.get('access_token')
     state = request.form.get('state')
-    if not token or not state:
+    if not state or 'access_token' not in request.form:
         abort(400, 'Missing or invalid required parameters: access token, state')
 
-    resp = backend.handle_authorize_success(state=state, params=request.args)
+    resp = backend.handle_authorize_success(state=state, params=request.form)
     db.session.commit()
     return resp
 
@@ -164,7 +163,7 @@ def _verify_auth_request(auth_token, params):
             abort(401, 'API key authorization failed')
     else:
         code_challenge = args.get('code_challenge')
-        verifier = params.get('code_verifier')
+        verifier = params.get('code_verifier', '')
         if not _verify_code_verifier(verifier=verifier, challenge=code_challenge):
             logger.warn('code_verifier does not match', verifier=verifier)
             abort(401, 'code_verifier does not match')
@@ -172,7 +171,7 @@ def _verify_auth_request(auth_token, params):
 
 
 def _verify_code_verifier(verifier, challenge):
-    return challenge == hashlib.sha256(verifier.encode('utf8')).hexdigiest()
+    return challenge == hashlib.sha256(verifier.encode('utf8')).hexdigest()
 
 
 def init_app(app):
