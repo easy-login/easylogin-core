@@ -595,9 +595,9 @@ class AuthLogs(Base):
         return jwts.generate(sub=self._id, exp_in_seconds=3600,
                              _nonce=self.nonce, **kwargs)
 
-    def generate_auth_token(self):
+    def generate_auth_token(self, **kwargs):
         return ests.generate(sub=self._id, exp_in_seconds=3600,
-                             _type='auth', _nonce=self.nonce)
+                             _type='auth', _nonce=self.nonce, **kwargs)
 
     @classmethod
     def parse_oauth_state(cls, oauth_state):
@@ -626,7 +626,7 @@ class AuthLogs(Base):
                          status=log.status,
                          expected=[cls.STATUS_AUTHORIZED, cls.STATUS_WAIT_REGISTER])
             raise BadRequestError('Invalid auth token')
-        return log
+        return log, args
 
 
 class AssociateLogs(Base):

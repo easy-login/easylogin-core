@@ -1,9 +1,11 @@
+import hashlib
 from flask import abort, request, jsonify
 
 from sociallogin import app as flask_app, db, login_manager, logger
 from sociallogin.backends import get_backend
-from sociallogin.models import Apps
+from sociallogin.models import Apps, AuthLogs, SocialProfiles
 from sociallogin.utils import get_remote_ip
+from sociallogin.exc import TokenParseError
 
 
 @flask_app.route('/auth/<provider>', defaults={'intent': None})
@@ -21,7 +23,7 @@ def authorize(provider, intent):
         intent=intent,
         succ_callback=callback_uri,
         fail_callback=callback_if_failed,
-        qs=request.args
+        params=request.args
     )
     db.session.commit()
     return resp
@@ -35,9 +37,9 @@ def authorize_callback(provider):
         abort(400, 'Missing a required parameter: state')
 
     if not backend.verify_callback_success(request.args):
-        backend.handle_authorize_error(state, request.args)
+        backend.handle_authorize_error(state=state, params=request.args)
 
-    resp = backend.handle_authorize_success(state=state, qs=request.args)
+    resp = backend.handle_authorize_success(state=state, params=request.args)
     db.session.commit()
     return resp
 
@@ -50,9 +52,50 @@ def verify_token(provider):
     if not token or not state:
         abort(400, 'Missing or invalid required parameters: access token, state')
 
-    resp = backend.handle_authorize_success(state=state, qs=request.args)
+    resp = backend.handle_authorize_success(state=state, params=request.args)
     db.session.commit()
     return resp
+
+
+@flask_app.route('/auth/profiles/authorized', methods=['POST'])
+def get_authorized_profile():
+    token = request.form.get('auth_token')
+    try:
+        log, args = _verify_auth_request(auth_token=token, params=request.form)
+        app = Apps.query.filter_by(_id=log.app_id).one_or_none()
+
+        if log.is_login:
+            log.status = AuthLogs.STATUS_SUCCEEDED
+        elif app.option_enabled(key='reg_page'):
+            log.status = AuthLogs.STATUS_WAIT_REGISTER
+        else:
+            SocialProfiles.activate(profile_id=log.social_id)
+            log.status = AuthLogs.STATUS_SUCCEEDED
+
+        profile = SocialProfiles.query.filter_by(_id=log.social_id).first_or_404()
+        body = profile.as_dict(fetch_user=True)
+        db.session.commit()
+
+        logger.debug('Profile authenticated', style='hybrid', **body)
+        return jsonify(body)
+    except TokenParseError as e:
+        logger.warning('Parse auth token failed', error=e.description, token=token)
+        abort(400, 'Invalid auth token')
+
+
+@flask_app.route('/auth/profiles/activate', methods=['POST'])
+def activate_profile():
+    token = request.form.get('auth_token')
+    try:
+        log, args = _verify_auth_request(auth_token=token, params=request.form)
+        log.status = AuthLogs.STATUS_SUCCEEDED
+
+        SocialProfiles.activate(profile_id=log.social_id)
+        db.session.commit()
+        return jsonify({'success': True})
+    except TokenParseError as e:
+        logger.warning('Parse auth token failed', error=e.description, token=token)
+        abort(400, 'Invalid auth token')
 
 
 @flask_app.route('/ip')
@@ -61,7 +104,7 @@ def get_ip():
 
 
 @login_manager.request_loader
-def verify_app_auth(req):
+def verify_web_api(req):
     try:
         client_api_key = _extract_api_key(req)
         if not client_api_key:
@@ -109,6 +152,27 @@ def _extract_api_key(req):
     if authorization:
         api_key = authorization.replace('ApiKey ', '', 1)
         return api_key
+
+
+def _verify_auth_request(auth_token, params):
+    log, args = AuthLogs.parse_auth_token(auth_token=auth_token)
+    api_key = params.get('api_key')
+    if api_key:
+        expected = (db.session.query(Apps.api_key)
+                    .filter_by(_id=log.app_id, _deleted=0).scalar())
+        if expected != api_key:
+            abort(401, 'API key authorization failed')
+    else:
+        code_challenge = args.get('code_challenge')
+        verifier = params.get('code_verifier')
+        if not _verify_code_verifier(verifier=verifier, challenge=code_challenge):
+            logger.warn('code_verifier does not match', verifier=verifier)
+            abort(401, 'code_verifier does not match')
+    return log, args
+
+
+def _verify_code_verifier(verifier, challenge):
+    return challenge == hashlib.sha256(verifier.encode('utf8')).hexdigiest()
 
 
 def init_app(app):

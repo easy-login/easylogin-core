@@ -11,7 +11,6 @@ import base64
 
 from amzpay import amazon_pay
 
-
 app = Flask(__name__, template_folder='templates', static_url_path='')
 app.config['SECRET_KEY'] = secrets.token_hex(nbytes=32)
 app.register_blueprint(amazon_pay, url_prefix='/amazon-pay')
@@ -137,12 +136,13 @@ def auth_callback():
         token = request.args['token']
         provider = request.args['provider']
         api_url = request.cookies['api_url']
-        app_id = request.cookies['app_id']
-        url = '{}/{}/profiles/authorized'.format(api_url, app_id)
+        url = '{}/auth/profiles/authorized'.format(api_url, )
 
         r = requests.post(url=url, verify=False,
-                          json={'token': token},
-                          headers={'X-Api-Key': request.cookies['api_key']})
+                          data={
+                              'auth_token': token,
+                              'api_key': request.cookies['api_key']
+                          })
         if r.status_code != 200:
             return redirect('/demo.html')
 
@@ -179,15 +179,15 @@ def register():
         return render_template('register.html', attrs=attrs)
     else:
         api_url = request.cookies['api_url']
-        app_id = request.cookies['app_id']
         provider = session['provider']
-
         submit = request.form.get('submit', '')
         if 'register' == submit.lower():
-            url = '{}/{}/profiles/activate'.format(api_url, app_id)
+            url = '{}/auth/profiles/activate'.format(api_url)
             r = requests.post(url=url, verify=False,
-                              json={'token': session['token']},
-                              headers={'X-Api-Key': request.cookies['api_key']})
+                              data={
+                                  'auth_token': session['token'],
+                                  'api_key': request.cookies['api_key']
+                              })
             if r.status_code == 200:
                 profile = json.loads(session[provider], encoding='utf8')
                 profile['verified'] = 1

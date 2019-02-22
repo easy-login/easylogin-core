@@ -1,49 +1,10 @@
 from flask import abort, jsonify, request
-from flask_login import login_required, current_user as app
+from flask_login import login_required
 
-from sociallogin import app as flask_app, db, logger
-from sociallogin.models import SocialProfiles, AuthLogs, AssociateLogs
-from sociallogin.utils import gen_random_token, smart_str2int
+from sociallogin import app as flask_app, db
 from sociallogin.backends import is_valid_provider
-from sociallogin.exc import TokenParseError
-
-
-@flask_app.route('/<int:app_id>/profiles/authorized', methods=['POST'])
-def authorized_profile(app_id):
-    token = request.json.get('token')
-    try:
-        log = AuthLogs.parse_auth_token(auth_token=token)
-        if log.is_login:
-            log.status = AuthLogs.STATUS_SUCCEEDED
-        elif app.option_enabled(key='reg_page'):
-            log.status = AuthLogs.STATUS_WAIT_REGISTER
-        else:
-            SocialProfiles.activate(profile_id=log.social_id)
-            log.status = AuthLogs.STATUS_SUCCEEDED
-
-        profile = SocialProfiles.query.filter_by(_id=log.social_id).first_or_404()
-        body = profile.as_dict(fetch_user=True)
-        db.session.commit()
-
-        logger.debug('Profile authenticated', style='hybrid', **body)
-        return jsonify(body)
-    except TokenParseError as e:
-        logger.warning('Parse auth token failed', error=e.description, token=token)
-        abort(400, 'Invalid auth token')
-
-
-@flask_app.route('/<int:app_id>/profiles/activate', methods=['POST'])
-def activate(app_id):
-    token = request.json.get('token')
-    try:
-        log = AuthLogs.parse_auth_token(auth_token=token)
-        log.status = AuthLogs.STATUS_SUCCEEDED
-        SocialProfiles.activate(profile_id=log.social_id)
-        db.session.commit()
-        return jsonify({'success': True})
-    except TokenParseError as e:
-        logger.warning('Parse auth token failed', error=e.description, token=token)
-        abort(400, 'Invalid auth token')
+from sociallogin.models import SocialProfiles, AssociateLogs
+from sociallogin.utils import gen_random_token, smart_str2int
 
 
 @flask_app.route('/<int:app_id>/users/link', methods=['PUT'])

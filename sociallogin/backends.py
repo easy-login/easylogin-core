@@ -113,24 +113,24 @@ class OAuthBackend(object):
         self.profile = None
         self.args = None
 
-    def verify_callback_success(self, qs):
+    def verify_callback_success(self, params):
         if self.OAUTH_VERSION == 2:
-            return 'code' in qs
+            return 'code' in params
         else:
-            return 'oauth_token' in qs and 'oauth_verifier' in qs
+            return 'oauth_token' in params and 'oauth_verifier' in params
 
-    def authorize(self, app_id, intent, succ_callback, fail_callback, qs):
+    def authorize(self, app_id, intent, succ_callback, fail_callback, params):
         """
 
         :param app_id:
         :param intent:
         :param succ_callback:
         :param fail_callback:
-        :param qs:
+        :param params:
         :return:
         """
         # Verify request params and extract extra args
-        self._init_authorize(intent=intent, qs=qs)
+        self._init_authorize(intent=intent, params=params)
 
         app = Apps.query.filter_by(_id=app_id, _deleted=0).one_or_none()
         self.channel = Channels.query.filter_by(app_id=app_id,
@@ -183,30 +183,34 @@ class OAuthBackend(object):
             logger.debug('Authorize URL', url)
             return redirect(url)
 
-    def _init_authorize(self, intent, qs):
-        self.sandbox = smart_str2bool(qs.get('sandbox'))
+    def _init_authorize(self, intent, params):
+        self.sandbox = smart_str2bool(params.get('sandbox'))
         if self.sandbox:
             self._enable_sandbox()
 
-        nonce = qs.get('nonce', '')
+        nonce = params.get('nonce', '')
         if len(nonce) > 255:
             raise BadRequestError('Nonce length exceeded limit 255 characters')
 
-        self.platform = qs.get('platform', 'web')
+        self.platform = params.get('platform', 'web')
         if self.platform not in ['web', 'ios', 'and']:
             raise BadRequestError('Invalid or unsupported platform')
-        if self._is_mobile() and 'verifier' not in qs:
-            raise BadRequestError('Parameter verifier must be provided '
-                                  'for platform ' + self.platform)
+
         self.args = {
             'sandbox': self.sandbox,
             'platform': self.platform,
-            'nonce': nonce,
-            'verifier': qs.get('verifier', '')
+            'nonce': nonce
         }
+        if self._is_mobile():
+            code_challenge = params.get('code_challenge', '')
+            if not code_challenge:
+                raise BadRequestError('Missing required parameter code_challenge for mobile client')
+            if len(code_challenge) != 64:
+                raise BadRequestError('Malformed parameter: code_challenge')
+            self.args['code_challenge'] = code_challenge
 
         if intent == AuthLogs.INTENT_ASSOCIATE:
-            assoc_token = qs.get('associate_token')
+            assoc_token = params.get('associate_token')
             try:
                 alog = AssociateLogs.parse_associate_token(assoc_token)
                 if alog.provider != self.provider:
@@ -219,7 +223,7 @@ class OAuthBackend(object):
                                error=e.description, token=assoc_token)
                 raise BadRequestError('Invalid associate token')
         elif intent == AuthLogs.INTENT_PAY_WITH_AMAZON:
-            update_dict(self.args, lpwa_domain=qs.get('site_domain'))
+            update_dict(self.args, lpwa_domain=params.get('site_domain'))
 
     def _is_mobile(self):
         return self.platform != 'web'
@@ -240,27 +244,27 @@ class OAuthBackend(object):
             uri += '&nonce=' + gen_random_token(nbytes=16, format='hex')
         return uri
 
-    def handle_authorize_error(self, state, qs):
+    def handle_authorize_error(self, state, params):
         """
 
         :param state:
-        :param qs:
+        :param params:
         :return:
         """
         self.log, self.args = self.verify_and_parse_state(state)
         self.log.status = AuthLogs.STATUS_FAILED
 
-        error, desc = self._get_error(qs, action='authorize')
+        error, desc = self._get_error(params, action='authorize')
         logger.info('Authorize failed', provider=self.provider.upper(),
                     error=error, message=desc)
         self._raise_error(error=self.ERROR_AUTHORIZE_FAILED,
                           msg='{}, {}'.format(error, desc))
 
-    def handle_authorize_success(self, state, qs):
+    def handle_authorize_success(self, state, params):
         """
 
         :param state:
-        :param qs:
+        :param params:
         :return:
         """
         self.log, self.args = self.verify_and_parse_state(state)
@@ -271,7 +275,7 @@ class OAuthBackend(object):
 
         self.channel = Channels.query.filter_by(app_id=self.log.app_id,
                                                 provider=self.provider).one_or_none()
-        self.profile, self.token = self._handle_authentication(qs)
+        self.profile, self.token = self._handle_authentication(params)
 
         intent = self.log.intent
         if intent == AuthLogs.INTENT_ASSOCIATE:
@@ -293,26 +297,34 @@ class OAuthBackend(object):
                 msg='Social profile already existed, should login instead'
             )
 
-        auth_token = self.log.generate_auth_token()
-        callback_uri = add_params_to_uri(
-            uri=self.log.callback_uri,
-            provider=self.provider,
-            token=auth_token,
-            nonce=self.args.get('nonce', '')
-        )
-        return self._make_redirect_response(callback_uri=callback_uri)
+        if self._is_mobile():
+            auth_token = self.log.generate_auth_token(
+                code_challenge=self.args.get('code_challenge'))
+            return jsonify({
+                'auth_token': auth_token,
+                'expires_in': 3900
+            })
+        else:
+            auth_token = self.log.generate_auth_token()
+            callback_uri = add_params_to_uri(
+                uri=self.log.callback_uri,
+                provider=self.provider,
+                token=auth_token,
+                nonce=self.args.get('nonce', '')
+            )
+            return self._make_redirect_response(callback_uri=callback_uri)
 
-    def _handle_authentication(self, qs):
+    def _handle_authentication(self, params):
         """
 
-        :param qs:
+        :param params:
         :return:
         """
         if self._is_mobile():
-            access_token = qs['access_token']
+            access_token = params['access_token']
             tokens = self._debug_token(access_token=access_token)
         else:
-            code = qs['code']
+            code = params['code']
             tokens = self._get_token(code=code)
         user_id, attrs = self._get_profile(tokens=tokens)
 
@@ -703,14 +715,14 @@ class TwitterBackend(OAuthBackend):
             oauth_token=token)
         return uri
 
-    def _handle_authentication(self, qs):
+    def _handle_authentication(self, params):
         """
 
-        :param qs:
+        :param params:
         :return:
         """
-        verifier = qs['oauth_verifier']
-        tokens = self._get_token(verifier)
+        oauth_verifier = params['oauth_verifier']
+        tokens = self._get_token(oauth_verifier)
         user_id, attrs = self._get_profile(tokens=tokens)
 
         profile, existed = SocialProfiles.add_or_update(
@@ -730,7 +742,7 @@ class TwitterBackend(OAuthBackend):
         db.session.add(token)
         return profile, token
 
-    def _get_token(self, verifier):
+    def _get_token(self, oauth_verifier):
         token_uri = self.__token_uri__(version=self.channel.api_version)
         auth = self.create_authorization_header(
             method='POST',
@@ -741,7 +753,7 @@ class TwitterBackend(OAuthBackend):
             oauth_token=self.log.oa1_token
         )
         res = requests.post(token_uri, headers={'Authorization': auth},
-                            data={'oauth_verifier': verifier})
+                            data={'oauth_verifier': oauth_verifier})
         if res.status_code != 200:
             body = up.parse_qs(res.text)
             logger.warn('Getting access token failed', code=res.status_code, **body)
