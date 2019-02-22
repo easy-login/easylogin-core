@@ -65,7 +65,7 @@ __PROVIDER_SETTINGS__ = {
             &prompt=select_account&login_hint=sub&include_granted_scopes=true&access_type=offline
             '''.strip().replace('\n', '').replace(' ', ''),
         'token_uri': 'https://www.googleapis.com/oauth2/v4/token',
-        'verify_token_uri': 'https://www.googleapis.com/oauth2/v4/tokeninfo',
+        'verify_token_uri': 'https://www.googleapis.com/oauth2/v3/tokeninfo',
         'profile_uri': 'https://people.googleapis.com/{version}/people/me',
         'identify_attrs': ['sub']
     }
@@ -210,7 +210,7 @@ class OAuthBackend(object):
             self.args['code_challenge'] = code_challenge
 
         if intent == AuthLogs.INTENT_ASSOCIATE:
-            assoc_token = params.get('associate_token')
+            assoc_token = params.get('associate_token', '')
             try:
                 alog = AssociateLogs.parse_associate_token(assoc_token)
                 if alog.provider != self.provider:
@@ -253,10 +253,13 @@ class OAuthBackend(object):
         """
         self.log, self.args = self.verify_and_parse_state(state)
         self.log.status = AuthLogs.STATUS_FAILED
+        if self.log.provider != self.provider:
+            raise PermissionDeniedError('OAuth state invalid, provider does not match',
+                                        provider=self.log.provider, expected=self.provider)
 
         error, desc = self._get_error(params, action='authorize')
-        logger.info('Authorize failed', provider=self.provider.upper(),
-                    error=error, message=desc)
+        logger.debug('Authorize failed', provider=self.provider.upper(),
+                     error=error, message=desc)
         self._raise_error(error=self.ERROR_AUTHORIZE_FAILED,
                           msg='{}, {}'.format(error, desc))
 
@@ -268,6 +271,11 @@ class OAuthBackend(object):
         :return:
         """
         self.log, self.args = self.verify_and_parse_state(state)
+        if self.log.provider != self.provider:
+            logger.warn('Provider in OAuth state does not match with current provider',
+                        provider=self.log.provider, expected=self.provider)
+            raise PermissionDeniedError('OAuth state invalid, provider does not match')
+
         if self.args.get('sandbox'):
             self._enable_sandbox()
         self.platform = self.args.get('platform')
@@ -275,7 +283,12 @@ class OAuthBackend(object):
 
         self.channel = Channels.query.filter_by(app_id=self.log.app_id,
                                                 provider=self.provider).one_or_none()
-        self.profile, self.token = self._handle_authentication(params)
+        try:
+            self.profile, self.token = self._handle_authentication(params)
+        except Exception:
+            self.log.status = AuthLogs.STATUS_FAILED
+            db.session.commit()
+            raise
 
         intent = self.log.intent
         if intent == AuthLogs.INTENT_ASSOCIATE:
@@ -382,8 +395,8 @@ class OAuthBackend(object):
         :param access_token:
         :return:
         """
-        res = request.get(self.__verify_token_uri(version=self.channel.api_version),
-                          params={'access_token': access_token})
+        res = requests.get(self.__verify_token_uri(version=self.channel.api_version),
+                           params={'access_token': access_token})
         if res.status_code != 200:
             body = res.json()
             error, desc = self._get_error(body, action='get_token')
