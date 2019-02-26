@@ -1,0 +1,19 @@
+version: '3'
+services:
+  core:
+    container_name: easylogin-core
+    build: .
+    restart: always
+    ports:
+      - "5000:80"
+    volumes:
+      - .:/app
+
+  demo:
+    container_name: easylogin-demo
+    build: "./examples"
+    restart: always
+    ports:
+      - "8080:80"
+    volumes:
+      - ./examples:/app
