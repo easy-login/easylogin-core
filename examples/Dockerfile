@@ -17,4 +17,4 @@ EXPOSE 80
 # ENV DEBUG True
 
 # Run wsgi.py when the container launches
-CMD ["sh", "gunicorn.sh"]
+CMD ["python", "demo.py"]
