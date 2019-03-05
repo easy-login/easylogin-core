@@ -1,8 +1,8 @@
 version: '3'
 services:
   core:
-    container_name: easylogin-core
-    image: easylogin-core
+    container_name: easycore
+    image: easycore
     build: .
     restart: always
     ports:
@@ -11,8 +11,8 @@ services:
       - .:/app
 
   demo:
-    container_name: easylogin-demo
-    image: easylogin-demo
+    container_name: easydemo
+    image: easydemo
     build: "./examples"
     restart: always
     ports:

@@ -17,4 +17,4 @@ EXPOSE 80
 # ENV DEBUG True
 
 # Run wsgi.py when the container launches
-CMD ["python", "demo.py"]
+CMD ["python", "demo.py", "80"]
