@@ -205,7 +205,7 @@ class OAuthBackend(object):
             code_challenge = params.get('code_challenge', '')
             if not code_challenge:
                 raise BadRequestError('Missing required parameter code_challenge for mobile client')
-            if len(code_challenge) != 64:
+            if len(code_challenge) > 128:
                 raise BadRequestError('Malformed parameter: code_challenge')
             self.args['code_challenge'] = code_challenge
 

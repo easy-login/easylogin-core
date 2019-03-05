@@ -1,11 +1,13 @@
 import hashlib
 from flask import abort, request, jsonify
+from passlib.hash import django_pbkdf2_sha256
 
 from sociallogin import app as flask_app, db, login_manager, logger
 from sociallogin.backends import get_backend
-from sociallogin.models import Apps, AuthLogs, SocialProfiles
-from sociallogin.utils import get_remote_ip
+from sociallogin.models import Apps, AuthLogs, SocialProfiles, Admins
+from sociallogin.utils import get_remote_ip, base64encode
 from sociallogin.exc import TokenParseError
+from sociallogin.sec import jwt_token_service
 
 
 @flask_app.route('/auth/<provider>', defaults={'intent': None})
@@ -102,6 +104,37 @@ def get_ip():
     return jsonify({'ip': get_remote_ip(request)})
 
 
+@flask_app.route('/admin/authenticate', methods=['POST'])
+def admin_authenticate():
+    email = request.form['email']
+    password = request.form['password']
+
+    admin = Admins.query.filter_by(email=email).one_or_none()
+    if not admin:
+        abort(404, 'Email not found')
+    if not django_pbkdf2_sha256.verify(secret=password, hash=admin.password):
+        abort(401, 'Invalid authorization credentials')
+
+    return jsonify({
+        'user': admin.as_dict(),
+        'access_token': jwt_token_service.generate(sub=email, exp_in_seconds=86400 * 365)
+    })
+
+
+@flask_app.route('/admin/userinfo')
+def admin_info():
+    try:
+        access_token = request.args['access_token']
+        sub, _ = jwt_token_service.decode(token=access_token)
+
+        admin = Admins.query.filter_by(email=sub).one_or_none()
+        if not admin:
+            abort(404, 'Email not found')
+        return jsonify({'user': admin.as_dict()})
+    except TokenParseError:
+        abort(401, 'Invalid access token')
+
+
 @login_manager.request_loader
 def verify_web_api(req):
     try:
@@ -171,7 +204,7 @@ def _verify_auth_request(auth_token, params):
 
 
 def _verify_code_verifier(verifier, challenge):
-    return challenge == hashlib.sha256(verifier.encode('utf8')).hexdigest()
+    return challenge == base64encode(hashlib.sha256(verifier.encode('utf8')), urlsafe=False)
 
 
 def init_app(app):
