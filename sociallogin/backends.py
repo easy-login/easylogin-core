@@ -510,7 +510,7 @@ class OAuthBackend(object):
         return __PROVIDER_SETTINGS__[key]['profile_uri'].format(version=version)
 
     def __provider_callback_uri__(self):
-        return url_for('authorize_callback', _external=True, provider=self.provider)
+        return url_for('authorize_callback', _external=True, _scheme='https', provider=self.provider)
 
     @staticmethod
     def verify_and_parse_state(state):
