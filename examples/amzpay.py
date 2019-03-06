@@ -11,7 +11,7 @@ from flask import Flask, Blueprint, render_template, abort, url_for, redirect, \
     request, flash, session, current_app as app
 from amazon_pay.client import AmazonPayClient
 
-amazon_pay = Blueprint('amazon_pay', __name__, template_folder='amazon-pay/templates')
+amazon_pay = Blueprint('amazon_pay', __name__, template_folder='templates/amazon-pay')
 
 REGION_CODE = 'jp'
 CURRENCY_CODE = 'JPY'

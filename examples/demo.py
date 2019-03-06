@@ -11,7 +11,7 @@ import base64
 
 from amzpay import amazon_pay
 
-app = Flask(__name__, template_folder='templates', static_url_path='')
+app = Flask(__name__, template_folder='templates', static_url_path='/static')
 app.config['SECRET_KEY'] = secrets.token_hex(nbytes=32)
 app.register_blueprint(amazon_pay, url_prefix='/amazon-pay')
 
@@ -21,14 +21,14 @@ API_URL = 'https://api.easy-login.jp'
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
-@app.route('/js/<path:path>')
+@app.route('/static/js/<path:path>')
 def send_js(path):
-    return send_from_directory(os.path.join(BASE_DIR, 'js'), path)
+    return send_from_directory(os.path.join(BASE_DIR, 'static/js'), path)
 
 
-@app.route('/css/<path:path>')
+@app.route('/static/css/<path:path>')
 def send_css(path):
-    return send_from_directory(os.path.join(BASE_DIR, 'css'), path)
+    return send_from_directory(os.path.join(BASE_DIR, 'static/css'), path)
 
 
 @app.route('/images/<path:path>')
