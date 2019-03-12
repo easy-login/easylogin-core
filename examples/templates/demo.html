@@ -91,7 +91,7 @@
                         <div class="code-result">
                             {% if session.get('amazon')  %}
                             <h4>Logged in AMAZON as</h4>
-                            <pre><code class="json">{{ amazon }}</code></pre>
+                            <pre><code class="json">{{ session['amazon'] }}</code></pre>
                             {% endif %}
                         </div>
                         <div class="code-result">
