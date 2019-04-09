@@ -500,6 +500,11 @@ class SocialProfiles(Base):
             ]
         }
 
+    @classmethod
+    def social_id_to_scope_id(cls, app_id, social_ids):
+        return db.session.query(SocialProfiles.scope_id)\
+            .filter(cls.alias.in_(social_ids), cls.app_id == app_id).all()
+
 
 class Users(Base):
     __tablename__ = 'users'
