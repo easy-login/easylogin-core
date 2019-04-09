@@ -63,7 +63,6 @@ def admin_authenticate():
         'access_token': jwt_token_service.generate(
             sub=admin._id,
             exp_in_seconds=86400 * 365,
-            aud='linemm',
             **admin_attrs,
         )
     })

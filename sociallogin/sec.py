@@ -82,14 +82,13 @@ class JwtTokenService:
         self.key = key
         self.issuer = issuer
 
-    def generate(self, sub, exp_in_seconds, aud=None, **kwargs):
+    def generate(self, sub, exp_in_seconds, **kwargs):
         now = int(time.time())
         return jwt.encode({
             'iss': self.issuer,
             'sub': sub,
             'exp': now + exp_in_seconds,
             'iat': now,
-            # 'aud': aud,
             'data': kwargs
         }, key=self.key, algorithm='HS256').decode('utf8')
 
