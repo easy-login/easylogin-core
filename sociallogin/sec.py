@@ -7,7 +7,7 @@ import msgpack
 
 from sociallogin.exc import TokenParseError
 from sociallogin.utils import calculate_hmac, base64encode, base64decode
-from sociallogin import app
+from sociallogin import app, logger
 
 
 class EasyTokenService:
@@ -50,7 +50,8 @@ class EasyTokenService:
             return payload['sub'], payload['data']
         except TokenParseError:
             raise
-        except Exception:
+        except Exception as e:
+            logger.debug('Decode easy token error', error=str(e))
             raise TokenParseError('Token malformed')
 
     @classmethod
@@ -101,7 +102,8 @@ class JwtTokenService:
             return payload['sub'], payload['data']
         except TokenParseError:
             raise
-        except Exception:
+        except Exception as e:
+            logger.debug('Decore JWT token error', error=str(e))
             raise TokenParseError('Token malformed')
 
 
