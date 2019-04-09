@@ -110,11 +110,19 @@ class Admins(db.Model):
     LEVEL_PREMIUM = 65535
     LEVEL_LINE_PLUS = 1
     LEVEL_AMAZON_PLUS = 2
+    LEVEL_YAHOOJP_PLUS = 4
+    LEVEL_FACEBOOK_PLUS = 8
+    LEVEL_TWITTER_PLUS = 16
+    LEVEL_GOOGLE_PLUS = 32
     LEVEL_AMAZON_AND_LINE_PLUS = LEVEL_LINE_PLUS | LEVEL_AMAZON_PLUS
 
     MAP_LEVEL_PROVIDERS = {
         'line': LEVEL_LINE_PLUS,
-        'amazon': LEVEL_AMAZON_PLUS
+        'amazon': LEVEL_AMAZON_PLUS,
+        'yahoojp': LEVEL_YAHOOJP_PLUS,
+        'facebook': LEVEL_FACEBOOK_PLUS,
+        'twitter': LEVEL_TWITTER_PLUS,
+        'google': LEVEL_GOOGLE_PLUS
     }
 
     HIDDEN_FIELDS = {'password', 'is_superuser'}
