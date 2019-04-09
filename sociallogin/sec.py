@@ -88,7 +88,7 @@ class JwtTokenService:
             'sub': sub,
             'exp': now + exp_in_seconds,
             'iat': now,
-            'aud': aud,
+            # 'aud': aud,
             'data': kwargs
         }, key=self.key, algorithm='HS256').decode('utf8')
 
