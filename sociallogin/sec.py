@@ -16,7 +16,7 @@ class EasyTokenService:
     """
     PREFIX = 'ESLG'
 
-    def __init__(self, key=None):
+    def __init__(self, key):
         self.key = key
 
     def generate(self, sub, exp_in_seconds, **kwargs):
@@ -77,17 +77,18 @@ class EasyTokenService2(EasyTokenService):
 
 
 class JwtTokenService:
-    def __init__(self, key='', issuer=None):
+    def __init__(self, key, issuer=None):
         self.key = key
         self.issuer = issuer
 
-    def generate(self, sub, exp_in_seconds, **kwargs):
+    def generate(self, sub, exp_in_seconds, aud=None, **kwargs):
         now = int(time.time())
         return jwt.encode({
             'iss': self.issuer,
             'sub': sub,
             'exp': now + exp_in_seconds,
             'iat': now,
+            'aud': aud,
             'data': kwargs
         }, key=self.key, algorithm='HS256').decode('utf8')
 
@@ -105,6 +106,5 @@ class JwtTokenService:
 
 
 # Define default TokenService object
-jwt_token_service = JwtTokenService(key=app.config['SECRET_KEY'],
-                                    issuer=app.config['SERVER_NAME'])
+jwt_token_service = JwtTokenService(key=app.config['SECRET_KEY'], issuer='easy-login.jp')
 easy_token_service = EasyTokenService2(key=app.config['SECRET_KEY'])

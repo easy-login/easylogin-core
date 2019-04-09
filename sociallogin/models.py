@@ -623,7 +623,7 @@ class AuthLogs(Base):
         self.status = self.STATUS_AUTHORIZED
 
     def generate_oauth_state(self, **kwargs):
-        return jwts.generate(sub=self._id, exp_in_seconds=3600,
+        return jwts.generate(sub=self._id, exp_in_seconds=3600, aud=self.app_id,
                              _nonce=self.nonce, **kwargs)
 
     def generate_auth_token(self, **kwargs):
