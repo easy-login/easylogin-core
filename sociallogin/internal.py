@@ -2,7 +2,7 @@ from flask import request, render_template_string, \
     make_response, redirect, jsonify, abort
 from passlib.hash import django_pbkdf2_sha256
 
-from sociallogin import app as flask_app, db
+from sociallogin import app as flask_app, db, logger
 from sociallogin.sec import jwt_token_service
 from sociallogin.models import SocialProfiles, Admins, Apps
 from sociallogin.exc import TokenParseError
@@ -97,5 +97,6 @@ def convert_social_id():
 def _validate_access_token(access_token):
     try:
         return jwt_token_service.decode(token=access_token)
-    except TokenParseError:
+    except TokenParseError as e:
+        logger.warning('Parse admin access token failed', error=e.description, token=access_token)
         abort(401, 'Invalid access token')
