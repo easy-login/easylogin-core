@@ -171,7 +171,7 @@ def _verify_auth_request(auth_token, params):
 
 
 def _verify_code_verifier(verifier, challenge):
-    return challenge == base64encode(hashlib.sha256(verifier.encode('utf8')), urlsafe=False)
+    return challenge == hashlib.sha256(verifier.encode('utf8')).hexdigest()
 
 
 def init_app(app):
