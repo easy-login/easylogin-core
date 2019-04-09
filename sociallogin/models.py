@@ -107,9 +107,15 @@ class Admins(db.Model):
     __tablename__ = 'admins'
 
     LEVEL_NORMAL = 0
-    LEVEL_PREMIUM = 1
-    LEVEL_LINE_PLUS = 2
-    LEVEL_AMAZON_PLUS = 3
+    LEVEL_PREMIUM = 65535
+    LEVEL_LINE_PLUS = 1
+    LEVEL_AMAZON_PLUS = 2
+    LEVEL_AMAZON_AND_LINE_PLUS = LEVEL_LINE_PLUS | LEVEL_AMAZON_PLUS
+
+    MAP_LEVEL_PROVIDERS = {
+        'line': LEVEL_LINE_PLUS,
+        'amazon': LEVEL_AMAZON_PLUS
+    }
 
     HIDDEN_FIELDS = {'password', 'is_superuser'}
 
@@ -122,11 +128,6 @@ class Admins(db.Model):
     first_name = db.Column(db.String(255))
     last_name = db.Column(db.String(255))
 
-    # def as_dict(self):
-    #     d = super().as_dict()
-    #     d['is_superuser'] = bool(self.is_superuser)
-    #     return d
-
     def as_dict(self):
         return {
             'username': self.username,
@@ -137,6 +138,9 @@ class Admins(db.Model):
             'last_name': self.last_name
         }
 
+    @classmethod
+    def check_has_plus_level(cls, provider, level):
+        return cls.MAP_LEVEL_PROVIDERS[provider] & level > 0
 
 
 class Apps(Base):
@@ -306,9 +310,7 @@ class SocialProfiles(Base):
             return False
         level = (db.session.query(Admins.level).join(
             Apps, and_(Admins._id == Apps.owner_id, Apps._id == self.app_id)).scalar())
-        return (level == Admins.LEVEL_PREMIUM
-                or (level == Admins.LEVEL_AMAZON_PLUS and self.provider == 'amazon')
-                or (level == Admins.LEVEL_LINE_PLUS and self.provider == 'line'))
+        return Admins.check_has_plus_level(provider=self.provider, level=level)
 
     @classmethod
     def link_with_user(cls, app_id, alias, user_pk, create_if_not_exist=True):
