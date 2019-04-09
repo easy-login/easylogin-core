@@ -79,7 +79,7 @@ def admin_info():
 
 @flask_app.route('/admin/convert_social_id', methods=['POST'])
 def convert_social_id():
-    sub, _ = _validate_access_token(access_token=request.args['access_token'])
+    sub, _ = _validate_access_token(access_token=request.form['access_token'])
     app_id = request.form['app_id']
     owner_id = db.session.query(Apps.owner_id).filter_by(_id=app_id).scalar()
     if not owner_id or owner_id != sub:
