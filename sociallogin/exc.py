@@ -143,7 +143,7 @@ def server_internal_error(error):
         # Hide error detail in production mode
         logger.error('{}: {}'.format(type(error).__name__, repr(error)))
         traceback.print_exc(file=sys.stderr)
-        return get_error_response(500)
+        return get_error_response(500, error=error)
 
 
 def get_error_response(code, error):
