@@ -1,3 +1,3 @@
-. $(dirname $0)/.env
+. $(dirname $0)/.env.sh
 
 gunicorn wsgi:app

@@ -15,6 +15,7 @@ msgpack==0.6.1
 passlib==1.7.1
 PyJWT==1.7.1
 PyMySQL==0.9.3
+python-dotenv==0.13.0
 pytz==2018.9
 requests==2.21.0
 SQLAlchemy==1.2.18

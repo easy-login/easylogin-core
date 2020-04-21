@@ -1,6 +1,7 @@
 *.pyc
 *.pyo
 .env
+.env.sh
 .venv/
 .vscode/
 .idea/
