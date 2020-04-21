@@ -16,8 +16,8 @@ app.config['SECRET_KEY'] = secrets.token_hex(nbytes=32)
 app.register_blueprint(amazon_pay, url_prefix='/amazon-pay')
 
 APP_ID = 1
-API_KEY = 'xrcyz2AaN1s9OscnpFLup5DVTi3D7WCIGhYnsmjOyCO8HjAH'
-API_URL = 'https://api.easy-login.jp'
+API_KEY = '5kDRiFirpw3MO4y9iXW9AEqDaqdgwMwEfDhQM9iVjuRwsU2R'
+API_URL = 'https://api.social-login.mirabo.co.jp'
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
