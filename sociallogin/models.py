@@ -128,9 +128,9 @@ class Admins(db.Model):
     HIDDEN_FIELDS = {'password', 'is_superuser'}
 
     _id = db.Column("id", db.Integer, primary_key=True)
-    username = db.Column(db.String(32), nullable=False)
-    email = db.Column(db.String(32), nullable=False)
-    password = db.Column(db.String(64), nullable=False)
+    username = db.Column(db.String(64), nullable=False)
+    email = db.Column(db.String(64), nullable=False)
+    password = db.Column(db.String(128), nullable=False)
     is_superuser = db.Column(db.SmallInteger, nullable=False)
     level = db.Column(db.SmallInteger, nullable=False)
     first_name = db.Column(db.String(255))
