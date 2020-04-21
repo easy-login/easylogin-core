@@ -6,7 +6,7 @@ services:
     build: .
     restart: always
     ports:
-      - "5000:80"
+      - "5000:7000"
     volumes:
       - .:/app
 
@@ -16,6 +16,16 @@ services:
     build: "./examples"
     restart: always
     ports:
-      - "8080:80"
+      - "8080:7000"
     volumes:
       - ./examples:/app
+
+  admin:
+    container_name: easyadmin
+    image: easyadmin
+    build: "../sociallogin-web"
+    restart: always
+    ports:
+      - "8000:7000"
+    volumes:
+      - ../sociallogin:/app

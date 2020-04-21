@@ -6,7 +6,7 @@ DEBUG = (os.getenv('DEBUG', 'True') != 'False')
 # Define the application directory
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-TIME_ZONE = os.getenv('TIME_ZONE', 'Asia/Tokyo')
+TIME_ZONE = os.getenv('TIME_ZONE', 'Asia/Ho_Chi_Minh')
 
 # SERVER_NAME = 'http://localhost:5000'
 SECRET_KEY = os.getenv('SECRET_KEY', 'soci@ll0gin.c48COByeIVl0NKUxsfgYYw')
@@ -14,7 +14,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'soci@ll0gin.c48COByeIVl0NKUxsfgYYw')
 # Define the database
 SQLALCHEMY_DATABASE_URI = os.getenv(
     'SQLALCHEMY_DATABASE_URI',
-    'mysql+pymysql://root:root@localhost/sociallogin?charset=utf8mb4'
+    'mysql+pymysql://root:root@localhost/easylogin?charset=utf8mb4'
 )
 SQLALCHEMY_TRACK_MODIFICATIONS = True
 SQLALCHEMY_NATIVE_UNICODE = True
