@@ -23,9 +23,9 @@ services:
   admin:
     container_name: easyadmin
     image: easyadmin
-    build: "../sociallogin-web"
+    build: "../easylogin-admin"
     restart: always
     ports:
       - "8000:7000"
     volumes:
-      - ../sociallogin:/app
+      - ../easylogin-admin:/app
