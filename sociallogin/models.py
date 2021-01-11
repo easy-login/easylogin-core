@@ -66,7 +66,7 @@ class Base(db.Model):
 
 
 class Providers(db.Model):
-    __tablename__ = 'providers'
+    __tablename__ = 'easylogin_providers'
 
     _id = db.Column("id", db.Integer, primary_key=True)
     name = db.Column(db.String(15), nullable=False)
@@ -74,16 +74,16 @@ class Providers(db.Model):
     required_permissions = db.Column(db.String(1023), nullable=False)
     basic_fields = db.Column(db.String(4095), nullable=False)
     advanced_fields = db.Column(db.String(4095), nullable=False)
-    options = db.Column(db.String(1023))
+    options = db.Column(db.String(4095))
 
 
 class SystemSettings(Base):
-    __tablename__ = 'system_settings'
+    __tablename__ = 'easylogin_system_settings'
 
     _last_update_ = datetime.now()
     _cache_ = dict()
 
-    name = db.Column(db.String(32), nullable=False)
+    name = db.Column(db.String(64), nullable=False)
     value = db.Column(db.String(64), nullable=False)
 
     @classmethod
@@ -104,7 +104,7 @@ class SystemSettings(Base):
 
 
 class Admins(db.Model):
-    __tablename__ = 'admins'
+    __tablename__ = 'easylogin_admins'
 
     LEVEL_NORMAL = 0
     LEVEL_PREMIUM = 65535
@@ -131,10 +131,12 @@ class Admins(db.Model):
     username = db.Column(db.String(64), nullable=False)
     email = db.Column(db.String(64), nullable=False)
     password = db.Column(db.String(128), nullable=False)
-    is_superuser = db.Column(db.SmallInteger, nullable=False)
-    level = db.Column(db.SmallInteger, nullable=False)
     first_name = db.Column(db.String(255))
     last_name = db.Column(db.String(255))
+    is_superuser = db.Column(db.SmallInteger, default=0)
+    is_active = db.Column(db.SmallInteger, default=1)
+    level = db.Column(db.Integer, default=0)
+    delete = db.Column(db.SmallInteger, default=0)
 
     def as_dict(self):
         return {
@@ -152,13 +154,13 @@ class Admins(db.Model):
 
 
 class Apps(Base):
-    __tablename__ = 'apps'
+    __tablename__ = 'easylogin_apps'
 
-    name = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(127), nullable=False)
     api_key = db.Column(db.String(64), nullable=False)
     allowed_ips = db.Column(db.String(255))
     callback_uris = db.Column(db.Text, nullable=False)
-    options = db.Column(db.String(255))
+    options = db.Column(db.String(1023))
 
     _deleted = db.Column("deleted", db.SmallInteger, nullable=False, default=0)
     owner_id = db.Column(db.Integer, db.ForeignKey("admins.id"), nullable=False)
@@ -180,7 +182,7 @@ class Apps(Base):
 
 
 class Channels(Base):
-    __tablename__ = 'channels'
+    __tablename__ = 'easylogin_channels'
 
     provider = db.Column(db.String(15), nullable=False)
     api_version = db.Column(db.String(15), nullable=False)
@@ -188,7 +190,7 @@ class Channels(Base):
     client_secret = db.Column(db.String(255), nullable=False)
     permissions = db.Column(db.String(1023), nullable=False)
     required_fields = db.Column(db.String(1023), nullable=False)
-    options = db.Column(db.String(255))
+    options = db.Column(db.String(1023))
 
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
 
@@ -209,7 +211,7 @@ class Channels(Base):
 
 
 class SocialProfiles(Base):
-    __tablename__ = 'social_profiles'
+    __tablename__ = 'easylogin_social_profiles'
 
     HIDDEN_FIELDS = {'pk', 'scope_id', 'attrs', 'alias', 'user_id', 'app_id'}
 
@@ -507,11 +509,11 @@ class SocialProfiles(Base):
 
 
 class Users(Base):
-    __tablename__ = 'users'
+    __tablename__ = 'easylogin_users'
 
     HIDDEN_FIELDS = {'pk', 'app_id'}
 
-    pk = db.Column(db.String(128), nullable=False)
+    pk = db.Column('ref_id', db.String(128), nullable=False)
     _deleted = db.Column("deleted", db.SmallInteger, default=0)
     app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
 
@@ -538,7 +540,7 @@ class Users(Base):
 
 
 class Tokens(Base):
-    __tablename__ = 'tokens'
+    __tablename__ = 'easylogin_tokens'
 
     OA_VERSION_2 = 2
     OA_VERSION_1A = 1
@@ -573,7 +575,7 @@ class Tokens(Base):
 
 
 class AuthLogs(Base):
-    __tablename__ = 'auth_logs'
+    __tablename__ = 'easylogin_auth_logs'
 
     STATUS_UNKNOWN = 'unknown'
     STATUS_AUTHORIZED = 'authorized'
@@ -595,7 +597,7 @@ class AuthLogs(Base):
     callback_if_failed = db.Column("callback_failed", db.String(2047))
     nonce = db.Column(db.String(32), nullable=False)
     status = db.Column(db.String(15), nullable=False)
-    is_login = db.Column(db.SmallInteger)
+    is_login = db.Column(db.SmallInteger, nullable=False)
     intent = db.Column(db.String(32))
     platform = db.Column(db.String(8), nullable=False)
 
@@ -666,7 +668,7 @@ class AuthLogs(Base):
 
 
 class AssociateLogs(Base):
-    __tablename__ = 'associate_logs'
+    __tablename__ = 'easylogin_associate_logs'
 
     STATUS_NEW = 'new'
     STATUS_AUTHORIZING = 'authorizing'
@@ -706,7 +708,7 @@ class AssociateLogs(Base):
 
 
 class JournalLogs(Base):
-    __tablename__ = 'journal_logs'
+    __tablename__ = 'easylogin_journal_logs'
 
     path = db.Column(db.String(4095))
     ua = db.Column(db.String(1023))
