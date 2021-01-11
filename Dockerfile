@@ -1,21 +1,19 @@
 # Use an official Python runtime as a parent image
-FROM python:3.7-slim
+FROM python:3.8-slim
 
 # Set the working directory to /app
 WORKDIR /app
 
 # Copy the current directory contents into the container at /app
-ADD . /app
+ADD sociallogin /app
+ADD requirements.txt /app
+ADD config.py /app
+ADD wsgi.py /app
+ADD bin /app
 
 # Install any needed packages specified in requirements.txt
 RUN pip install -U pip
 RUN pip install --trusted-host pypi.python.org -r requirements.txt
 
-# Make port 7000 available to the world outside this container
-# EXPOSE 7000
-
-# Define environment variable
-# ENV DEBUG True
-
 # Run wsgi.py when the container launches
-CMD ["sh", "gunicorn.sh"]
+CMD ["./bin/docker-server"]

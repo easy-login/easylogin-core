@@ -2,6 +2,7 @@
 *.pyo
 .env
 .env.sh
+.env.local
 .venv/
 .vscode/
 .idea/

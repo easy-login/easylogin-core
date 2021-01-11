@@ -10,6 +10,3 @@ ADD . /app
 # Install any needed packages specified in requirements.txt
 RUN pip install -U pip
 RUN pip install --trusted-host pypi.python.org -r requirements.txt
-
-# Run demo.py when the container launches
-CMD ["python", "demo.py", "8080"]

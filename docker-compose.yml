@@ -1,21 +1,43 @@
-version: '3'
+version: '3.5'
 services:
   core:
+    build: .
     container_name: easycore
     image: easycore
-    build: .
-    restart: always
+    command: ./bin/docker-server
     ports:
-      - "8001:7000"
+      - "7001:7001"
     volumes:
       - .:/app
-
+    environment: 
+      GUNICORN_CMD_ARGS: "-k gevent -w 2 -b 0.0.0.0:7001"
+      DEBUG: 'True'
+      SECRET_KEY: 'RiFirpw3MO4y9iXW9AEqDaqdgwMwEfDhQM9iVj'
+      LOG_LEVEL: 'DEBUG'
+      SQLALCHEMY_DATABASE_URI: "mysql+pymysql://easylogin:easylogin@db/easylogin?charset=utf8mb4"
+      TIME_ZONE: Asia/Ho_Chi_Minh
+      LOG_DIR: /var/log/easylogin
+      LOG_STYLE: inline
+    networks: 
+      - easylogin
   demo:
+    build: 
+      context: "./examples"
     container_name: easydemo
     image: easydemo
-    build: "./examples"
-    restart: always
+    command: "python demo.py 7234"
     ports:
-      - "8002:7000"
+      - "7234:7234"
     volumes:
       - ./examples:/app
+    environment: 
+      DEBUG: 'True'
+      DEFAULT_APP_ID: '1'
+      DEFAULT_API_KEY: '5kDRiFirpw3MO4y9iXW9AEqDaqdgwMwEfDhQM9iVjuRwsU2R'
+      DEFAULT_API_URL: http://localhost:7001
+    networks: 
+      - easylogin
+networks:
+  easylogin:
+    external:
+      name: easylogin_default

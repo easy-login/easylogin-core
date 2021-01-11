@@ -1,0 +1,7 @@
+#!/bin/bash
+
+gunicorn wsgi:app \
+    --log-file - \
+    --log-level info \
+    --access-logfile - \
+    --worker-tmp-dir /dev/shm \
