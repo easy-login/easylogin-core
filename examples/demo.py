@@ -15,9 +15,9 @@ app = Flask(__name__, template_folder='templates', static_url_path='/static')
 app.config['SECRET_KEY'] = secrets.token_hex(nbytes=32)
 app.register_blueprint(amazon_pay, url_prefix='/amazon-pay')
 
-APP_ID = 1
-API_KEY = '5kDRiFirpw3MO4y9iXW9AEqDaqdgwMwEfDhQM9iVjuRwsU2R'
-API_URL = 'https://api.social-login.mirabo.co.jp'
+APP_ID = os.getenv('DEFAULT_APP_ID', '1')
+API_KEY = os.getenv('DEFAULT_API_KEY', '5kDRiFirpw3MO4y9iXW9AEqDaqdgwMwEfDhQM9iVjuRwsU2R')
+API_URL = os.getenv('DEFAULT_API_URL', 'localhost:5000')
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -275,4 +275,5 @@ if __name__ == '__main__':
     import sys
 
     port = sys.argv[1] if len(sys.argv) > 1 else 8080
-    app.run(host='0.0.0.0', port=port, debug=True)
+    debug_mode = bool(os.getenv('DEBUG', 1))
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)
