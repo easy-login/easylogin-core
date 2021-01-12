@@ -25,7 +25,7 @@ if not SECRET_KEY:
 if DEBUG:
     SQLALCHEMY_DATABASE_URI = os.getenv(
         'SQLALCHEMY_DATABASE_URI',
-        'mysql+pymysql://root:root@localhost/easylogin?charset=utf8mb4'
+        'mysql+pymysql://easylogin:easylogin@127.0.0.1/easylogin?charset=utf8mb4'
     )
 else:
     # You must provide SQLALCHEMY_DATABASE_URI in prodution
@@ -43,5 +43,5 @@ LOG_FORMAT = os.getenv(
     '[%(asctime)s] %(levelname)s %(filename)s:%(lineno)d - %(message)s'
 )
 LOG_DATE_FORMAT = os.getenv('LOG_DATE_FORMAT', '%Y-%m-%d %H:%M:%S')
-LOG_DIR = os.getenv('LOG_DIR', '/var/log/sociallogin')
+LOG_DIR = os.getenv('LOG_DIR', '/tmp')
 LOG_STYLE = os.getenv('LOG_STYLE', 'inline')
