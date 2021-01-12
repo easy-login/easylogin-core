@@ -12,7 +12,7 @@ class Apps(Base):
     options = db.Column(db.String(1023))
 
     _deleted = db.Column("deleted", db.SmallInteger, nullable=False, default=0)
-    owner_id = db.Column(db.Integer, db.ForeignKey("admins.id"), nullable=False)
+    owner_id = db.Column(db.Integer, db.ForeignKey("easylogin_admins.id"), nullable=False)
 
     def __init__(self):
         super().__init__()

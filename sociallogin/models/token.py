@@ -18,7 +18,7 @@ class Tokens(Base):
     oa1_token = db.Column(db.String(1023))
     oa1_secret = db.Column(db.String(1023))
 
-    social_id = db.Column(db.Integer, db.ForeignKey('social_profiles.id'), nullable=False)
+    social_id = db.Column(db.Integer, db.ForeignKey('easylogin_social_profiles.id'), nullable=False)
 
     def __init__(self, provider, social_id, **kwargs):
         self.provider = provider

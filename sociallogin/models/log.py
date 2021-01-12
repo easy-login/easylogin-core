@@ -27,15 +27,15 @@ class AuthLogs(Base):
     callback_if_failed = db.Column("callback_failed", db.String(2047))
     nonce = db.Column(db.String(32), nullable=False)
     status = db.Column(db.String(15), nullable=False)
-    is_login = db.Column(db.SmallInteger, nullable=False)
+    is_login = db.Column(db.SmallInteger)
     intent = db.Column(db.String(32))
     platform = db.Column(db.String(8), nullable=False)
 
     oa1_token = db.Column(db.String(1023))
     oa1_secret = db.Column(db.String(1023))
 
-    app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
-    social_id = db.Column(db.Integer, db.ForeignKey('social_profiles.id'))
+    app_id = db.Column(db.Integer, db.ForeignKey("easylogin_apps.id"), nullable=False)
+    social_id = db.Column(db.Integer, db.ForeignKey('easylogin_social_profiles.id'))
 
     def __init__(self, provider, app_id, callback_uri, **kwargs):
         self.provider = provider
@@ -110,7 +110,7 @@ class AssociateLogs(Base):
     status = db.Column(db.String(15), nullable=False)
     nonce = db.Column(db.String(32), nullable=False)
 
-    app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
+    app_id = db.Column(db.Integer, db.ForeignKey("easylogin_apps.id"), nullable=False)
 
     def __init__(self, provider, app_id, social_id, **kwargs):
         self.provider = provider

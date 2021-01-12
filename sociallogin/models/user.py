@@ -14,7 +14,7 @@ class Users(Base):
 
     pk = db.Column('ref_id', db.String(128), nullable=False)
     _deleted = db.Column("deleted", db.SmallInteger, default=0)
-    app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
+    app_id = db.Column(db.Integer, db.ForeignKey("easylogin_apps.id"), nullable=False)
 
     def __init__(self, app_id, pk):
         self.app_id = app_id

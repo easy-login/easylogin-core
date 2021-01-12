@@ -29,8 +29,8 @@ class SocialProfiles(Base):
     _deleted = db.Column("deleted", db.SmallInteger, default=0)
     _prohibited = db.Column("prohibited", db.SmallInteger, default=0)
 
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("easylogin_users.id"))
+    app_id = db.Column(db.Integer, db.ForeignKey("easylogin_apps.id"), nullable=False)
 
     def __init__(self, *args, **kwargs):
         self.app_id = kwargs['app_id']

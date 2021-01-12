@@ -13,7 +13,7 @@ class Channels(Base):
     required_fields = db.Column(db.String(1023), nullable=False)
     options = db.Column(db.String(1023))
 
-    app_id = db.Column(db.Integer, db.ForeignKey("apps.id"), nullable=False)
+    app_id = db.Column(db.Integer, db.ForeignKey("easylogin_apps.id"), nullable=False)
 
     def get_permissions(self):
         return (self.permissions or '').split('|')
