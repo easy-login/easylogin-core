@@ -5,7 +5,7 @@ from typing import List
 import requests
 from flask import request, url_for, redirect, jsonify
 
-from sociallogin import db, logger
+from sociallogin import app, db, logger
 from sociallogin.exc import RedirectLoginError, PermissionDeniedError, \
     NotFoundError, BadRequestError, TokenParseError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, \
@@ -433,7 +433,8 @@ class OAuthBackend(object):
         return self.PROFILE_URI.format(version=version)
 
     def __provider_callback_uri__(self):
-        return url_for('authorize_callback', _external=True, _scheme='https', provider=self.provider)
+        return url_for('authorize_callback', _external=True, provider=self.provider,
+                       _scheme='http' if app.config['DEBUG'] else 'https')
 
     @staticmethod
     def verify_and_parse_state(state):
