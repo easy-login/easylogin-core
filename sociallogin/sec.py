@@ -90,7 +90,7 @@ class JwtTokenService:
             'exp': now + exp_in_seconds,
             'iat': now,
             'data': kwargs
-        }, key=self.key, algorithm='HS256').decode('utf8')
+        }, key=self.key, algorithm='HS256')
 
     def decode(self, token):
         try:
