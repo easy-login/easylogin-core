@@ -17,7 +17,7 @@ app.register_blueprint(amazon_pay, url_prefix='/amazon-pay')
 
 APP_ID = os.getenv('DEFAULT_APP_ID', '1')
 API_KEY = os.getenv('DEFAULT_API_KEY', '5kDRiFirpw3MO4y9iXW9AEqDaqdgwMwEfDhQM9iVjuRwsU2R')
-API_URL = os.getenv('DEFAULT_API_URL', 'localhost:5000')
+API_URL = os.getenv('DEFAULT_API_URL', 'http://localhost:7001')
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -133,8 +133,8 @@ def authenticate(provider):
 @app.route('/auth/callback')
 def auth_callback():
     try:
-        token = request.args['token']
         provider = request.args['provider']
+        token = request.args['token']
         api_url = request.cookies['api_url']
         url = '{}/auth/profiles/authorized'.format(api_url, )
 
@@ -164,7 +164,7 @@ def auth_callback():
             return resp
     except KeyError as e:
         print(e)
-        return _handle_error()
+        return _handle_error(provider=request.args.get('provider', 'unknown'), error=str(e))
 
 
 @app.route('/auth/failed')
