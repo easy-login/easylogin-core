@@ -1,7 +1,5 @@
-from sociallogin import db, logger
-from sociallogin.exc import BadRequestError
+from sociallogin import db
 from sociallogin.models import Base
-from sociallogin.sec import jwt_token_service as jwts, easy_token_service as ests
 
 
 class AuthLogs(Base):
@@ -53,48 +51,11 @@ class AuthLogs(Base):
     def get_failed_callback(self):
         return self.callback_if_failed or self.callback_uri
 
-    def set_authorized(self, social_id, is_login, nonce):
+    def set_authorized(self, social_id: int, is_login: bool, nonce: str):
         self.nonce = nonce
         self.social_id = social_id
         self.is_login = is_login
         self.status = self.STATUS_AUTHORIZED
-
-    def generate_oauth_state(self, **kwargs):
-        return jwts.generate(sub=self._id, exp_in_seconds=3600, aud=self.app_id,
-                             _nonce=self.nonce, **kwargs)
-
-    def generate_auth_token(self, **kwargs):
-        return ests.generate(sub=self._id, exp_in_seconds=3600,
-                             _type='auth', _nonce=self.nonce, **kwargs)
-
-    @classmethod
-    def parse_oauth_state(cls, oauth_state):
-        log_id, args = jwts.decode(token=oauth_state)
-        log = cls.query.filter_by(_id=log_id).one_or_none()
-
-        if not log or log.nonce != args.get('_nonce'):
-            logger.debug('Invalid OAuth state or nonce does not match')
-            raise BadRequestError('Invalid OAuth state')
-        if log.status != cls.STATUS_UNKNOWN:
-            logger.debug('Validate OAuth state failed. Illegal auth log status.',
-                         status=log.status, expected=cls.STATUS_UNKNOWN)
-            raise BadRequestError('Invalid OAuth state')
-        return log, args
-
-    @classmethod
-    def parse_auth_token(cls, auth_token):
-        log_id, args = ests.decode(token=auth_token)
-        log = cls.query.filter_by(_id=log_id).one_or_none()
-
-        if not log or log.nonce != args.get('_nonce'):
-            logger.debug('Invalid auth token or nonce does not match')
-            raise BadRequestError('Invalid auth token')
-        if log.status not in [cls.STATUS_AUTHORIZED, cls.STATUS_WAIT_REGISTER]:
-            logger.debug('Validate auth token failed. Illegal auth log status.',
-                         status=log.status,
-                         expected=[cls.STATUS_AUTHORIZED, cls.STATUS_WAIT_REGISTER])
-            raise BadRequestError('Invalid auth token')
-        return log, args
 
 
 class AssociateLogs(Base):
@@ -118,23 +79,6 @@ class AssociateLogs(Base):
         self.dst_social_id = social_id
         self.nonce = kwargs.get('nonce')
         self.status = kwargs.get('status', self.STATUS_NEW)
-
-    def generate_associate_token(self):
-        return ests.generate(sub=self.dst_social_id, exp_in_seconds=600,
-                             _type='associate', _nonce=self.nonce)
-
-    @classmethod
-    def parse_associate_token(cls, associate_token):
-        social_id, args = ests.decode(token=associate_token)
-        log = cls.query.filter_by(dst_social_id=social_id).order_by(cls._id.desc()).first()
-
-        if not log or log.nonce != args.get('_nonce'):
-            logger.debug('Invalid associate token or nonce does not match')
-            raise BadRequestError('Invalid associate token')
-        if log.status != cls.STATUS_NEW:
-            logger.debug('Illegal associate log status', status=log.status, expected=cls.STATUS_NEW)
-            raise BadRequestError('Invalid associate token')
-        return log
 
 
 class JournalLogs(Base):

@@ -62,6 +62,11 @@ class BadRequestError(SocialLoginError):
         super().__init__(*args, **kwargs)
 
 
+class UnauthorizedError(SocialLoginError):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
 class NotFoundError(SocialLoginError):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -106,6 +111,7 @@ def bad_request(error):
 
 
 @app.errorhandler(401)
+@app.errorhandler(UnauthorizedError)
 def unauthorized(error):
     return get_error_response(401, error=error)
 

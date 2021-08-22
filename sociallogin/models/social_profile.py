@@ -234,14 +234,14 @@ class SocialProfiles(Base):
                 p._delete_unsafe()
             return len(profiles)
         else:
-            return (cls.query
-                .filter(cls.alias == alias, not_(cls.provider.in_(providers)))
+            return cls.query\
+                .filter(cls.alias == alias, not_(cls.provider.in_(providers)))\
                 .update({
                     '_deleted': 1,
                     'pk': func.concat(int(time.time()), '.', cls._id),
                     'user_id': None,
                     'alias': 0
-            }, synchronize_session=False))
+                }, synchronize_session=False)
 
     @classmethod
     def add_or_update(cls, app_id, scope_id, provider, attrs):

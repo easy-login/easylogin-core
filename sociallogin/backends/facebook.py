@@ -1,7 +1,10 @@
+from typing import Dict, Any, Tuple
+
 import requests
 
 from sociallogin import logger
 from sociallogin.backends import OAuthBackend
+from sociallogin.entities import OAuth2TokenPack
 
 
 class FacebookBackend(OAuthBackend):
@@ -14,7 +17,7 @@ class FacebookBackend(OAuthBackend):
     PROFILE_URI = 'https://graph.facebook.com/{version}/me'
     IDENTIFY_ATTRS = ['id']
 
-    def _get_token(self, code):
+    def _get_token(self, code: str):
         res = requests.get(self.__token_uri__(version=self.channel.api_version), params={
             'code': code,
             'redirect_uri': self.__provider_callback_uri__(),
@@ -30,11 +33,11 @@ class FacebookBackend(OAuthBackend):
                               msg='{}: {}'.format(error, desc))
         return res.json()
 
-    def _get_profile(self, tokens):
+    def _get_profile(self, token_pack: OAuth2TokenPack) -> Tuple[str, Dict[str, Any]]:
         fields = self.channel.get_required_fields()
         res = requests.get(self.__profile_uri__(version=self.channel.api_version), params={
             'fields': ','.join(fields),
-            'access_token': tokens['access_token']
+            'access_token': token_pack.access_token
         })
         if res.status_code != 200:
             body = res.json()
@@ -44,7 +47,7 @@ class FacebookBackend(OAuthBackend):
                 error=self.ERROR_GET_PROFILE_FAILED,
                 msg='Getting user attributes from provider failed')
 
-        return self._get_attributes(response=res.json(), nofilter=True)
+        return self._parse_attributes(response=res.json(), nofilter=True)
 
     def _get_error(self, response, action):
         if action != 'authorize':

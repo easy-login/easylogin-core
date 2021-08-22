@@ -1,17 +1,22 @@
 import urllib.parse as up
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Tuple, Dict, Any, Optional
 
 import requests
 from flask import request, url_for, redirect, jsonify
 
 from sociallogin import app, db, logger
+from sociallogin.backends.utils import verify_callback_uri, generate_oauth_state, parse_associate_token, \
+    generate_auth_token
+from sociallogin.constants import PLATFORM_WEB, ALL_PLATFORMS
+from sociallogin.entities import OAuthAuthorizeParams, OAuthCallbackParams, \
+    OAuthSessionParams, OAuth2TokenPack
 from sociallogin.exc import RedirectLoginError, PermissionDeniedError, \
     NotFoundError, BadRequestError, TokenParseError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, \
     SocialProfiles, JournalLogs, AssociateLogs
-from sociallogin.utils import gen_random_token, add_params_to_uri, \
-    smart_str2bool, get_remote_ip, update_dict
+from sociallogin.sec import jwt_token_service as jwt_token_svc
+from sociallogin.utils import gen_random_token, add_params_to_uri, get_remote_ip
 
 
 class OAuthBackend(object):
@@ -19,11 +24,11 @@ class OAuthBackend(object):
     SANDBOX_SUPPORT = False
     OPENID_CONNECT_SUPPORT = False
 
-    AUTHORIZE_URI: str = None
-    TOKEN_URI: str = None
-    VERIFY_TOKEN_URI: str = None
-    PROFILE_URI: str = None
-    IDENTIFY_ATTRS: List = []
+    AUTHORIZE_URI: str
+    TOKEN_URI: str
+    VERIFY_TOKEN_URI: str
+    PROFILE_URI: str
+    IDENTIFY_ATTRS: List[str] = []
 
     ERROR_AUTHORIZE_FAILED = 'authorize_failed'
     ERROR_GET_TOKEN_FAILED = 'get_token_failed'
@@ -31,14 +36,9 @@ class OAuthBackend(object):
 
     def __init__(self, provider):
         self.provider = provider
-        self.sandbox = False
-        self.platform = None
-
-        self.channel = None
-        self.log = None
-        self.token = None
-        self.profile = None
-        self.args = None
+        self.channel: Optional[Channels] = None
+        self.log: Optional[AuthLogs] = None
+        self.session: Optional[OAuthSessionParams] = None
 
     def verify_callback_success(self, params):
         if self.OAUTH_VERSION == 2:
@@ -46,45 +46,40 @@ class OAuthBackend(object):
         else:
             return 'oauth_token' in params and 'oauth_verifier' in params
 
-    def authorize(self, app_id, intent, succ_callback, fail_callback, params):
-        """
+    def authorize(self, params: OAuthAuthorizeParams):
+        # Verify request params and extract session data
+        self.session = self._verify_and_parse_session(params=params)
 
-        :param app_id:
-        :param intent:
-        :param succ_callback:
-        :param fail_callback:
-        :param params:
-        :return:
-        """
-        # Verify request params and extract extra args
-        self._init_authorize(intent=intent, params=params)
-
-        app = Apps.query.filter_by(_id=app_id, _deleted=0).one_or_none()
-        self.channel = Channels.query.filter_by(app_id=app_id,
+        oauth_app = Apps.query.filter_by(_id=params.app_id, _deleted=0).one_or_none()
+        self.channel = Channels.query.filter_by(app_id=params.app_id,
                                                 provider=self.provider).one_or_none()
-        if not app or not self.channel:
+        if not oauth_app or not self.channel:
             raise NotFoundError(msg='Application or channel not found')
 
         if not self._is_mobile():
-            allowed_uris = [up.unquote_plus(uri) for uri in app.get_callback_uris()]
-            logger.debug('Verify callback URI', style='hybrid', allowed_uris=allowed_uris,
-                         succ_callback=succ_callback, fail_callback=fail_callback)
+            allowed_uris = [up.unquote_plus(uri) for uri in oauth_app.get_callback_uris()]
+            logger.debug('Verify callback URI',
+                         style='hybrid', allowed_uris=allowed_uris,
+                         succ_callback=params.success_callback,
+                         fail_callback=params.failed_callback)
 
             illegal_callback_msg = ('Invalid callback_uri value. '
                                     'Check if it is registered in EasyLogin developer site')
-            if not self.verify_callback_uri(allowed_uris, succ_callback):
+
+            if not verify_callback_uri(allowed_uris, params.success_callback):
                 raise PermissionDeniedError(msg=illegal_callback_msg)
-            if fail_callback and not self.verify_callback_uri(allowed_uris, fail_callback):
+
+            if params.failed_callback and not verify_callback_uri(allowed_uris, params.failed_callback):
                 raise PermissionDeniedError(msg=illegal_callback_msg)
 
         self.log = AuthLogs(
             provider=self.provider,
-            app_id=app_id,
+            app_id=params.app_id,
             nonce=gen_random_token(nbytes=32),
-            intent=intent,
-            platform=self.platform,
-            callback_uri=succ_callback,
-            callback_if_failed=fail_callback
+            intent=params.intent,
+            platform=self.session.platform,
+            callback_uri=params.success_callback,
+            callback_if_failed=params.failed_callback
         )
         db.session.add(self.log)
         db.session.flush()
@@ -95,7 +90,7 @@ class OAuthBackend(object):
             ref_id=self.log._id
         ))
 
-        oauth_state = self.log.generate_oauth_state(**self.args)
+        oauth_state = generate_oauth_state(self.log, **self.session.to_dict())
         if self._is_mobile():
             return jsonify({
                 'channel': {
@@ -110,50 +105,46 @@ class OAuthBackend(object):
             logger.debug('Authorize URL', url)
             return redirect(url)
 
-    def _init_authorize(self, intent, params):
-        self.sandbox = smart_str2bool(params.get('sandbox'))
-        if self.sandbox:
-            self._enable_sandbox()
-
-        nonce = params.get('nonce', '')
+    def _verify_and_parse_session(self, params: OAuthAuthorizeParams) -> OAuthSessionParams:
+        nonce = params.nonce
         if len(nonce) > 255:
             raise BadRequestError('Nonce length exceeded limit 255 characters')
 
-        self.platform = params.get('platform', 'web')
-        if self.platform not in ['web', 'ios', 'and']:
+        platform = params.platform or PLATFORM_WEB
+        if platform not in ALL_PLATFORMS:
             raise BadRequestError('Invalid or unsupported platform')
 
-        self.args = {
-            'sandbox': self.sandbox,
-            'platform': self.platform,
+        session_data = {
+            'provider': self.provider,
+            'sandbox': params.sandbox,
+            'platform': platform,
             'nonce': nonce
         }
         if self._is_mobile():
-            code_challenge = params.get('code_challenge', '')
+            code_challenge = params.code_challenge
             if not code_challenge:
                 raise BadRequestError('Missing required parameter code_challenge for mobile client')
             if len(code_challenge) > 128:
                 raise BadRequestError('Malformed parameter: code_challenge')
-            self.args['code_challenge'] = code_challenge
+            session_data['code_challenge'] = code_challenge
 
-        if intent == AuthLogs.INTENT_ASSOCIATE:
-            assoc_token = params.get('associate_token', '')
+        if params.intent == AuthLogs.INTENT_ASSOCIATE:
+            assoc_token = params.associate_token
             try:
-                alog = AssociateLogs.parse_associate_token(assoc_token)
+                alog = parse_associate_token(assoc_token)
                 if alog.provider != self.provider:
                     raise BadRequestError('Invalid target provider, must be {}'.format(alog.provider))
 
                 alog.status = AssociateLogs.STATUS_AUTHORIZING
-                update_dict(self.args, dst_social_id=alog.dst_social_id, provider=self.provider)
+                session_data['dst_social_id'] = alog.dst_social_id
             except TokenParseError as e:
                 logger.warning('Parse associate token failed',
                                error=e.description, token=assoc_token)
                 raise BadRequestError('Invalid associate token')
-        elif intent == AuthLogs.INTENT_PAY_WITH_AMAZON:
-            update_dict(self.args, lpwa_domain=params.get('site_domain'))
+        elif params.intent == AuthLogs.INTENT_PAY_WITH_AMAZON:
+            session_data['lpwa_domain'] = params.site_domain
 
-    def _is_mobile(self):
-        return self.platform != 'web'
+        return OAuthSessionParams(data=session_data)
 
     def _build_authorize_uri(self, state):
         """
@@ -171,47 +162,35 @@ class OAuthBackend(object):
             uri += '&nonce=' + gen_random_token(nbytes=16, format='hex')
         return uri
 
-    def handle_authorize_error(self, state, params):
-        """
-
-        :param state:
-        :param params:
-        :return:
-        """
-        self.log, self.args = self.verify_and_parse_state(state)
+    def handle_authorize_error(self, params: OAuthCallbackParams):
+        self.log, self.session = self._parse_oauth_state(params.state)
         self.log.status = AuthLogs.STATUS_FAILED
-        if self.log.provider != self.provider:
-            raise PermissionDeniedError('OAuth state invalid, provider does not match',
-                                        provider=self.log.provider, expected=self.provider)
+        logger.debug('Parse OAuth state result', sub=self.log._id, **self.session.to_dict())
 
-        error, desc = self._get_error(params, action='authorize')
-        logger.debug('Authorize failed', provider=self.provider.upper(),
-                     error=error, message=desc)
-        self._raise_error(error=self.ERROR_AUTHORIZE_FAILED,
-                          msg='{}, {}'.format(error, desc))
+        error, desc = self._get_error(params.to_dict(), action='authorize')
+        logger.debug('Authorize with provider failed',
+                     provider=self.provider.upper(), error=error, message=desc)
 
-    def handle_authorize_success(self, state, params):
-        """
+        error_data = {
+            'error': self.ERROR_AUTHORIZE_FAILED,
+            'msg': '{}, {}'.format(error, desc),
+            'nonce': self.session.nonce,
+            'provider': self.provider
+        }
+        if self.log.callback_if_failed:
+            redirect_url = add_params_to_uri(uri=self.log.callback_if_failed, **error_data)
+            return redirect(redirect_url)
+        else:
+            return jsonify(error_data)
 
-        :param state:
-        :param params:
-        :return:
-        """
-        self.log, self.args = self.verify_and_parse_state(state)
-        if self.log.provider != self.provider:
-            logger.warn('Provider in OAuth state does not match with current provider',
-                        provider=self.log.provider, expected=self.provider)
-            raise PermissionDeniedError('OAuth state invalid, provider does not match')
+    def handle_authorize_success(self, params: OAuthCallbackParams):
+        self.log, self.session = self._parse_oauth_state(state=params.state)
+        logger.debug('Parse OAuth state result', sub=self.log._id, **self.session.to_dict())
 
-        if self.args.get('sandbox'):
-            self._enable_sandbox()
-        self.platform = self.args.get('platform')
-        logger.debug('Parse OAuth state result', sub=self.log._id, **self.args)
-
-        self.channel = Channels.query.filter_by(app_id=self.log.app_id,
-                                                provider=self.provider).one_or_none()
         try:
-            self.profile, self.token = self._handle_authentication(params)
+            self.channel = Channels.query.filter_by(app_id=self.log.app_id,
+                                                    provider=self.provider).one_or_none()
+            profile, token = self._handle_authentication(params=params)
         except Exception:
             self.log.status = AuthLogs.STATUS_FAILED
             db.session.commit()
@@ -219,13 +198,13 @@ class OAuthBackend(object):
 
         intent = self.log.intent
         if intent == AuthLogs.INTENT_ASSOCIATE:
-            if self.args.get('provider') != self.provider:
+            if self.session.provider != self.provider:
                 self._raise_error(error='permission_denied',
                                   msg='Target provider does not match')
-            elif self.profile.user_id:
+            elif profile.user_id:
                 self._raise_error(error='conflict',
                                   msg='Profile has linked with another user')
-            self.profile.merge_with(alias=self.args.get('dst_social_id'))
+            profile.merge_with(alias=self.session.dst_social_id)
         elif intent == AuthLogs.INTENT_LOGIN and not self.log.is_login:
             self._raise_error(
                 error='invalid_request',
@@ -238,36 +217,65 @@ class OAuthBackend(object):
             )
 
         if self._is_mobile():
-            auth_token = self.log.generate_auth_token(
-                code_challenge=self.args.get('code_challenge'))
-            return jsonify({
-                'auth_token': auth_token,
-                'expires_in': 3900
-            })
+            return self._make_mobile_authorize_success_response(token)
         else:
-            auth_token = self.log.generate_auth_token()
-            callback_uri = add_params_to_uri(
-                uri=self.log.callback_uri,
-                provider=self.provider,
-                token=auth_token,
-                nonce=self.args.get('nonce', '')
-            )
-            return self._make_redirect_response(callback_uri=callback_uri)
+            return self._make_web_authorize_success_response(token)
 
-    def _handle_authentication(self, params):
+    def _parse_oauth_state(self, state: str) -> Tuple[AuthLogs, OAuthSessionParams]:
+        try:
+            log_id, args = jwt_token_svc.decode(token=state)
+            log: Optional[AuthLogs] = AuthLogs.query.filter_by(_id=log_id).one_or_none()
+
+            if not log or log.nonce != args.get('_nonce'):
+                logger.debug('Invalid OAuth state or nonce does not match')
+                raise BadRequestError('Invalid OAuth state')
+
+            if log.status != AuthLogs.STATUS_UNKNOWN:
+                logger.debug('Validate OAuth state failed. Illegal auth log status.',
+                             status=log.status, expected=AuthLogs.STATUS_UNKNOWN)
+                raise BadRequestError('Invalid OAuth state')
+
+            if log.provider != self.provider:
+                logger.warn('Provider in OAuth state does not match with current provider',
+                            provider=log.provider, expected=self.provider)
+                raise PermissionDeniedError('OAuth state invalid, provider does not match')
+
+            return log, OAuthSessionParams(data=args)
+        except TokenParseError as e:
+            logger.warning('Parse OAuth state failed', error=e.description, token=state)
+            raise BadRequestError('Invalid OAuth state')
+
+    def _make_mobile_authorize_success_response(self, _: Tokens):
+        auth_token = generate_auth_token(self.log, code_challenge=self.session.code_challenge)
+        return jsonify({
+            'auth_token': auth_token,
+            'expires_in': 3600
+        })
+
+    def _make_web_authorize_success_response(self, _: Tokens):
+        auth_token = generate_auth_token(self.log)
+        callback_uri = add_params_to_uri(
+            uri=self.log.callback_uri,
+            provider=self.provider,
+            token=auth_token,
+            nonce=self.session.nonce
+        )
+        return redirect(callback_uri)
+
+    def _handle_authentication(self, params: OAuthCallbackParams) -> Tuple[SocialProfiles, Tokens]:
         """
-
+        Handle authentication, return authenticated profile + token info
         :param params:
         :return:
         """
         if self._is_mobile():
-            access_token = params['access_token']
-            id_token = params.get('id_token')
-            tokens = self._debug_token(access_token=access_token, id_token=id_token)
+            access_token = params.access_token
+            id_token = params.id_token
+            token_pack = self._debug_token(access_token=access_token, id_token=id_token)
         else:
-            code = params['code']
-            tokens = self._get_token(code=code)
-        user_id, attrs = self._get_profile(tokens=tokens)
+            code = params.code
+            token_pack: OAuth2TokenPack = self._get_token(code=code)
+        user_id, attrs = self._get_profile(token_pack=token_pack)
 
         profile, existed = SocialProfiles.add_or_update(
             app_id=self.log.app_id,
@@ -277,27 +285,19 @@ class OAuthBackend(object):
                                 nonce=gen_random_token(nbytes=32))
         token = Tokens(
             provider=self.provider,
-            access_token=tokens['access_token'],
-            token_type=tokens['token_type'],
-            expires_at=datetime.utcnow() + timedelta(seconds=tokens['expires_in']),
-            refresh_token=tokens.get('refresh_token'),
-            id_token=tokens.get('id_token'),
+            access_token=token_pack.access_token,
+            token_type=token_pack.token_type,
+            expires_at=datetime.utcnow() + timedelta(seconds=token_pack.expires_in),
+            refresh_token=token_pack.refresh_token,
+            id_token=token_pack.id_token,
             social_id=profile._id
         )
         db.session.add(token)
         return profile, token
 
-    def _enable_sandbox(self):
-        if self.SANDBOX_SUPPORT:
-            self.sandbox = True
-            logger.info('Enable sandbox mode', provider=self.provider)
-        else:
-            logger.warn('Cannot enable sandbox mode, provider is not supported',
-                        provider=self.provider)
-
-    def _get_token(self, code):
+    def _get_token(self, code) -> OAuth2TokenPack:
         """
-
+        Get OAuth2 access token by authorization code
         :param code:
         :return:
         """
@@ -315,11 +315,11 @@ class OAuthBackend(object):
                         provider=self.provider.upper(), **body)
             self._raise_error(error=self.ERROR_GET_TOKEN_FAILED,
                               msg='{}: {}'.format(error, desc))
-        return res.json()
+        return OAuth2TokenPack(data=res.json())
 
-    def _debug_token(self, access_token, id_token=None):
+    def _debug_token(self, access_token, id_token=None) -> OAuth2TokenPack:
         """
-
+        Debug adnd get access token that was sent by Mobile SDK
         :param access_token:
         :return:
         """
@@ -338,20 +338,21 @@ class OAuthBackend(object):
             logger.warn('Access token does not belong to current app',
                         client_id=client_id, expected=self.channel.client_id)
             raise PermissionDeniedError('Illegal access token')
-        return {
-            'access_token': access_token,
-            'expires_in': token_info['expires_in'],
-            'token_type': 'Bearer',
-            'id_token': id_token
-        }
 
-    def _get_profile(self, tokens):
+        return OAuth2TokenPack(
+            access_token=access_token,
+            expires_in=token_info['expires_in'],
+            token_type='Bearer',
+            id_token=id_token
+        )
+
+    def _get_profile(self, token_pack: OAuth2TokenPack) -> Tuple[str, Dict[str, Any]]:
         """
-
-        :param tokens:
+        Get profile attributes of authenticated profile
+        :param token_pack:
         :return:
         """
-        authorization = tokens['token_type'] + ' ' + tokens['access_token']
+        authorization = token_pack.token_type + ' ' + token_pack.access_token
         res = requests.get(self.__profile_uri__(version=self.channel.api_version),
                            headers={'Authorization': authorization})
         if res.status_code != 200:
@@ -362,9 +363,9 @@ class OAuthBackend(object):
                 error=self.ERROR_GET_PROFILE_FAILED,
                 msg='Getting user attributes from provider failed')
 
-        return self._get_attributes(response=res.json())
+        return self._parse_attributes(response=res.json())
 
-    def _get_attributes(self, response, nofilter=False):
+    def _parse_attributes(self, response: Dict[str, Any], nofilter=False) -> Tuple[str, Dict[str, Any]]:
         """
 
         :param response:
@@ -384,18 +385,10 @@ class OAuthBackend(object):
                 attrs[key] = value
         return user_id, attrs
 
-    def _make_redirect_response(self, callback_uri):
-        """
-        Make response redirect to client callback URI
-        :param callback_uri:
-        :return:
-        """
-        return redirect(callback_uri)
-
     def _get_error(self, response, action):
         return response['error'], response.get('error_description', '')
 
-    def _raise_error(self, error, msg):
+    def _raise_error(self, error: str, msg: str):
         if self._is_mobile():
             return jsonify({
                 'error': error,
@@ -405,9 +398,12 @@ class OAuthBackend(object):
         else:
             raise RedirectLoginError(
                 error=error, msg=msg,
-                nonce=self.args.get('nonce', ''),
+                nonce=self.session.nonce,
                 redirect_uri=self.log.get_failed_callback(),
                 provider=self.provider)
+
+    def _is_mobile(self):
+        return self.session.platform != PLATFORM_WEB
 
     def __identify_attrs__(self):
         return self.IDENTIFY_ATTRS
@@ -435,41 +431,3 @@ class OAuthBackend(object):
     def __provider_callback_uri__(self):
         return url_for('authorize_callback', _external=True, provider=self.provider,
                        _scheme='http' if app.config['DEBUG'] else 'https')
-
-    @staticmethod
-    def verify_and_parse_state(state):
-        try:
-            return AuthLogs.parse_oauth_state(oauth_state=state)
-        except TokenParseError as e:
-            logger.warning('Parse OAuth state failed', error=e.description, token=state)
-            raise BadRequestError('Invalid OAuth state')
-
-    @staticmethod
-    def verify_callback_uri(allowed_uris, uri):
-        if not uri:
-            return False
-        r1 = up.urlparse(uri)
-        # Always allow callback for hosted JS
-        if r1.netloc == 'api.easy-login.jp' \
-                and r1.path == '/hosted/auth/callback' \
-                and r1.scheme == 'https':
-            return True
-
-        for _uri in allowed_uris:
-            r2 = up.urlparse(_uri)
-            ok = r1.scheme == r2.scheme and r1.netloc == r2.netloc and r1.path == r2.path
-            if ok:
-                return True
-        return False
-
-    @staticmethod
-    def extract_domain_for_cookie(url, subdomain=True):
-        netloc = up.urlparse(url).netloc
-        if netloc.startswith('localhost'):
-            return None
-        else:
-            parts = netloc.split('.')
-            domain = parts[-2] + '.' + parts[-1]
-            if subdomain:
-                domain = '.' + domain
-            return domain

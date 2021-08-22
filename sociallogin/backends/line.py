@@ -1,7 +1,10 @@
+from typing import Dict, Any, Tuple
+
 import jwt
 
 from sociallogin import logger
 from sociallogin.backends import OAuthBackend
+from sociallogin.entities import OAuth2TokenPack
 
 
 class LineBackend(OAuthBackend):
@@ -22,10 +25,10 @@ class LineBackend(OAuthBackend):
             uri += '&bot_prompt=aggressive'
         return uri
 
-    def _get_profile(self, tokens):
-        user_id, attrs = super()._get_profile(tokens)
+    def _get_profile(self, token_pack: OAuth2TokenPack) -> Tuple[str, Dict[str, Any]]:
+        user_id, attrs = super()._get_profile(token_pack)
         try:
-            payload = jwt.decode(tokens['id_token'],
+            payload = jwt.decode(token_pack.id_token,
                                  key=self.channel.client_secret,
                                  audience=self.channel.client_id,
                                  issuer='https://access.line.me',

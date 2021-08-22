@@ -50,10 +50,11 @@ init_logging(app)
 # This will create the database file using SQLAlchemy
 from sociallogin import models
 
+# Create all tables
 db.create_all()
 db.session.commit()
 
 # Import all API endpoint definitions
-from sociallogin import auth, apis, internal, exc
+from sociallogin import auth, exc, routes
 
 auth.init_app(app)

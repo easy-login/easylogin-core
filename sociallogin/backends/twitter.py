@@ -1,12 +1,14 @@
 import time
 import urllib.parse as up
+from typing import Dict, Any, Tuple
 
 import requests
 
 from sociallogin import db, logger
 from sociallogin.backends import OAuthBackend
+from sociallogin.entities import OAuthCallbackParams, OAuthSessionParams
 from sociallogin.models import Tokens, \
-    SocialProfiles
+    SocialProfiles, AuthLogs
 from sociallogin.utils import gen_random_token, add_params_to_uri, \
     calculate_hmac
 
@@ -57,15 +59,15 @@ class TwitterBackend(OAuthBackend):
             oauth_token=token)
         return uri
 
-    def _handle_authentication(self, params):
+    def _handle_authentication(self, params: OAuthCallbackParams) -> Tuple[SocialProfiles, Tokens]:
         """
-
+        Handle authentication, return authenticated profile + token info
         :param params:
         :return:
         """
-        oauth_verifier = params['oauth_verifier']
-        tokens = self._get_token(oauth_verifier)
-        user_id, attrs = self._get_profile(tokens=tokens)
+        oauth_verifier = params.oauth_verifier
+        token_tup = self._get_token_oa1(oauth_verifier)
+        user_id, attrs = self._get_profile_oa1(token_tup=token_tup)
 
         profile, existed = SocialProfiles.add_or_update(
             app_id=self.log.app_id,
@@ -77,14 +79,14 @@ class TwitterBackend(OAuthBackend):
             provider=self.provider,
             token_type='OAuth',
             oa_version=Tokens.OA_VERSION_1A,
-            oa1_token=tokens[0],
-            oa1_secret=tokens[1],
+            oa1_token=token_tup[0],
+            oa1_secret=token_tup[1],
             social_id=profile._id
         )
         db.session.add(token)
         return profile, token
 
-    def _get_token(self, oauth_verifier):
+    def _get_token_oa1(self, oauth_verifier: str) -> Tuple[str, str]:
         token_uri = self.__token_uri__(version=self.channel.api_version)
         auth = self.create_authorization_header(
             method='POST',
@@ -106,15 +108,15 @@ class TwitterBackend(OAuthBackend):
         body = up.parse_qs(res.text)
         return body['oauth_token'][0], body['oauth_token_secret'][0]
 
-    def _get_profile(self, tokens):
+    def _get_profile_oa1(self, token_tup: Tuple[str, str]) -> Tuple[str, Dict[str, Any]]:
         profile_uri = self.__profile_uri__(version=self.channel.api_version, numeric_format=True)
         auth = self.create_authorization_header(
             method='GET',
             url=profile_uri,
             consumer_key=self.channel.client_id,
             consumer_secret=self.channel.client_secret,
-            oauth_token_secret=tokens[1],
-            oauth_token=tokens[0],
+            oauth_token_secret=token_tup[1],
+            oauth_token=token_tup[0],
             include_entities='false',
             skip_status='true',
             include_email='true'
@@ -131,7 +133,7 @@ class TwitterBackend(OAuthBackend):
                 error=self.ERROR_GET_PROFILE_FAILED,
                 msg='Getting profile failed')
 
-        return self._get_attributes(response=res.json())
+        return self._parse_attributes(response=res.json())
 
     def _get_error(self, response, action):
         if action != 'authorize':

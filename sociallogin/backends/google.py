@@ -1,7 +1,10 @@
+from typing import Dict, Any, Tuple
+
 import requests
 
 from sociallogin import logger
 from sociallogin.backends import OAuthBackend
+from sociallogin.entities import OAuth2TokenPack
 
 
 class GoogleBackend(OAuthBackend):
@@ -19,7 +22,7 @@ class GoogleBackend(OAuthBackend):
     PROFILE_URI = 'https://people.googleapis.com/{version}/people/me'
     IDENTIFY_ATTRS = ['sub']
 
-    def _get_profile(self, tokens):
+    def _get_profile(self, token_pack: OAuth2TokenPack):
         perms = self.channel.get_permissions()
         fields = self.channel.get_required_fields()
         if 'email' in perms and 'emailAddresses' not in fields:
@@ -27,7 +30,7 @@ class GoogleBackend(OAuthBackend):
         fields.remove('#')
         res = requests.get(self.__profile_uri__(version=self.channel.api_version), params={
             'personFields': ','.join(fields),
-            'access_token': tokens['access_token']
+            'access_token': token_pack.access_token
         })
         if res.status_code != 200:
             body = res.json()
@@ -37,9 +40,9 @@ class GoogleBackend(OAuthBackend):
                 error=self.ERROR_GET_PROFILE_FAILED,
                 msg='Getting user attributes from provider failed')
 
-        return self._get_attributes(response=res.json(), nofilter=True)
+        return self._parse_attributes(response=res.json(), nofilter=True)
 
-    def _get_attributes(self, response, nofilter=False):
+    def _parse_attributes(self, response: Dict[str, Any], nofilter=False) -> Tuple[str, Dict[str, Any]]:
         rs_name = response['resourceName']
         user_id = rs_name.split('/')[1]
         attrs = dict()

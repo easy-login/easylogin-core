@@ -1,5 +1,6 @@
 import pickle
 import time
+from typing import Any, Dict, Tuple
 from urllib import parse as urlparse
 import hashlib
 import jwt
@@ -10,7 +11,15 @@ from sociallogin.utils import calculate_hmac, base64encode, base64decode
 from sociallogin import app, logger
 
 
-class EasyTokenService:
+class TokenService:
+    def generate(self, sub: str, exp_in_seconds: int, **kwargs):
+        raise NotImplementedError()
+
+    def decode(self, token: str) -> Tuple[str, Dict[str, Any]]:
+        raise NotImplementedError()
+
+
+class EasyTokenService(TokenService):
     """
     First version, use Pickle to serialize/deserialize
     """
@@ -19,7 +28,7 @@ class EasyTokenService:
     def __init__(self, key):
         self.key = key
 
-    def generate(self, sub, exp_in_seconds, **kwargs):
+    def generate(self, sub: str, exp_in_seconds: int, **kwargs):
         now = int(time.time())
         payload = {
             'sub': sub,
@@ -33,7 +42,7 @@ class EasyTokenService:
         token = base64encode(self.serialize(raw=payload), urlsafe=True, padding=False)
         return self.PREFIX + token
 
-    def decode(self, token):
+    def decode(self, token: str) -> Tuple[str, Dict[str, Any]]:
         try:
             data = base64decode(token[4:], urlsafe=True)
             payload = self.deserialize(packed=data)
@@ -77,12 +86,12 @@ class EasyTokenService2(EasyTokenService):
         return msgpack.unpackb(packed, raw=False)
 
 
-class JwtTokenService:
+class JwtTokenService(TokenService):
     def __init__(self, key, issuer=None):
         self.key = key
         self.issuer = issuer
 
-    def generate(self, sub, exp_in_seconds, **kwargs):
+    def generate(self, sub: str, exp_in_seconds: int, **kwargs):
         now = int(time.time())
         return jwt.encode({
             'iss': self.issuer,
@@ -92,7 +101,7 @@ class JwtTokenService:
             'data': kwargs
         }, key=self.key, algorithm='HS256')
 
-    def decode(self, token):
+    def decode(self, token: str) -> Tuple[str, Dict[str, Any]]:
         try:
             payload = jwt.decode(token, key=self.key, issuer=self.issuer,
                                  algorithms=['HS256'])
