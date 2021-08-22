@@ -1,0 +1,50 @@
+@startuml
+participant "End-User Browser" as u
+participant "Application\nWeb Server" as ws
+participant "EasyLogin\nAuthentication Server" as auth
+participant "EasyLogin\nAPI Server" as api
+participant "Social Provider" as sp
+
+
+u -> auth: Redirect to social login URL
+activate u
+activate auth
+
+u <-- auth: Provider social login URL
+destroy auth
+
+u -> sp: Redirect to Provider social login URL
+activate sp
+
+sp -> sp: Authentication processing
+
+u <-- sp: EasyLogin callback URL
+destroy sp
+
+u -> auth: Redirect to EasyLogin callback URL
+activate auth
+
+auth -> auth: Authentication processing
+
+u <-- auth: Application registration URL\n(with EasyLogin one-time token)
+destroy auth
+
+u -> ws: Redirect to registration URL
+activate ws
+
+ws -> api: EasyLogin ID request
+activate api
+
+ws <-- api: EasyLogin ID
+
+ws -> ws: Registration processing
+
+ws -> api: Link EasyLogin ID and Application user ID
+
+api -> api: Associate EasyLogin ID and\nApplication user ID
+
+ws <-- api: 200 OK
+destroy api
+
+u <-- ws: Registration complete screen
+@enduml
