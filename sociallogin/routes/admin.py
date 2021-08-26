@@ -2,7 +2,7 @@ from flask import request, render_template_string, \
     make_response, redirect, jsonify
 
 from sociallogin import app as flask_app
-from sociallogin.sec import jwt_token_service
+from sociallogin.sec import jwt_token_helper
 from sociallogin.services import admin as admin_serv
 
 html = """
@@ -30,7 +30,7 @@ def hosted_init_auth():
     return_url = request.args['return_url']
     origin = request.args['origin']
     resp = make_response(redirect(return_url))
-    ht = jwt_token_service.generate(sub=origin, exp_in_seconds=600)
+    ht = jwt_token_helper.generate(sub=origin, exp_in_seconds=600)
     resp.set_cookie('_ht', ht, secure=True)
     return resp
 
@@ -39,7 +39,7 @@ def hosted_init_auth():
 def hosted_auth_callback():
     token = request.args['token']
     ht = request.cookies['_ht']
-    origin, _ = jwt_token_service.decode(ht)
+    origin, _ = jwt_token_helper.decode(ht)
     print('request origin', origin)
     return render_template_string(html, token=token, origin=origin)
 

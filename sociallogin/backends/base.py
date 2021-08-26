@@ -15,7 +15,7 @@ from sociallogin.exc import RedirectLoginError, PermissionDeniedError, \
     NotFoundError, BadRequestError, TokenParseError
 from sociallogin.models import Apps, Channels, AuthLogs, Tokens, \
     SocialProfiles, JournalLogs, AssociateLogs
-from sociallogin.sec import jwt_token_service as jwt_token_svc
+from sociallogin.sec import jwt_token_helper
 from sociallogin.utils import gen_random_token, add_params_to_uri, get_remote_ip
 
 
@@ -223,7 +223,7 @@ class OAuthBackend(object):
 
     def _parse_oauth_state(self, state: str) -> Tuple[AuthLogs, OAuthSessionParams]:
         try:
-            log_id, args = jwt_token_svc.decode(token=state)
+            log_id, args = jwt_token_helper.decode(token=state)
             log: Optional[AuthLogs] = AuthLogs.query.filter_by(_id=log_id).one_or_none()
 
             if not log or log.nonce != args.get('_nonce'):

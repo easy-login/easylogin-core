@@ -11,7 +11,7 @@ from sociallogin.utils import calculate_hmac, base64encode, base64decode
 from sociallogin import app, logger
 
 
-class TokenService:
+class TokenHelper:
     def generate(self, sub: str, exp_in_seconds: int, **kwargs):
         raise NotImplementedError()
 
@@ -19,7 +19,7 @@ class TokenService:
         raise NotImplementedError()
 
 
-class EasyTokenService(TokenService):
+class EasyTokenHelper(TokenHelper):
     """
     First version, use Pickle to serialize/deserialize
     """
@@ -72,7 +72,7 @@ class EasyTokenService(TokenService):
         return pickle.loads(packed)
 
 
-class EasyTokenService2(EasyTokenService):
+class EasyTokenService2(EasyTokenHelper):
     """
     Second version, use message packe to serialize/deserialize
     """
@@ -86,7 +86,7 @@ class EasyTokenService2(EasyTokenService):
         return msgpack.unpackb(packed, raw=False)
 
 
-class JwtTokenService(TokenService):
+class JwtTokenHelper(TokenHelper):
     def __init__(self, key, issuer=None):
         self.key = key
         self.issuer = issuer
@@ -116,5 +116,5 @@ class JwtTokenService(TokenService):
 
 
 # Define default TokenService object
-jwt_token_service = JwtTokenService(key=app.config['SECRET_KEY'], issuer='easy-login.jp')
-easy_token_service = EasyTokenService2(key=app.config['SECRET_KEY'])
+jwt_token_helper = JwtTokenHelper(key=app.config['SECRET_KEY'], issuer='easy-login.jp')
+easy_token_helper = EasyTokenService2(key=app.config['SECRET_KEY'])

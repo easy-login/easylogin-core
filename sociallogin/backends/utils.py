@@ -4,11 +4,11 @@ from typing import Tuple, Dict, Any, Optional
 from sociallogin import logger
 from sociallogin.exc import BadRequestError
 from sociallogin.models import AuthLogs, AssociateLogs
-from sociallogin.sec import jwt_token_service as jwt_token_svc, easy_token_service as easy_token_svc
+from sociallogin.sec import jwt_token_helper, easy_token_helper
 
 
 def parse_auth_token(auth_token: str) -> Tuple[AuthLogs, Dict[str, Any]]:
-    log_id, args = easy_token_svc.decode(token=auth_token)
+    log_id, args = easy_token_helper.decode(token=auth_token)
     log: Optional[AuthLogs] = AuthLogs.query.filter_by(_id=log_id).one_or_none()
 
     if not log or log.nonce != args.get('_nonce'):
@@ -25,7 +25,7 @@ def parse_auth_token(auth_token: str) -> Tuple[AuthLogs, Dict[str, Any]]:
 
 
 def parse_associate_token(associate_token: str):
-    social_id, args = easy_token_svc.decode(token=associate_token)
+    social_id, args = easy_token_helper.decode(token=associate_token)
     log: Optional[AssociateLogs] = AssociateLogs.query \
         .filter_by(dst_social_id=social_id) \
         .order_by(AssociateLogs._id.desc()).first()
@@ -42,18 +42,18 @@ def parse_associate_token(associate_token: str):
 
 
 def generate_oauth_state(log: AuthLogs, **kwargs) -> str:
-    return jwt_token_svc.generate(sub=log._id, exp_in_seconds=3600, aud=log.app_id,
-                                  _nonce=log.nonce, **kwargs)
+    return jwt_token_helper.generate(sub=log._id, exp_in_seconds=3600, aud=log.app_id,
+                                     _nonce=log.nonce, **kwargs)
 
 
 def generate_auth_token(log: AuthLogs, **kwargs) -> str:
-    return easy_token_svc.generate(sub=log._id, exp_in_seconds=3600,
-                                   _type='auth', _nonce=log.nonce, **kwargs)
+    return easy_token_helper.generate(sub=log._id, exp_in_seconds=3600,
+                                      _type='auth', _nonce=log.nonce, **kwargs)
 
 
 def generate_associate_token(log: AssociateLogs, **kwargs):
-    return easy_token_svc.generate(sub=log.dst_social_id, exp_in_seconds=600,
-                                   _type='associate', _nonce=log.nonce, **kwargs)
+    return easy_token_helper.generate(sub=log.dst_social_id, exp_in_seconds=600,
+                                      _type='associate', _nonce=log.nonce, **kwargs)
 
 
 def verify_callback_uri(allowed_uris, uri):

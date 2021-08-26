@@ -3,7 +3,7 @@ from passlib.hash import django_pbkdf2_sha256
 from sociallogin import db, logger
 from sociallogin.exc import TokenParseError, NotFoundError, UnauthorizedError, BadRequestError
 from sociallogin.models import SocialProfiles, Admins, Apps
-from sociallogin.sec import jwt_token_service
+from sociallogin.sec import jwt_token_helper
 
 
 def admin_authenticate(email, password):
@@ -16,7 +16,7 @@ def admin_authenticate(email, password):
     admin_attrs = admin.as_dict()
     return {
         'user': admin_attrs,
-        'access_token': jwt_token_service.generate(
+        'access_token': jwt_token_helper.generate(
             sub=admin._id,
             exp_in_seconds=86400 * 365,
             **admin_attrs,
@@ -49,7 +49,7 @@ def convert_social_id(body):
 
 def _validate_access_token(access_token):
     try:
-        return jwt_token_service.decode(token=access_token)
+        return jwt_token_helper.decode(token=access_token)
     except TokenParseError as e:
         logger.warning('Parse admin access token failed', error=e.description, token=access_token)
         raise UnauthorizedError('Invalid access token')
