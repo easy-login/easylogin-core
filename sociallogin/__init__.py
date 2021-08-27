@@ -41,7 +41,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 # Define logger object
-from sociallogin.utils import EasyLogger
+from sociallogin.log import EasyLogger
 logger = EasyLogger(impl=app.logger)
 logger.load_from_config(app.config)
 init_logging(app)
