@@ -1,7 +1,7 @@
 import hashlib
 from typing import Dict, Any
 
-from flask import abort, request
+from flask import abort
 
 from sociallogin import db, logger
 from sociallogin.backends import get_backend
@@ -41,8 +41,8 @@ def mobile_authorize_callback(params: OAuthCallbackParams):
     return resp
 
 
-def get_authorized_profile(auth_token) -> Dict[str, Any]:
-    log, args = _verify_auth_request(auth_token=auth_token, params=request.form)
+def get_authorized_profile(auth_token: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    log, args = _verify_auth_request(auth_token=auth_token, params=params)
     app = Apps.query.filter_by(_id=log.app_id).one_or_none()
 
     if log.is_login:
@@ -61,8 +61,8 @@ def get_authorized_profile(auth_token) -> Dict[str, Any]:
     return body
 
 
-def activate_profile(auth_token):
-    log, args = _verify_auth_request(auth_token=auth_token, params=request.form)
+def activate_profile(auth_token: str, params: Dict[str, Any]):
+    log, args = _verify_auth_request(auth_token=auth_token, params=params)
     log.status = AuthLogs.STATUS_SUCCEEDED
 
     SocialProfiles.activate(profile_id=log.social_id)

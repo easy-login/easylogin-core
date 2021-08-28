@@ -42,7 +42,7 @@ def mobile_authorize_callback(provider):
 def get_authorized_profile():
     auth_token = request.form.get('auth_token')
     try:
-        body = oauth_serv.get_authorized_profile(auth_token=auth_token)
+        body = oauth_serv.get_authorized_profile(auth_token=auth_token, params=request.form)
         logger.debug('Profile authenticated', style='hybrid', **body)
         return jsonify(body)
     except TokenParseError as e:
@@ -54,7 +54,7 @@ def get_authorized_profile():
 def activate_profile():
     auth_token = request.form.get('auth_token')
     try:
-        oauth_serv.activate_profile(auth_token=auth_token)
+        oauth_serv.activate_profile(auth_token=auth_token, params=request.form)
         return jsonify({'success': True})
     except TokenParseError as e:
         logger.warning('Parse auth token failed', error=e.description, auth_token=auth_token)
