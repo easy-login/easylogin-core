@@ -139,7 +139,7 @@ class OAuthBackend(object):
                 session_data['dst_social_id'] = alog.dst_social_id
             except TokenParseError as e:
                 logger.warning('Parse associate token failed',
-                               error=e.description, token=assoc_token)
+                               error=e.message, token=assoc_token)
                 raise BadRequestError('Invalid associate token')
         elif params.intent == AuthLogs.INTENT_PAY_WITH_AMAZON:
             session_data['lpwa_domain'] = params.site_domain
@@ -242,7 +242,7 @@ class OAuthBackend(object):
 
             return log, OAuthSessionParams(data=args)
         except TokenParseError as e:
-            logger.warning('Parse OAuth state failed', error=e.description, token=state)
+            logger.warning('Parse OAuth state failed', error=e.message, token=state)
             raise BadRequestError('Invalid OAuth state')
 
     def _make_mobile_authorize_success_response(self, _: Tokens):

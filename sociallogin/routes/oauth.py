@@ -46,7 +46,7 @@ def get_authorized_profile():
         logger.debug('Profile authenticated', style='hybrid', **body)
         return jsonify(body)
     except TokenParseError as e:
-        logger.warning('Parse auth token failed', error=e.description, auth_token=auth_token)
+        logger.warning('Parse auth token failed', error=e.message, auth_token=auth_token)
         abort(400, 'Invalid auth token')
 
 
@@ -57,5 +57,5 @@ def activate_profile():
         oauth_serv.activate_profile(auth_token=auth_token, params=request.form)
         return jsonify({'success': True})
     except TokenParseError as e:
-        logger.warning('Parse auth token failed', error=e.description, auth_token=auth_token)
+        logger.warning('Parse auth token failed', error=e.message, auth_token=auth_token)
         abort(400, 'Invalid auth token')

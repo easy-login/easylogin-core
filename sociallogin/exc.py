@@ -22,18 +22,25 @@ ERROR_CODES = {
 class SocialLoginError(Exception):
     def __init__(self, *args, **kwargs):
         self.error = kwargs.get('error')
-        self.description = args[0] if args else kwargs.get('msg')
+        self.error_description = args[0] if args else kwargs.get('msg')
         self.data = kwargs.get('data')
 
     def __repr__(self):
-        return self.error + ': ' + self.description
+        return self.error + ': ' + self.error_description
 
     def as_dict(self):
         return {
             'error': self.error,
-            'error_description': self.description,
+            'error_description': self.error_description,
             'data': self.data
         }
+
+    @property
+    def message(self):
+        """
+        Alias to error_description
+        """
+        return self.error_description
 
 
 class RedirectLoginError(SocialLoginError):
@@ -47,7 +54,7 @@ class RedirectLoginError(SocialLoginError):
         return {
             'provider': self.provider,
             'error': self.error,
-            'error_description': self.description,
+            'error_description': self.error_description,
             'nonce': self.nonce
         }
 
@@ -153,8 +160,9 @@ def server_internal_error(error):
 
 
 def get_error_response(code, error):
-    payload = error.as_dict() if isinstance(error, SocialLoginError) \
-        else {'error_description': error.description}
+    payload = error.as_dict() \
+        if isinstance(error, SocialLoginError) \
+        else {'error_description': error.error_description}
     if not payload.get('error'):
         payload['error'] = ERROR_CODES.get(code, 'unknown')
     return jsonify(payload), code

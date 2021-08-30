@@ -51,5 +51,5 @@ def _validate_access_token(access_token):
     try:
         return jwt_token_helper.decode(token=access_token)
     except TokenParseError as e:
-        logger.warning('Parse admin access token failed', error=e.description, token=access_token)
+        logger.warning('Parse admin access token failed', error=e.message, token=access_token)
         raise UnauthorizedError('Invalid access token')
