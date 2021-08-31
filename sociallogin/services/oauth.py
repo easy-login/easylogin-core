@@ -1,12 +1,11 @@
 import hashlib
 from typing import Dict, Any
 
-from flask import abort
-
 from sociallogin import db, logger
 from sociallogin.backends import get_backend
 from sociallogin.backends.utils import parse_auth_token
 from sociallogin.entities import OAuthAuthorizeParams, OAuthCallbackParams
+from sociallogin.exc import UnauthorizedError
 from sociallogin.models import Apps, AuthLogs, SocialProfiles
 
 
@@ -76,13 +75,14 @@ def _verify_auth_request(auth_token, params):
         expected = (db.session.query(Apps.api_key)
                     .filter_by(_id=log.app_id, _deleted=0).scalar())
         if expected != api_key:
-            abort(401, 'API key authorization failed')
+            raise UnauthorizedError('API key authorization failed')
     else:
         code_challenge = args.get('code_challenge')
         verifier = params.get('code_verifier', '')
         if not _verify_code_verifier(verifier=verifier, challenge=code_challenge):
             logger.warn('code_verifier does not match', verifier=verifier)
-            abort(401, 'code_verifier does not match')
+            raise UnauthorizedError('code_verifier does not match')
+
     return log, args
 
 
