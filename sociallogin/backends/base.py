@@ -9,7 +9,7 @@ from sociallogin import app, db, logger
 from sociallogin.backends.utils import verify_callback_uri, generate_oauth_state, parse_associate_token, \
     generate_auth_token
 from sociallogin.constants import PLATFORM_WEB, ALL_PLATFORMS
-from sociallogin.entities import OAuthAuthorizeParams, OAuthCallbackParams, \
+from sociallogin.dto import OAuthAuthorizeParams, OAuthCallbackParams, \
     OAuthSessionParams, OAuth2TokenPack
 from sociallogin.exc import RedirectLoginError, PermissionDeniedError, \
     NotFoundError, BadRequestError, TokenParseError

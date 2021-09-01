@@ -5,7 +5,7 @@ from flask import make_response, redirect
 
 from sociallogin import logger
 from sociallogin.backends import OAuthBackend
-from sociallogin.entities import OAuthSessionParams
+from sociallogin.dto import OAuthSessionParams
 from sociallogin.models import AuthLogs, Tokens
 from sociallogin.utils import add_params_to_uri, unix_time_millis
 

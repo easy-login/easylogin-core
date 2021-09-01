@@ -4,7 +4,7 @@ from typing import Dict, Any
 from sociallogin import db, logger
 from sociallogin.backends import get_backend
 from sociallogin.backends.utils import parse_auth_token
-from sociallogin.entities import OAuthAuthorizeParams, OAuthCallbackParams
+from sociallogin.dto import OAuthAuthorizeParams, OAuthCallbackParams
 from sociallogin.exc import UnauthorizedError
 from sociallogin.models import Apps, AuthLogs, SocialProfiles
 

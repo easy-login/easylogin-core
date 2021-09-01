@@ -4,7 +4,7 @@ import requests
 
 from sociallogin import logger
 from sociallogin.backends import OAuthBackend
-from sociallogin.entities import OAuth2TokenPack
+from sociallogin.dto import OAuth2TokenPack
 
 
 class GoogleBackend(OAuthBackend):

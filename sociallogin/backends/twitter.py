@@ -6,7 +6,7 @@ import requests
 
 from sociallogin import db, logger
 from sociallogin.backends import OAuthBackend
-from sociallogin.entities import OAuthCallbackParams, OAuthSessionParams
+from sociallogin.dto import OAuthCallbackParams, OAuthSessionParams
 from sociallogin.models import Tokens, \
     SocialProfiles, AuthLogs
 from sociallogin.utils import gen_random_token, add_params_to_uri, \

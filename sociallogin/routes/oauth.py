@@ -1,7 +1,7 @@
 from flask import abort, request, jsonify
 
 from sociallogin import app as flask_app, logger
-from sociallogin.entities import OAuthAuthorizeParams, OAuthCallbackParams
+from sociallogin.dto import OAuthAuthorizeParams, OAuthCallbackParams
 from sociallogin.exc import TokenParseError
 from sociallogin.services import oauth as oauth_serv
 
